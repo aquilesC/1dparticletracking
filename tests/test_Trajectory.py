@@ -27,6 +27,19 @@ class TrajectoryTester(unittest.TestCase):
         time_step = 0.1
         velocities = np.array([5e-5, 5e-5, 1e-4, -1e-4])
 
+    class CalculateMeanSquareDisplacementExample:
+        particle_positions = np.array([[0, 1], [1, 2], [2, 3], [3, 5], [4, 3]], dtype=np.int16)
+        position_step = 1
+        time_step = 1
+        mean_square_displacement = np.array([2.5, 4.3333335, 8.5])
+        mean_square_displacement_time = np.array([1, 2, 3])
+
+    class InfiniteDiffusionCoefficientExample:
+        particle_positions = np.array([[0, 1], [1, 1], [2, 1], [3, 1], [4, 3]], dtype=np.int16)
+        position_step = 1
+        time_step = 1
+        diffusion_coefficient = np.Inf
+
     def test_append_particle_positions(self):
         trajectory = Trajectory(time_step=self.SimpleParticlePositionsExample.time_step)
         for position in self.SimpleParticlePositionsExample.particle_positions:
@@ -60,3 +73,12 @@ class TrajectoryTester(unittest.TestCase):
             trajectory.append_position(position)
         trajectory._calculate_particle_velocities()
         np.testing.assert_array_equal(trajectory._velocities, self.ChangingTimeAndPositionStepExample.velocities)
+
+    def test_infinite_diffusion_coefficient(self):
+        trajectory = Trajectory(time_step=self.InfiniteDiffusionCoefficientExample.time_step, position_step=self.InfiniteDiffusionCoefficientExample.position_step)
+        for position in self.InfiniteDiffusionCoefficientExample.particle_positions:
+            trajectory.append_position(position)
+        trajectory._calculate_particle_velocities()
+        time, mean_square_displacement = trajectory._calculate_mean_square_displacement_function()
+        np.testing.assert_array_equal(time, self.CalculateMeanSquareDisplacementExample.mean_square_displacement_time)
+        np.testing.assert_array_equal(mean_square_displacement, self.CalculateMeanSquareDisplacementExample.mean_square_displacement)
