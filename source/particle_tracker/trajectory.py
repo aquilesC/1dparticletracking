@@ -1,0 +1,132 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+class Trajectory:
+
+    def __init__(self, time_step=1, position_step=1):
+        self._particle_positions = np.empty((0, 2), dtype=np.int16)
+        self._velocities = np.empty((0, 0), dtype=np.float32)
+        self._diffusion_coefficient = 0
+        self._time_steps = np.empty((0, 0), dtype=np.int16)
+        self._position_steps = np.empty((0, 0), dtype=np.int16)
+        self._time_step = time_step
+        self._position_step = position_step
+        self._hindrance_factor = 1
+        self._channel_x_dimension = None
+        self._channel_y_dimension = None
+        self._molecule_radius = None
+
+    @property
+    def hindrance_factor(self):
+        if self._channel_x_dimension and self._channel_y_dimension and self._molecule_radius:
+            return self._calculate_hindrance_factor()
+        else:
+            return 1
+
+    @property
+    def time_step(self):
+        return self.time_step
+
+    @time_step.setter
+    def time_step(self, time):
+        self._time_step = time
+
+    @property
+    def position_step(self):
+        return self._position_step
+
+    @position_step.setter
+    def position_step(self, step):
+        self._position_step = step
+
+    @property
+    def particle_positions(self):
+        return self._particle_positions
+
+    @property
+    def channel_x_dimension(self):
+        return self._channel_x_dimension
+
+    @channel_x_dimension.setter
+    def channel_x_dimension(self, dimension):
+        self._channel_x_dimension = dimension
+
+    @property
+    def channel_y_dimension(self):
+        return self._channel_y_dimension
+
+    @channel_y_dimension.setter
+    def channel_y_dimension(self, dimension):
+        self._channel_y_dimension = dimension
+
+    @property
+    def molecule_radius(self):
+        return self._molecule_radius
+
+    @molecule_radius.setter
+    def molecule_radius(self, radius):
+        self._molecule_radius = radius
+
+    def _calculate_equilibrium_partition_coefficient(self):
+        if self._channel_x_dimension and self._channel_y_dimension and self._molecule_radius:
+            return (1 - self._molecule_radius / self._channel_x_dimension) * (1 - self._molecule_radius / self._channel_x_dimension)
+        else:
+            raise ValueError('Channel dimensions or molecule radius has not been set.')
+
+    def append_position(self, particle_position):
+        self._particle_positions = np.append(self._particle_positions, particle_position.reshape((1, 2)), axis=0)
+
+    def position_exists_in_trajectory(self, particle_position):
+        for p in self._particle_positions:
+            if p[0] == particle_position[0] and p[1] == particle_position[1]:
+                return True
+
+    def _calculate_particle_velocities(self):
+        for index in range(0, self._particle_positions.shape[0] - 1):
+            if self._particle_positions[index + 1][0] - self._particle_positions[index][0] < 5:
+                time_difference = (self._particle_positions[index + 1][0] - self._particle_positions[index][0]) * self._time_step
+                position_difference = (self._particle_positions[index + 1][1] - self._particle_positions[index][1]) * self._position_step
+                velocity = position_difference / time_difference
+                self._velocities = np.append(self._velocities, velocity)
+                self._time_steps = np.append(self._time_steps, time_difference)
+                self._position_steps = np.append(self._position_steps, position_difference)
+
+    def plot_trajectory(self, ax=None, **kwargs):
+        if ax is None:
+            ax = plt.axes()
+        ax.plot(self._particle_positions[:, 1], self._particle_positions[:, 0], np.ones((1,)), **kwargs)
+        return ax
+
+    def plot_velocity_histogram(self, ax=None, **kwargs):
+        if ax is None:
+            ax = plt.axes()
+        ax.hist(self._velocities, **kwargs)
+        return ax
+
+    def plot_velocity_auto_correlation(self, ax=None, **kwargs):
+        if ax is None:
+            ax = plt.axes()
+        ax.acorr(self._velocities, **kwargs)
+        return ax
+
+    def calculate_diffusion_coefficient_from_velocity(self):
+        diffusion_coefficient_velocity = 0
+        for index, velocity in enumerate(self._velocities):
+            diffusion_coefficient_velocity += velocity ** 2 * self._time_steps[index] / 4
+        return self.hindrance_factor * diffusion_coefficient_velocity / len(self._velocities)
+
+    def calculate_diffusion_coefficient_from_msd(self):
+        diffusion_coefficient_msd = 0
+        for index, position in enumerate(self._particle_positions[1:-1]):
+            diffusion_coefficient_msd += ((self._particle_positions[0, 1] - position[1]) * self.position_step)**2 / (4 * self._particle_positions.shape[0] * (position[0] - self._particle_positions[0, 0]) * self._time_step)
+        return self.hindrance_factor * diffusion_coefficient_msd
+
+    def _calculate_hindrance_factor(self):
+        equilibrium_partition_coefficient = self._calculate_equilibrium_partition_coefficient()
+        ratio_molecule_size_and_dimension = self._molecule_radius / np.sqrt(self._channel_x_dimension * self._channel_y_dimension)
+        H = 1 + 9 / 8 * ratio_molecule_size_and_dimension * np.log(ratio_molecule_size_and_dimension) - 1.56034 * ratio_molecule_size_and_dimension + \
+            0.528155 * ratio_molecule_size_and_dimension ** 2 + 1.91521 * ratio_molecule_size_and_dimension ** 3 - \
+            2.81903 * ratio_molecule_size_and_dimension ** 4 + 0.270788 * ratio_molecule_size_and_dimension ** 5 + \
+            1.10115 * ratio_molecule_size_and_dimension ** 6 - 0.435933 * ratio_molecule_size_and_dimension ** 7
+        return H / equilibrium_partition_coefficient
