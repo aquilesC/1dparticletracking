@@ -1,6 +1,6 @@
 matplotlib
 scipy
-numpy
+numpy>=1.16.0
 astropy
 setuptools>=38.6.0
 wheel==0.31.0
