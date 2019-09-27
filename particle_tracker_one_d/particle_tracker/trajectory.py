@@ -173,7 +173,15 @@ class Trajectory:
         return self.hindrance_factor * polynomial_coefficients[0] / 2, error_estimate[0] / 2
 
     def calculate_diffusion_coefficient_using_covariance_based_estimator(self):
-        return 1
+        displacements = []
+        for index, first_position in enumerate(self._particle_positions[:-1]):
+            for second_position in self._particle_positions[index + 1:]:
+                if second_position[0] - first_position[0] == 1:
+                    displacements.append((second_position[1] - first_position[1]) * self.position_step)
+        displacements = np.array(displacements, dtype=np.float32)
+        mean_squared_displacements = np.mean(displacements ** 2)
+        mean_first_order_correlation = np.mean(displacements[:-1] * displacements[1:])
+        return mean_squared_displacements / (2 * self.time_step) + mean_first_order_correlation / self.time_step
 
     def _calculate_hindrance_factor(self):
         equilibrium_partition_coefficient = self._calculate_equilibrium_partition_coefficient()
