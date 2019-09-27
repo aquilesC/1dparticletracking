@@ -6,8 +6,8 @@ with open('requirements.txt') as f:
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-setup(name='particletracking1D',
-      version='0.0.2',
+setup(name='particle_tracker_one_d',
+      version='0.0.3',
       description='Particle tracking in Kymographs',
       long_description=long_description,
       long_description_content_type="text/markdown",
