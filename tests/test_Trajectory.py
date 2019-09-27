@@ -66,8 +66,8 @@ class TrajectoryTester(unittest.TestCase):
 
     class CalculateDiffusionCoefficientExample:
         particle_positions = np.array([[0, 1], [1, 2], [2, 3], [4, 5], [5, 6]], dtype=np.int16)
-        expected_diffusion_coefficient = 6.0 / 4
-        expected_error = 2.2656860623955235 / 4
+        expected_diffusion_coefficient = 6.0 / 2
+        expected_error = 2.2656860623955235 / 2
 
     class InfiniteDiffusionCoefficientExample:
         particle_positions = np.array([[0, 1], [1, 1], [2, 1], [3, 1], [4, 3]], dtype=np.int16)

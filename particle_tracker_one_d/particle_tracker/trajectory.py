@@ -170,7 +170,7 @@ class Trajectory:
 
     def calculate_diffusion_coefficient_from_mean_square_displacement_function(self):
         polynomial_coefficients, error_estimate = self._fit_straight_line_to_mean_square_displacement_function()
-        return self.hindrance_factor * polynomial_coefficients[0] / 4, error_estimate[0] / 4
+        return self.hindrance_factor * polynomial_coefficients[0] / 2, error_estimate[0] / 2
 
     def _calculate_hindrance_factor(self):
         equilibrium_partition_coefficient = self._calculate_equilibrium_partition_coefficient()
