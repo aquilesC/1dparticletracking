@@ -172,6 +172,9 @@ class Trajectory:
         polynomial_coefficients, error_estimate = self._fit_straight_line_to_mean_square_displacement_function()
         return self.hindrance_factor * polynomial_coefficients[0] / 2, error_estimate[0] / 2
 
+    def calculate_diffusion_coefficient_using_covariance_based_estimator(self):
+        return 1
+
     def _calculate_hindrance_factor(self):
         equilibrium_partition_coefficient = self._calculate_equilibrium_partition_coefficient()
         ratio_molecule_size_and_dimension = self._molecule_radius / np.sqrt(self._channel_x_dimension * self._channel_y_dimension)

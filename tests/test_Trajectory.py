@@ -75,6 +75,12 @@ class TrajectoryTester(unittest.TestCase):
         time_step = 1
         diffusion_coefficient = np.Inf
 
+    class DiffusionCoefficientFromCovarianceExample:
+        particle_positions = np.array([[0, 1], [1, 2], [2, 3], [3, 5], [4, 3]], dtype=np.int16)
+        time_step = 0.8
+        position_step = 0.2
+        expected_diffusion_coefficient = 0.04583333836247547
+
     def test_append_particle_positions(self):
         trajectory = Trajectory(time_step=self.SimpleParticlePositionsExample.time_step)
         for position in self.SimpleParticlePositionsExample.particle_positions:
@@ -155,3 +161,12 @@ class TrajectoryTester(unittest.TestCase):
         trajectory._calculate_particle_velocities()
         diffusion_coefficient, error_estimate = trajectory.calculate_diffusion_coefficient_from_mean_square_displacement_function()
         self.assertAlmostEqual(diffusion_coefficient, self.CalculateDiffusionCoefficientExample.expected_diffusion_coefficient)
+
+    def test_calculating_diffusion_coefficient_covariance_based_estimator(self):
+        trajectory = Trajectory()
+        for position in self.DiffusionCoefficientFromCovarianceExample.particle_positions:
+            trajectory.append_position(position)
+        trajectory.time_step = self.DiffusionCoefficientFromCovarianceExample.time_step
+        trajectory.position_step = self.DiffusionCoefficientFromCovarianceExample.position_step
+        diffusion_coefficient = trajectory.calculate_diffusion_coefficient_using_covariance_based_estimator()
+        self.assertAlmostEqual(diffusion_coefficient, self.DiffusionCoefficientFromCovarianceExample.expected_diffusion_coefficient)
