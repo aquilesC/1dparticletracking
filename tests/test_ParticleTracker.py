@@ -1,5 +1,5 @@
 import unittest
-from source import ParticleTracker
+from particle_tracker_one_d import ParticleTracker
 import numpy as np
 
 

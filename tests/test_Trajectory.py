@@ -1,6 +1,7 @@
 import unittest
 import numpy as np
-from source import Trajectory
+from particle_tracker_one_d import Trajectory
+from setuptools import setup, find_packages
 
 
 class TrajectoryTester(unittest.TestCase):
