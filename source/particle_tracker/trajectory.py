@@ -26,7 +26,7 @@ class Trajectory:
 
     @property
     def time_step(self):
-        return self.time_step
+        return self._time_step
 
     @time_step.setter
     def time_step(self, time):
@@ -110,17 +110,67 @@ class Trajectory:
         ax.acorr(self._velocities, **kwargs)
         return ax
 
+    @staticmethod
+    def _remove_non_unique_values(array):
+        return np.unique(array)
+
+    @staticmethod
+    def _sort_values_low_to_high(array):
+        return np.sort(array)
+
+    def _find_time_values_for_mean_square_displacement_function(self):
+        times = []
+        for index, first_position in enumerate(self._particle_positions[:-1]):
+            for second_position in self._particle_positions[index + 1:]:
+                if first_position[0] != second_position[0]:
+                    times.append(second_position[0] - first_position[0])
+        times = np.array(times, dtype=np.int16)
+        times = self._remove_non_unique_values(times)
+        return self._sort_values_low_to_high(times)
+
+    def _initialise_dictionary_for_mean_square_displacement_function(self):
+        initial_dictionary = {}
+        times = self._find_time_values_for_mean_square_displacement_function()
+        for t in times:
+            initial_dictionary[str(t)] = None
+        return initial_dictionary
+
+    def calculate_mean_square_displacement_function(self):
+        mean_square_displacement = self._initialise_dictionary_for_mean_square_displacement_function()
+        for key in mean_square_displacement.keys():
+            time = int(key)
+            mean_square_displacement[key] = self._calculate_mean_square_displacement_at_time(time)
+
+        times = np.array([int(key) * self.time_step for key in mean_square_displacement.keys()])
+        mean_square_displacements = np.array([mean_square_displacement[key] for key in mean_square_displacement.keys()])
+        return times, mean_square_displacements
+
+    def _calculate_mean_square_displacement_at_time(self, time):
+        count = 0
+        mean_square_displacement = 0
+        for index, first_position in enumerate(self._particle_positions[:-1]):
+            for second_position in self._particle_positions[index + 1:]:
+                if second_position[0] - first_position[0] == time:
+                    count += 1
+                    mean_square_displacement += (self.position_step * (second_position[1] - first_position[1])) ** 2
+        return mean_square_displacement / count
+
+    def _fit_straight_line_to_mean_square_displacement_function(self):
+        times, mean_square_displacements = self.calculate_mean_square_displacement_function()
+        polynomial_degree = 1
+        polynomial_coefficients, covariance_matrix = np.polyfit(times, mean_square_displacements, polynomial_degree, cov=True)
+        error_estimate = [np.sqrt(covariance_matrix[0, 0]), np.sqrt(covariance_matrix[1, 1])]
+        return polynomial_coefficients, error_estimate
+
     def calculate_diffusion_coefficient_from_velocity(self):
         diffusion_coefficient_velocity = 0
         for index, velocity in enumerate(self._velocities):
             diffusion_coefficient_velocity += velocity ** 2 * self._time_steps[index] / 4
         return self.hindrance_factor * diffusion_coefficient_velocity / len(self._velocities)
 
-    def calculate_diffusion_coefficient_from_msd(self):
-        diffusion_coefficient_msd = 0
-        for index, position in enumerate(self._particle_positions[1:-1]):
-            diffusion_coefficient_msd += ((self._particle_positions[0, 1] - position[1]) * self.position_step)**2 / (4 * self._particle_positions.shape[0] * (position[0] - self._particle_positions[0, 0]) * self._time_step)
-        return self.hindrance_factor * diffusion_coefficient_msd
+    def calculate_diffusion_coefficient_from_mean_square_displacement_function(self):
+        polynomial_coefficients, error_estimate = self._fit_straight_line_to_mean_square_displacement_function()
+        return self.hindrance_factor * polynomial_coefficients[0] / 4, error_estimate[0] / 4
 
     def _calculate_hindrance_factor(self):
         equilibrium_partition_coefficient = self._calculate_equilibrium_partition_coefficient()
