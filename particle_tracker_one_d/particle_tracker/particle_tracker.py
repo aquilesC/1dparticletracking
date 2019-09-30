@@ -262,21 +262,20 @@ class ParticleTracker:
         return self._particle_positions[np.where(self._particle_positions[:, 0] == frame_index)]
 
     def _remove_particles_too_closely_together(self, particle_positions):
-        index_of_particles_to_be_removed = []
-        for index_1, p1 in enumerate(particle_positions[:-1]):
-            for index_2, p2 in enumerate(particle_positions[index_1 + 1:]):
-                if self._particles_are_too_close(p1, p2):
-                    index_of_particles_to_be_removed.append(self._index_of_particle_with_lowest_first_order_moment(index_1, index_1 + index_2, particle_positions))
-        return np.delete(particle_positions, index_of_particles_to_be_removed, axis=0)
+        for index, first_position in enumerate(particle_positions[:-1]):
+            second_position = particle_positions[index + 1]
+            if self._particles_are_too_close(first_position, second_position):
+                first_order_moment_for_first_position = self._calculate_first_order_intensity_moment(first_position)
+                first_order_moment_for_second_position = self._calculate_first_order_intensity_moment(second_position)
+                if first_order_moment_for_first_position < first_order_moment_for_second_position:
+                    return self._remove_particles_too_closely_together(np.delete(particle_positions, index, axis=0))
+                else:
+                    return self._remove_particles_too_closely_together(np.delete(particle_positions, index + 1, axis=0))
 
-    def _index_of_particle_with_lowest_first_order_moment(self, particle_index_1, particle_index_2, particle_positions):
-        if self._calculate_first_order_intensity_moment(particle_positions[particle_index_1]) < self._calculate_first_order_intensity_moment(
-                particle_positions[particle_index_2]):
-            return particle_index_1
-        return particle_index_2
+        return particle_positions
 
     def _particles_are_too_close(self, position1, position2):
-        return position1[0] == position2[0] and np.abs(position2[1] - position1[1]) < self.expected_width_of_particle
+        return position1[0] == position2[0] and (np.abs(position2[1] - position1[1]) < self.expected_width_of_particle)
 
     def _initialise_empty_association_matrix(self):
         self._association_matrix = {}

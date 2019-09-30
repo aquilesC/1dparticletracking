@@ -167,12 +167,27 @@ class ParticleTrackerTester(unittest.TestCase):
             [7, 3]
         ], dtype=np.int32)
 
+    class TestFindingParticlePositionExample:
+        intensity = np.array([np.load('tests/intensity_test.npy')], dtype=np.float32)
+        time = np.arange(0, intensity.shape[0])
+        feature_point_threshold = 0.7
+        expected_width_of_particle = 20
+        expected_particle_position = np.array([
+            [0, 110]
+        ], dtype=np.int16)
+
+    def test_finding_particle_position(self):
+        particle_tracker = ParticleTracker(intensity=self.TestFindingParticlePositionExample.intensity, time=self.TestFindingParticlePositionExample.time)
+        particle_tracker.feature_point_threshold = self.TestFindingParticlePositionExample.feature_point_threshold
+        particle_tracker.expected_width_of_particle = self.TestFindingParticlePositionExample.expected_width_of_particle
+        positions_of_intensity_maximas = particle_tracker._get_positions_of_intensity_maximas()
+        particle_positions = particle_tracker._remove_particles_too_closely_together(positions_of_intensity_maximas)
+        np.testing.assert_array_equal(self.TestFindingParticlePositionExample.expected_particle_position, particle_positions)
+
     def test_finding_intensity_maximas(self):
         particle_tracker = ParticleTracker(intensity=self.TestFindingIntensityMaximasExample.intensity, time=self.TestFindingIntensityMaximasExample.time)
         particle_tracker.feature_point_threshold = 0.6
         positions_of_intensity_maximas = particle_tracker._get_positions_of_intensity_maximas()
-        print(positions_of_intensity_maximas)
-        print(self.TestFindingIntensityMaximasExample.expected_positions)
         np.testing.assert_array_equal(self.TestFindingIntensityMaximasExample.expected_positions, positions_of_intensity_maximas)
 
     def test_center_of_mass_calculation(self):
