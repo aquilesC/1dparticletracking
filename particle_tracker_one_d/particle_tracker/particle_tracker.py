@@ -187,8 +187,9 @@ class ParticleTracker:
         return positions
 
     def _refine_particle_positions(self, particle_positions):
-        for row_index, position in enumerate(particle_positions):
-            particle_positions[row_index, 1] = self._find_center_of_mass_close_to_position(position)
+        if self.expected_width_of_particle != 0:
+            for row_index, position in enumerate(particle_positions):
+                particle_positions[row_index, 1] = self._find_center_of_mass_close_to_position(position)
         return particle_positions
 
     def _find_center_of_mass_close_to_position(self, particle_position):

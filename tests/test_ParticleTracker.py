@@ -143,6 +143,38 @@ class ParticleTrackerTester(unittest.TestCase):
             ], dtype=np.int16)
         ]
 
+    class TestFindingIntensityMaximasExample:
+        intensity = np.array([
+            [1, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0],
+            [0, 0, 1, 0, 0],
+            [0, 0, 0, 1, 0],
+            [0, 0, 0, 0, 1],
+            [0, 0, 0, 1, 1],
+            [0, 0, 1, 0, 1],
+            [0, 1, 0, 1, 0]
+        ], dtype=np.int16)
+        time = np.arange(0, intensity.shape[0])
+        expected_positions = np.array([
+            [0, 0],
+            [1, 1],
+            [2, 2],
+            [3, 3],
+            [4, 4],
+            [6, 2],
+            [6, 4],
+            [7, 1],
+            [7, 3]
+        ], dtype=np.int32)
+
+    def test_finding_intensity_maximas(self):
+        particle_tracker = ParticleTracker(intensity=self.TestFindingIntensityMaximasExample.intensity, time=self.TestFindingIntensityMaximasExample.time)
+        particle_tracker.feature_point_threshold = 0.6
+        positions_of_intensity_maximas = particle_tracker._get_positions_of_intensity_maximas()
+        print(positions_of_intensity_maximas)
+        print(self.TestFindingIntensityMaximasExample.expected_positions)
+        np.testing.assert_array_equal(self.TestFindingIntensityMaximasExample.expected_positions, positions_of_intensity_maximas)
+
     def test_center_of_mass_calculation(self):
         for example in self.CenterOfMassExamples.y_examples:
             self.assertEqual(example['center_of_mass'], ParticleTracker._calculate_center_of_mass(example['y']))
