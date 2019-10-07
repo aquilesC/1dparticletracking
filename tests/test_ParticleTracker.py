@@ -40,15 +40,22 @@ class ParticleTrackerTester(unittest.TestCase):
             [0, 1, 0, 0, 0],
             [0, 1, 0, 0, 1],
         ])
-        particle_positions = np.array([[0, 1], [0, 3], [1, 1], [1, 4], [2, 1], [3, 1], [3, 4]], dtype=np.uint16)
+        particle_positions = np.empty((7,), dtype=[('frame_index', np.int16), ('time', np.float32), ('integer_position', np.int16), ('refined_position', np.float32)])
+        particle_positions['frame_index'] = np.array([0, 0, 1, 1, 2, 3, 3])
+        particle_positions['time'] = np.array([0, 0, 1, 1, 2, 3, 3])
+        particle_positions['integer_position'] = np.array([1, 3, 1, 4, 1, 1, 4])
+        particle_positions['refined_position'] = np.array([1, 3, 1, 4, 1, 1, 4])
 
     class AssociationMatrixExample:
         time = np.array([0, 1, 2, 3])
         number_of_frames = 4
         number_of_future_frames_to_be_considered = 2
         maximum_distance_a_particle_can_travel_between_frames = 3
-        particle_positions = np.array([[0, 1], [0, 3], [1, 1], [1, 4], [2, 1], [3, 1], [3, 4]], dtype=np.uint16)
-        intensity = np.ones((4, 4))
+        particle_positions = np.empty((7,), dtype=[('frame_index', np.int16), ('time', np.float32), ('integer_position', np.int16), ('refined_position', np.float32)])
+        particle_positions['frame_index'] = np.array([0, 0, 1, 1, 2, 3, 3])
+        particle_positions['time'] = np.array([0, 0, 1, 1, 2, 3, 3])
+        particle_positions['integer_position'] = np.array([1, 3, 1, 4, 1, 1, 4])
+        particle_positions['refined_position'] = np.array([1, 3, 1, 4, 1, 1, 4])
         empty_association_matrix = {
             '0': {
                 '1': [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
@@ -154,41 +161,57 @@ class ParticleTrackerTester(unittest.TestCase):
             [0, 0, 1, 0, 1],
             [0, 1, 0, 1, 0]
         ], dtype=np.int16)
-        time = np.arange(0, intensity.shape[0])
-        expected_positions = np.array([
-            [0, 0],
-            [1, 1],
-            [2, 2],
-            [3, 3],
-            [4, 4],
-            [6, 2],
-            [6, 4],
-            [7, 1],
-            [7, 3]
-        ], dtype=np.int32)
+        time = np.arange(0, intensity.shape[0]) * 0.5
+        expected_positions = np.empty((9,), dtype=[('frame_index', np.int16), ('time', np.float32), ('integer_position', np.int16), ('refined_position', np.float32)])
+        expected_positions['frame_index'] = np.array([0, 1, 2, 3, 4, 6, 6, 7, 7])
+        expected_positions['time'] = np.array([0, 1, 2, 3, 4, 6, 6, 7, 7]) * 0.5
+        expected_positions['integer_position'] = np.array([0, 1, 2, 3, 4, 2, 4, 1, 3])
+        expected_positions['refined_position'] = np.array([0, 1, 2, 3, 4, 2, 4, 1, 3])
 
     class TestFindingParticlePositionExample:
         intensity = np.array([np.load('tests/intensity_test.npy')], dtype=np.float32)
         time = np.arange(0, intensity.shape[0])
         feature_point_threshold = 0.7
         expected_width_of_particle = 20
-        expected_particle_position = np.array([
-            [0, 110]
+        expected_positions = np.empty((1,), dtype=[('frame_index', np.int16), ('time', np.float32), ('integer_position', np.int16), ('refined_position', np.float32)])
+        expected_positions['frame_index'] = np.array([0])
+        expected_positions['time'] = np.array([0])
+        expected_positions['integer_position'] = np.array([108])
+        expected_positions['refined_position'] = np.array([108.462814])
+
+    class TestFindingNonIntegerParticlePositions:
+        intensity = np.array([
+            [0, 1, 2, 0, 0]
         ], dtype=np.int16)
+        time = [0]
+        feature_point_threshold = 1
+        expected_width_of_particle = 2
+
+        expected_positions = np.empty((1,), dtype=[('frame_index', np.int16), ('time', np.float32), ('integer_position', np.int16), ('refined_position', np.float32)])
+        expected_positions['frame_index'] = np.array([0])
+        expected_positions['time'] = np.array([0])
+        expected_positions['integer_position'] = np.array([2])
+        expected_positions['refined_position'] = np.array([5/3])
+
 
     def test_finding_particle_position(self):
         particle_tracker = ParticleTracker(intensity=self.TestFindingParticlePositionExample.intensity, time=self.TestFindingParticlePositionExample.time)
         particle_tracker.feature_point_threshold = self.TestFindingParticlePositionExample.feature_point_threshold
         particle_tracker.expected_width_of_particle = self.TestFindingParticlePositionExample.expected_width_of_particle
-        positions_of_intensity_maximas = particle_tracker._get_positions_of_intensity_maximas()
-        particle_positions = particle_tracker._remove_particles_too_closely_together(positions_of_intensity_maximas)
-        np.testing.assert_array_equal(self.TestFindingParticlePositionExample.expected_particle_position, particle_positions)
+        np.testing.assert_array_equal(self.TestFindingParticlePositionExample.expected_positions, particle_tracker.particle_positions)
+
+    def test_finding_non_integer_particle_position(self):
+        particle_tracker = ParticleTracker(intensity=self.TestFindingNonIntegerParticlePositions.intensity, time=self.TestFindingNonIntegerParticlePositions.time)
+        particle_tracker.expected_width_of_particle = self.TestFindingNonIntegerParticlePositions.expected_width_of_particle
+        particle_tracker.feature_point_threshold = self.TestFindingNonIntegerParticlePositions.feature_point_threshold
+        particle_tracker._update_particle_positions()
+        print(particle_tracker.particle_positions)
+        np.testing.assert_array_equal(particle_tracker.particle_positions, self.TestFindingNonIntegerParticlePositions.expected_positions)
 
     def test_finding_intensity_maximas(self):
         particle_tracker = ParticleTracker(intensity=self.TestFindingIntensityMaximasExample.intensity, time=self.TestFindingIntensityMaximasExample.time)
         particle_tracker.feature_point_threshold = 0.6
-        positions_of_intensity_maximas = particle_tracker._get_positions_of_intensity_maximas()
-        np.testing.assert_array_equal(self.TestFindingIntensityMaximasExample.expected_positions, positions_of_intensity_maximas)
+        np.testing.assert_array_equal(particle_tracker._particle_positions, self.TestFindingIntensityMaximasExample.expected_positions)
 
     def test_center_of_mass_calculation(self):
         for example in self.CenterOfMassExamples.y_examples:
@@ -215,9 +238,11 @@ class ParticleTrackerTester(unittest.TestCase):
         particle_tracker.expected_width_of_particle = 20
         particle_tracker.particle_discrimination_threshold = 0
 
-        initial_particle_positions_before_discrimination = particle_tracker._get_positions_of_intensity_maximas()
+        particle_tracker._find_integer_particle_positions()
+        particle_tracker._refine_particle_positions()
 
-        self.assertEqual(self.IntensityTwoParticlesCloseTooEachOtherExample.number_of_particles_before_discrimination, initial_particle_positions_before_discrimination.shape[0])
+        self.assertEqual(self.IntensityTwoParticlesCloseTooEachOtherExample.number_of_particles_before_discrimination, particle_tracker.particle_positions.shape[0])
+        particle_tracker._perform_particle_discrimination()
         self.assertEqual(self.IntensityTwoParticlesCloseTooEachOtherExample.number_of_particles_after_discrimination, particle_tracker._particle_positions.shape[0])
 
     def test_initialising_association_matrix(self):
@@ -227,7 +252,7 @@ class ParticleTrackerTester(unittest.TestCase):
         particle_tracker.feature_point_threshold = 0.2
         particle_tracker.maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles = 2
         particle_tracker.maximum_distance_a_particle_can_travel_between_frames = 2
-        np.testing.assert_array_equal(particle_tracker.time, self.AssociationMatrixExample.time)
+        np.testing.assert_array_equal(particle_tracker._time, self.AssociationMatrixExample.time)
         np.testing.assert_array_equal(particle_tracker._particle_positions, self.AssociationMatrixExample.particle_positions)
 
         # Test keys in association matrix
@@ -260,6 +285,7 @@ class ParticleTrackerTester(unittest.TestCase):
         # Test trajectories
         particle_tracker.future_frames_to_be_considered = 3
         particle_tracker._update_trajectories()
+        print(particle_tracker.trajectories)
         number_of_actual_trajectories = len(particle_tracker.trajectories)
         expected_number_of_trajectories = len(self.AssociationMatrixExample.trajectories.keys())
         self.assertEqual(expected_number_of_trajectories, number_of_actual_trajectories)

@@ -6,7 +6,7 @@ from .trajectory import Trajectory
 
 class ParticleTracker:
     def __init__(self, intensity, time):
-        self.time = time
+        self._time = time
         self._intensity = intensity
         self._expected_width_of_particle = 1
         self._boxcar_width = 0
@@ -18,7 +18,7 @@ class ParticleTracker:
         self._trajectories = []
         self._association_matrix = {}
         self._cost_matrix = {}
-        self._particle_positions = np.empty((0, 2), dtype=np.int16)
+        self._particle_positions = np.empty(1, dtype=[('frame_index', np.int16), ('time', np.float32), ('integer_position', np.int16), ('refined_position', np.float32)])
         self._update_averaged_intensity()
         self._update_particle_positions()
         self._update_association_matrix()
@@ -144,14 +144,14 @@ class ParticleTracker:
     def _update_trajectories(self):
         self._trajectories = []
         count = 0
-        for index, point in enumerate(self._particle_positions):
-            if not self._is_particle_position_already_used_in_trajectory(point):
+        for index, position in enumerate(self._particle_positions):
+            if not self._is_particle_position_already_used_in_trajectory(position):
                 self._trajectories.append(Trajectory())
-                self._trajectories[count].append_position(point)
+                self._trajectories[count].append_position(position)
                 for index_future_points, future_point in enumerate(self._particle_positions[index + 1:]):
-                    if self._points_are_linked(point, future_point):
+                    if self._points_are_linked(position, future_point):
                         self._trajectories[count].append_position(future_point)
-                        point = future_point
+                        position = future_point
                 count += 1
 
     def _update_association_matrix(self):
@@ -171,52 +171,63 @@ class ParticleTracker:
                 self._averaged_intensity[row_index] = convolve(row_intensity, kernel)
 
     def _update_particle_positions(self):
-        initial_particle_positions = self._get_positions_of_intensity_maximas()
-        refined_particle_positions = self._refine_particle_positions(initial_particle_positions)
-        self._particle_positions = self._perform_particle_discrimination(refined_particle_positions)
+        self._find_integer_particle_positions()
+        self._refine_particle_positions()
+        self._perform_particle_discrimination()
 
-    def _get_positions_of_intensity_maximas(self):
-        positions = np.empty((0, 2), dtype=np.uint16)
+    def _find_integer_particle_positions(self):
+        frame_indexes = []
+        times = []
+        integer_positions = []
         for row_index, row_intensity in enumerate(self._averaged_intensity):
-            columns_with_local_maximas = np.r_[row_intensity[:-1] > row_intensity[1:], True] & \
-                                         np.r_[True, row_intensity[1:] > row_intensity[:-1]] & \
-                                         np.r_[row_intensity > self.feature_point_threshold]
-            for col_index, is_max in enumerate(columns_with_local_maximas):
-                if is_max:
-                    positions = np.append(positions, np.array([[row_index, col_index]]), axis=0)
-        return positions
+            indexes_of_local_maximas = self._find_indexes_of_local_maximas_with_intensity_higher_than_threshold(row_intensity)
+            integer_positions += indexes_of_local_maximas
+            frame_indexes += [row_index for index in indexes_of_local_maximas]
+            times += [self._time[row_index] for index in indexes_of_local_maximas]
+        self._particle_positions = np.empty((len(frame_indexes),),
+                                            dtype=[('frame_index', np.int16), ('time', np.float32), ('integer_position', np.int16), ('refined_position', np.float32)])
+        self._particle_positions['frame_index'] = frame_indexes
+        self._particle_positions['time'] = times
+        self._particle_positions['integer_position'] = integer_positions
 
-    def _refine_particle_positions(self, particle_positions):
+    def _find_indexes_of_local_maximas_with_intensity_higher_than_threshold(self, array):
+        columns_with_local_maximas = np.r_[array[:-1] > array[1:], True] & \
+                                     np.r_[True, array[1:] > array[:-1]] & \
+                                     np.r_[array > self.feature_point_threshold]
+        return np.argwhere(columns_with_local_maximas).flatten().tolist()
+
+    def _refine_particle_positions(self):
         if self.expected_width_of_particle != 0:
-            for row_index, position in enumerate(particle_positions):
-                particle_positions[row_index, 1] = self._find_center_of_mass_close_to_position(position)
-        return particle_positions
+            for row_index, position in enumerate(self._particle_positions):
+                refined_position = self._find_center_of_mass_close_to_position(position)
+                self._particle_positions['refined_position'][row_index] = refined_position
+                self._particle_positions['integer_position'][row_index] = round(refined_position)
+        else:
+            self._particle_positions['refined_position'] = self._particle_positions['integer_position']
 
     def _find_center_of_mass_close_to_position(self, particle_position):
-        if particle_position[1] == 0:
+        if particle_position['integer_position'] == 0:
             return 0
-        if particle_position[1] <= self.expected_width_of_particle:
-            width = particle_position[1]
-        elif particle_position[1] >= self._averaged_intensity.shape[1] - self.expected_width_of_particle:
-            width = self._averaged_intensity.shape[1] - particle_position[1]
+        if particle_position['integer_position'] <= self.expected_width_of_particle:
+            width = particle_position['integer_position']
+        elif particle_position['integer_position'] >= self._averaged_intensity.shape[1] - self.expected_width_of_particle:
+            width = self._averaged_intensity.shape[1] - particle_position['integer_position']
         else:
             width = self._expected_width_of_particle
-        intensity = self._averaged_intensity[particle_position[0], particle_position[1] - width:particle_position[1] + width]
-        return particle_position[1] + self._calculate_center_of_mass(intensity) - width
+        intensity = self._averaged_intensity[particle_position[0], particle_position['integer_position'] - width:particle_position['integer_position'] + width]
+        return particle_position['integer_position'] + self._calculate_center_of_mass(intensity) - width
 
-    def _perform_particle_discrimination(self, particle_positions):
-        particle_positions = self._remove_particles_with_wrong_moment(particle_positions)
-        particle_positions = self._remove_particles_too_closely_together(particle_positions)
-        return particle_positions
+    def _perform_particle_discrimination(self):
+        self._remove_particles_with_wrong_moment()
+        self._remove_particles_too_closely_together()
 
-    def _remove_particles_with_wrong_moment(self, particle_positions):
-        if self.particle_discrimination_threshold == 0:
-            return particle_positions
-        index_of_particles_to_be_kept = []
-        for row_index, position in enumerate(particle_positions):
-            if self._calculate_discrimination_score_for_particle(position) >= self.particle_discrimination_threshold:
-                index_of_particles_to_be_kept.append(row_index)
-        return particle_positions[index_of_particles_to_be_kept]
+    def _remove_particles_with_wrong_moment(self):
+        if self.particle_discrimination_threshold != 0:
+            index_of_particles_to_be_kept = []
+            for row_index, position in enumerate(self._particle_positions):
+                if self._calculate_discrimination_score_for_particle(position) >= self.particle_discrimination_threshold:
+                    index_of_particles_to_be_kept.append(row_index)
+            self._particle_positions = self._particle_positions[index_of_particles_to_be_kept]
 
     def _calculate_discrimination_score_for_particle(self, particle_position):
         score = 0
@@ -235,56 +246,56 @@ class ParticleTracker:
                               2 * self.sigma_2))
 
     def _calculate_second_order_intensity_moment(self, particle_position):
-        if particle_position[1] == 0:
+        if particle_position['integer_position'] == 0:
             return 0
-        if particle_position[1] < self.expected_width_of_particle:
-            w = particle_position[1]
-        elif particle_position[1] > self._intensity.shape[1] - self.expected_width_of_particle:
-            w = self._intensity.shape[1] - particle_position[1]
+        if particle_position['integer_position'] < self.expected_width_of_particle:
+            w = particle_position['integer_position']
+        elif particle_position['integer_position'] > self._intensity.shape[1] - self.expected_width_of_particle:
+            w = self._intensity.shape[1] - particle_position['integer_position']
         else:
             w = self.expected_width_of_particle
         return np.sum(
-            np.arange(-w, w) ** 2 * self.intensity[particle_position[0], particle_position[1] - w: particle_position[1] + w]) / \
+            np.arange(-w, w) ** 2 * self.intensity[particle_position['frame_index'], particle_position['integer_position'] - w: particle_position['integer_position'] + w]) / \
                self._calculate_first_order_intensity_moment(particle_position)
 
     def _calculate_first_order_intensity_moment(self, particle_position):
-        if particle_position[1] == 0:
-            return particle_position[0]
-        if particle_position[1] < self.expected_width_of_particle:
-            w = particle_position[1]
-        elif particle_position[1] > self._intensity.shape[1] - self.expected_width_of_particle:
-            w = self._intensity.shape[1] - particle_position[1]
+        if particle_position['integer_position'] == 0:
+            return self._averaged_intensity[particle_position['frame_index'], particle_position['integer_position']]
+        if particle_position['integer_position'] < self.expected_width_of_particle:
+            w = particle_position['integer_position']
+        elif particle_position['integer_position'] > self._intensity.shape[1] - self.expected_width_of_particle:
+            w = self._intensity.shape[1] - particle_position['integer_position']
         else:
             w = self.expected_width_of_particle
-        return np.sum(self.intensity[particle_position[0], particle_position[1] - w: particle_position[1] + w])
+        return np.sum(self.intensity[particle_position['frame_index'], particle_position['integer_position'] - w: particle_position['integer_position'] + w])
 
     def _get_particle_positions_in_frame(self, frame_index):
-        return self._particle_positions[np.where(self._particle_positions[:, 0] == frame_index)]
+        return self._particle_positions[np.where(self._particle_positions['frame_index'] == frame_index)]
 
-    def _remove_particles_too_closely_together(self, particle_positions):
-        for index, first_position in enumerate(particle_positions[:-1]):
-            second_position = particle_positions[index + 1]
+    def _remove_particles_too_closely_together(self):
+        for index, first_position in enumerate(self._particle_positions[:-1]):
+            second_position = self._particle_positions[index + 1]
             if self._particles_are_too_close(first_position, second_position):
                 first_order_moment_for_first_position = self._calculate_first_order_intensity_moment(first_position)
                 first_order_moment_for_second_position = self._calculate_first_order_intensity_moment(second_position)
                 if first_order_moment_for_first_position < first_order_moment_for_second_position:
-                    return self._remove_particles_too_closely_together(np.delete(particle_positions, index, axis=0))
+                    self._particle_positions = np.delete(self._particle_positions, index, axis=0)
+                    return self._remove_particles_too_closely_together()
                 else:
-                    return self._remove_particles_too_closely_together(np.delete(particle_positions, index + 1, axis=0))
-
-        return particle_positions
+                    self._particle_positions = np.delete(self._particle_positions, index + 1, axis=0)
+                    return self._remove_particles_too_closely_together()
 
     def _particles_are_too_close(self, position1, position2):
-        return position1[0] == position2[0] and (np.abs(position2[1] - position1[1]) < self.expected_width_of_particle)
+        return position1['frame_index'] == position2['frame_index'] and (np.abs(position2['integer_position'] - position1['integer_position']) < self.expected_width_of_particle)
 
     def _initialise_empty_association_matrix(self):
         self._association_matrix = {}
-        for index, t in enumerate(self.time):
-            number_of_particles_at_t = np.count_nonzero(self._particle_positions[:, 0] == index)
+        for index, t in enumerate(self._time):
+            number_of_particles_at_t = np.count_nonzero(self._particle_positions['frame_index'] == index)
             self._association_matrix[str(index)] = {}
             for r in range(1, self.maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles + 1):
-                if r + index < len(self.time):
-                    number_of_particles_at_t_plus_r = np.count_nonzero(self._particle_positions[:, 0] == index + r)
+                if r + index < len(self._time):
+                    number_of_particles_at_t_plus_r = np.count_nonzero(self._particle_positions['frame_index'] == index + r)
                     self._association_matrix[str(index)][str(r)] = np.zeros(
                         (number_of_particles_at_t + 1, number_of_particles_at_t_plus_r + 1), dtype=np.int16)
 
@@ -399,21 +410,21 @@ class ParticleTracker:
         return False
 
     def _points_are_linked(self, point, future_point):
-        if point[0] == future_point[0]:
+        if point['frame_index'] == future_point['frame_index']:
             return False
-        nr_of_frames_between_points = self._calculate_number_of_frames_between_points(point, future_point)
+        nr_of_frames_between_points = self._calculate_number_of_frames_between_particle_positions(point, future_point)
         if nr_of_frames_between_points <= self.maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles:
 
-            time_key = str(point[0])
+            time_key = str(point['frame_index'])
             r_key = str(nr_of_frames_between_points)
 
             link_matrix = self._association_matrix[time_key][r_key]
 
-            points_in_same_frame_as_point = self._get_particle_positions_in_frame(point[0])
-            points_in_same_frame_as_future_point = self._get_particle_positions_in_frame(future_point[0])
+            points_in_same_frame_as_point = self._get_particle_positions_in_frame(point['frame_index'])
+            points_in_same_frame_as_future_point = self._get_particle_positions_in_frame(future_point['frame_index'])
 
-            index_of_point = np.where(points_in_same_frame_as_point[:, 1] == point[1])[0][0]
-            index_of_future_point = np.where(points_in_same_frame_as_future_point[:, 1] == future_point[1])[0][0]
+            index_of_point = np.where(points_in_same_frame_as_point['integer_position'] == point['integer_position'])[0][0]
+            index_of_future_point = np.where(points_in_same_frame_as_future_point['integer_position'] == future_point['integer_position'])[0][0]
             return int(link_matrix[index_of_point + 1][index_of_future_point + 1]) == 1
         else:
             return False
@@ -424,8 +435,8 @@ class ParticleTracker:
         return np.sum(x * y) / np.sum(y)
 
     @staticmethod
-    def _calculate_number_of_frames_between_points(p1, p2):
-        return int(p2[0] - p1[0])
+    def _calculate_number_of_frames_between_particle_positions(p1, p2):
+        return int(p2['frame_index'] - p1['frame_index'])
 
     @staticmethod
     def _fill_in_empty_rows_and_columns(link_matrix):

@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 class Trajectory:
 
     def __init__(self, time_step=1, position_step=1):
-        self._particle_positions = np.empty((0, 2), dtype=np.int16)
+        self._particle_positions = np.empty((0,), dtype=[('frame_index', np.int16), ('time', np.float32), ('integer_position', np.int16), ('refined_position', np.float32)])
         self._velocities = np.empty((0, 0), dtype=np.float32)
         self._diffusion_coefficient = 0
         self._time_steps = np.empty((0, 0), dtype=np.int16)
@@ -75,11 +75,11 @@ class Trajectory:
             raise ValueError('Channel dimensions or molecule radius has not been set.')
 
     def append_position(self, particle_position):
-        self._particle_positions = np.append(self._particle_positions, particle_position.reshape((1, 2)), axis=0)
+        self._particle_positions = np.append(self._particle_positions, particle_position)
 
     def position_exists_in_trajectory(self, particle_position):
         for p in self._particle_positions:
-            if p[0] == particle_position[0] and p[1] == particle_position[1]:
+            if np.array_equal(p, particle_position):
                 return True
 
     def _calculate_particle_velocities(self):
