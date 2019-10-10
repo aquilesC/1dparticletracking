@@ -83,14 +83,9 @@ class Trajectory:
                 return True
 
     def _calculate_particle_velocities(self):
-        for index in range(0, self._particle_positions.shape[0] - 1):
-            if self._particle_positions[index + 1][0] - self._particle_positions[index][0] < 5:
-                time_difference = (self._particle_positions[index + 1][0] - self._particle_positions[index][0]) * self._time_step
-                position_difference = (self._particle_positions[index + 1][1] - self._particle_positions[index][1]) * self._position_step
-                velocity = position_difference / time_difference
-                self._velocities = np.append(self._velocities, velocity)
-                self._time_steps = np.append(self._time_steps, time_difference)
-                self._position_steps = np.append(self._position_steps, position_difference)
+        self._time_steps = np.diff(self._particle_positions['time'])
+        self._position_steps = np.diff(self._particle_positions['refined_position'] * self.position_step)
+        self._velocities = self._position_steps / self._time_steps
 
     def plot_trajectory(self, ax=None, **kwargs):
         if ax is None:
@@ -118,41 +113,42 @@ class Trajectory:
     def _sort_values_low_to_high(array):
         return np.sort(array)
 
-    def _find_time_values_for_mean_square_displacement_function(self):
-        times = []
+    def _find_frame_step_values_for_mean_square_displacement_function(self):
+        frame_steps = []
         for index, first_position in enumerate(self._particle_positions[:-1]):
             for second_position in self._particle_positions[index + 1:]:
-                if first_position[0] != second_position[0]:
-                    times.append(second_position[0] - first_position[0])
-        times = np.array(times, dtype=np.int16)
-        times = self._remove_non_unique_values(times)
-        return self._sort_values_low_to_high(times)
+                if first_position['frame_index'] != second_position['frame_index']:
+                    frame_steps.append(second_position['frame_index'] - first_position['frame_index'])
+        frame_steps = np.array(frame_steps, dtype=np.int16)
+        frame_steps = self._remove_non_unique_values(frame_steps)
+        return self._sort_values_low_to_high(frame_steps)
 
     def _initialise_dictionary_for_mean_square_displacement_function(self):
         initial_dictionary = {}
-        times = self._find_time_values_for_mean_square_displacement_function()
-        for t in times:
-            initial_dictionary[str(t)] = None
+        frame_steps = self._find_frame_step_values_for_mean_square_displacement_function()
+        for step in frame_steps:
+            initial_dictionary[str(step)] = None
         return initial_dictionary
 
     def calculate_mean_square_displacement_function(self):
         mean_square_displacement = self._initialise_dictionary_for_mean_square_displacement_function()
         for key in mean_square_displacement.keys():
-            time = int(key)
-            mean_square_displacement[key] = self._calculate_mean_square_displacement_at_time(time)
+            step = int(key)
+            mean_square_displacement[key] = self._calculate_mean_square_displacement_for_frame_step(step)
 
-        times = np.array([int(key) * self.time_step for key in mean_square_displacement.keys()])
+        time_step = self._particle_positions['time'][1] - self._particle_positions['time'][0]
+        times = np.array([int(key)*time_step for key in mean_square_displacement.keys()])
         mean_square_displacements = np.array([mean_square_displacement[key] for key in mean_square_displacement.keys()])
         return times, mean_square_displacements
 
-    def _calculate_mean_square_displacement_at_time(self, time):
+    def _calculate_mean_square_displacement_for_frame_step(self, step):
         count = 0
         mean_square_displacement = 0
         for index, first_position in enumerate(self._particle_positions[:-1]):
             for second_position in self._particle_positions[index + 1:]:
-                if second_position[0] - first_position[0] == time:
+                if second_position['frame_index'] - first_position['frame_index'] == step:
                     count += 1
-                    mean_square_displacement += (self.position_step * (second_position[1] - first_position[1])) ** 2
+                    mean_square_displacement += ((second_position['refined_position'] - first_position['refined_position'])*self.position_step) ** 2
         return mean_square_displacement / count
 
     def _fit_straight_line_to_mean_square_displacement_function(self):
@@ -174,14 +170,21 @@ class Trajectory:
 
     def calculate_diffusion_coefficient_using_covariance_based_estimator(self):
         displacements = []
+        time_step = self._calculate_minimum_time_step()
+        print(time_step)
         for index, first_position in enumerate(self._particle_positions[:-1]):
             for second_position in self._particle_positions[index + 1:]:
-                if second_position[0] - first_position[0] == 1:
-                    displacements.append((second_position[1] - first_position[1]) * self.position_step)
+                if second_position['frame_index'] - first_position['frame_index'] == 1:
+                    displacements.append((second_position['refined_position'] - first_position['refined_position']) * self.position_step)
         displacements = np.array(displacements, dtype=np.float32)
         mean_squared_displacements = np.mean(displacements ** 2)
         mean_first_order_correlation = np.mean(displacements[:-1] * displacements[1:])
-        return mean_squared_displacements / (2 * self.time_step) + mean_first_order_correlation / self.time_step
+        return mean_squared_displacements / (2 * time_step) + mean_first_order_correlation / time_step
+
+    def _calculate_minimum_time_step(self):
+        for index, first_position in enumerate(self._particle_positions[:-1]):
+            if self._particle_positions[index+1]['frame_index'] - first_position['frame_index'] == 1:
+                return self._particle_positions[index+1]['time'] - first_position['time']
 
     def _calculate_hindrance_factor(self):
         equilibrium_partition_coefficient = self._calculate_equilibrium_partition_coefficient()
