@@ -117,6 +117,10 @@ class ParticleTracker:
     def particle_positions(self):
         return self._particle_positions
 
+    @property
+    def time(self):
+        return self._time
+
     def get_intensity_at_time(self, time):
         index = self._find_index_of_nearest(self.time, time)
         return self._averaged_intensity[index]
