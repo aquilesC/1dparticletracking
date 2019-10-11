@@ -341,7 +341,7 @@ class ParticleTracker:
 
     def _calculate_linking_cost(self, position1, position2):
         return (
-                (position1[1] - position2[1]) ** 2 +
+                (position1['refined_position'] - position2['refined_position']) ** 2 +
                 (self._calculate_first_order_intensity_moment(position1) - self._calculate_first_order_intensity_moment(position2)) ** 2 +
                 (self._calculate_second_order_intensity_moment(position1) - self._calculate_second_order_intensity_moment(position2)) ** 2
         )
