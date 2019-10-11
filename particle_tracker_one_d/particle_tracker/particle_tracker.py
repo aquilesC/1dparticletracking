@@ -235,9 +235,9 @@ class ParticleTracker:
 
     def _calculate_discrimination_score_for_particle(self, particle_position):
         score = 0
-        particle_positions_of_particles_in_same_frame = self._get_particle_positions_in_frame(frame_index=particle_position[0])
+        particle_positions_of_particles_in_same_frame = self._get_particle_positions_in_frame(frame_index=particle_position['frame_index'])
         particle_positions_of_particles_in_same_frame = particle_positions_of_particles_in_same_frame[
-            np.where(particle_positions_of_particles_in_same_frame[:, 1] != particle_position[1])]
+            np.where(particle_positions_of_particles_in_same_frame['integer_position'] != particle_position['integer_position'])]
         for index, position in enumerate(particle_positions_of_particles_in_same_frame):
             score += self._calculate_gaussian_moment(particle_position, position)
         return score
