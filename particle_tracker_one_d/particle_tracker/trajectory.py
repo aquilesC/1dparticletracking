@@ -90,7 +90,7 @@ class Trajectory:
     def plot_trajectory(self, ax=None, **kwargs):
         if ax is None:
             ax = plt.axes()
-        ax.plot(self._particle_positions['frame_index'], self._particle_positions['refined_position'], np.ones((1,)), **kwargs)
+        ax.plot(self._particle_positions['refined_position'],self._particle_positions['frame_index'], np.ones((1,)), **kwargs)
         return ax
 
     def plot_velocity_histogram(self, ax=None, **kwargs):
