@@ -7,7 +7,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(name='particle_tracker_one_d',
-      version='0.1.3',
+      version='0.1.4',
       description='Particle tracking in Kymographs',
       long_description=long_description,
       long_description_content_type="text/markdown",
