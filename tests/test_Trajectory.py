@@ -99,6 +99,18 @@ class TrajectoryTester(unittest.TestCase):
         position_step = 0.2
         expected_diffusion_coefficient = 0.04583333836247547
 
+    class SparseFrameIndexExample:
+        particle_positions = np.empty((6,), dtype=[('frame_index', np.int16), ('time', np.float32), ('integer_position', np.int16), ('refined_position', np.float32)])
+        particle_positions['frame_index'] = np.array([0, 2, 5, 6, 10, 11])
+        particle_positions['time'] = np.array([0, 2, 5, 6, 10, 11]) * 0.8
+        particle_positions['integer_position'] = np.array([1, 2, 3, 5, 3, 8])
+        particle_positions['refined_position'] = np.array([1, 2, 3, 5, 3, 8])
+        position_step = 0.2
+        expected_diffusion_coefficient = 0.04583333836247547
+        number_of_missing_data_points = 6
+        number_of_particle_positions_with_single_time_step_between = 2
+
+
     def test_append_particle_positions(self):
         trajectory = Trajectory()
         for position in self.SimpleParticlePositionsExample.particle_positions:
@@ -172,3 +184,10 @@ class TrajectoryTester(unittest.TestCase):
         trajectory.position_step = self.DiffusionCoefficientFromCovarianceExample.position_step
         diffusion_coefficient = trajectory.calculate_diffusion_coefficient_using_covariance_based_estimator()
         self.assertAlmostEqual(diffusion_coefficient, self.DiffusionCoefficientFromCovarianceExample.expected_diffusion_coefficient)
+
+    def test_calculating_number_of_missing_data_points(self):
+        trajectory = Trajectory()
+        for position in self.SparseFrameIndexExample.particle_positions:
+            trajectory.append_position(position)
+        self.assertEqual(trajectory.calculate_number_of_missing_data_points(),self.SparseFrameIndexExample.number_of_missing_data_points)
+        self.assertEqual(trajectory.calculate_number_of_particle_positions_with_single_time_step_between(),self.SparseFrameIndexExample.number_of_particle_positions_with_single_time_step_between)

@@ -90,7 +90,7 @@ class Trajectory:
     def plot_trajectory(self, ax=None, **kwargs):
         if ax is None:
             ax = plt.axes()
-        ax.plot(self._particle_positions['refined_position'],self._particle_positions['frame_index'], np.ones((1,)), **kwargs)
+        ax.plot(self._particle_positions['refined_position'], self._particle_positions['frame_index'], np.ones((1,)), **kwargs)
         return ax
 
     def plot_velocity_histogram(self, ax=None, **kwargs):
@@ -137,7 +137,7 @@ class Trajectory:
             mean_square_displacement[key] = self._calculate_mean_square_displacement_for_frame_step(step)
 
         time_step = self._particle_positions['time'][1] - self._particle_positions['time'][0]
-        times = np.array([int(key)*time_step for key in mean_square_displacement.keys()])
+        times = np.array([int(key) * time_step for key in mean_square_displacement.keys()])
         mean_square_displacements = np.array([mean_square_displacement[key] for key in mean_square_displacement.keys()])
         return times, mean_square_displacements
 
@@ -148,7 +148,7 @@ class Trajectory:
             for second_position in self._particle_positions[index + 1:]:
                 if second_position['frame_index'] - first_position['frame_index'] == step:
                     count += 1
-                    mean_square_displacement += ((second_position['refined_position'] - first_position['refined_position'])*self.position_step) ** 2
+                    mean_square_displacement += ((second_position['refined_position'] - first_position['refined_position']) * self.position_step) ** 2
         return mean_square_displacement / count
 
     def _fit_straight_line_to_mean_square_displacement_function(self):
@@ -183,8 +183,8 @@ class Trajectory:
 
     def _calculate_minimum_time_step(self):
         for index, first_position in enumerate(self._particle_positions[:-1]):
-            if self._particle_positions[index+1]['frame_index'] - first_position['frame_index'] == 1:
-                return self._particle_positions[index+1]['time'] - first_position['time']
+            if self._particle_positions[index + 1]['frame_index'] - first_position['frame_index'] == 1:
+                return self._particle_positions[index + 1]['time'] - first_position['time']
 
     def _calculate_hindrance_factor(self):
         equilibrium_partition_coefficient = self._calculate_equilibrium_partition_coefficient()
@@ -194,3 +194,9 @@ class Trajectory:
             2.81903 * ratio_molecule_size_and_dimension ** 4 + 0.270788 * ratio_molecule_size_and_dimension ** 5 + \
             1.10115 * ratio_molecule_size_and_dimension ** 6 - 0.435933 * ratio_molecule_size_and_dimension ** 7
         return H / equilibrium_partition_coefficient
+
+    def calculate_number_of_missing_data_points(self):
+        return (self._particle_positions['frame_index'][-1] - self._particle_positions['frame_index'][0]) - self._particle_positions['frame_index'].shape[0] + 1
+
+    def calculate_number_of_particle_positions_with_single_time_step_between(self):
+        return np.sum([diff == 1 for diff in np.diff(self._particle_positions['frame_index'])])
