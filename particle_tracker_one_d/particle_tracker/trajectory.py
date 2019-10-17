@@ -166,12 +166,11 @@ class Trajectory:
 
     def calculate_diffusion_coefficient_from_mean_square_displacement_function(self):
         polynomial_coefficients, error_estimate = self._fit_straight_line_to_mean_square_displacement_function()
-        return self.hindrance_factor * polynomial_coefficients[0] / 2, error_estimate[0] / 2
+        return polynomial_coefficients[0] / 2, error_estimate[0] / 2
 
     def calculate_diffusion_coefficient_using_covariance_based_estimator(self):
         displacements = []
         time_step = self._calculate_minimum_time_step()
-        print(time_step)
         for index, first_position in enumerate(self._particle_positions[:-1]):
             for second_position in self._particle_positions[index + 1:]:
                 if second_position['frame_index'] - first_position['frame_index'] == 1:

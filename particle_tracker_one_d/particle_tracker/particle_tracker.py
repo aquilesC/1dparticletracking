@@ -8,7 +8,7 @@ class ParticleTracker:
     def __init__(self, intensity, time):
         self._time = time
         self._intensity = intensity
-        self._expected_width_of_particle = 1
+        self._integration_radius_of_intensity_peaks = 1
         self._boxcar_width = 0
         self._feature_point_threshold = 1
         self._particle_discrimination_threshold = 0
@@ -51,12 +51,12 @@ class ParticleTracker:
 
     @property
     def expected_width_of_particle(self):
-        return self._expected_width_of_particle
+        return self._integration_radius_of_intensity_peaks
 
     @expected_width_of_particle.setter
     def expected_width_of_particle(self, width):
-        if not width == self._expected_width_of_particle:
-            self._expected_width_of_particle = width
+        if not width == self._integration_radius_of_intensity_peaks:
+            self._integration_radius_of_intensity_peaks = width
             self._update_particle_positions()
             self._update_association_matrix()
             self._update_trajectories()
@@ -217,7 +217,7 @@ class ParticleTracker:
         elif particle_position['integer_position'] >= self._averaged_intensity.shape[1] - self.expected_width_of_particle:
             width = self._averaged_intensity.shape[1] - particle_position['integer_position']
         else:
-            width = self._expected_width_of_particle
+            width = self._integration_radius_of_intensity_peaks
         intensity = self._averaged_intensity[particle_position[0], particle_position['integer_position'] - width:particle_position['integer_position'] + width]
         return particle_position['integer_position'] + self._calculate_center_of_mass(intensity) - width
 
