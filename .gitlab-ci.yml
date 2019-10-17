@@ -20,3 +20,5 @@ production:
   - pip3 install -r requirements.txt
   - python3 setup.py sdist
   - twine upload dist/* -u $PYPI_USER_NAME -p $PYPI_PASSWORD
+  - cd docs
+  - make html
