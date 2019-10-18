@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>particle_tracker_one_d.particle_tracker.trajectory &mdash; particle-tracker-one-d 0.1.5 documentation</title>
+  <title>particle_tracker_one_d.particle_tracker.trajectory &mdash; particle-tracker-one-d 0.1.6 documentation</title>
   
 
   
@@ -33,7 +33,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="particle-tracker-one-d 0.1.5 documentation" href="../../../index.html"/>
+    <link rel="top" title="particle-tracker-one-d 0.1.6 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -66,7 +66,7 @@
             
             
               <div class="version">
-                0.1.5
+                0.1.6
               </div>
             
           
@@ -161,25 +161,14 @@
 
 <div class="viewcode-block" id="Trajectory"><a class="viewcode-back" href="../../../usage/Trajectory.html#particle_tracker_one_d.Trajectory">[docs]</a><span class="k">class</span> <span class="nc">Trajectory</span><span class="p">:</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time_step</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">position_step</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position_step</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">0</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;frame_index&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int16</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;integer_position&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int16</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;refined_position&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_velocities</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_diffusion_coefficient</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_time_steps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int16</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_position_steps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int16</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_time_step</span> <span class="o">=</span> <span class="n">time_step</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_position_step</span> <span class="o">=</span> <span class="n">position_step</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_hindrance_factor</span> <span class="o">=</span> <span class="mi">1</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_channel_x_dimension</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_channel_y_dimension</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_molecule_radius</span> <span class="o">=</span> <span class="kc">None</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">hindrance_factor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_x_dimension</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_y_dimension</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_molecule_radius</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_hindrance_factor</span><span class="p">()</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="mi">1</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">time_step</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -200,36 +189,6 @@
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">particle_positions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">channel_x_dimension</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_x_dimension</span>
-
-    <span class="nd">@channel_x_dimension</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">channel_x_dimension</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dimension</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_channel_x_dimension</span> <span class="o">=</span> <span class="n">dimension</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">channel_y_dimension</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_y_dimension</span>
-
-    <span class="nd">@channel_y_dimension</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">channel_y_dimension</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dimension</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_channel_y_dimension</span> <span class="o">=</span> <span class="n">dimension</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">molecule_radius</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_molecule_radius</span>
-
-    <span class="nd">@molecule_radius</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">molecule_radius</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">radius</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_molecule_radius</span> <span class="o">=</span> <span class="n">radius</span>
-
-    <span class="k">def</span> <span class="nf">_calculate_equilibrium_partition_coefficient</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_x_dimension</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_y_dimension</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_molecule_radius</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_molecule_radius</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_x_dimension</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_molecule_radius</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_x_dimension</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Channel dimensions or molecule radius has not been set.&#39;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">append_position</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particle_position</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">,</span> <span class="n">particle_position</span><span class="p">)</span>
@@ -319,7 +278,7 @@
         <span class="n">diffusion_coefficient_velocity</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">velocity</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_velocities</span><span class="p">):</span>
             <span class="n">diffusion_coefficient_velocity</span> <span class="o">+=</span> <span class="n">velocity</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_steps</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">/</span> <span class="mi">4</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">hindrance_factor</span> <span class="o">*</span> <span class="n">diffusion_coefficient_velocity</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_velocities</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">diffusion_coefficient_velocity</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_velocities</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">calculate_diffusion_coefficient_from_mean_square_displacement_function</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">polynomial_coefficients</span><span class="p">,</span> <span class="n">error_estimate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fit_straight_line_to_mean_square_displacement_function</span><span class="p">()</span>
@@ -341,15 +300,6 @@
         <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">first_position</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="n">index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">][</span><span class="s1">&#39;frame_index&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">first_position</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="n">index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">first_position</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span>
-
-    <span class="k">def</span> <span class="nf">_calculate_hindrance_factor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">equilibrium_partition_coefficient</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_equilibrium_partition_coefficient</span><span class="p">()</span>
-        <span class="n">ratio_molecule_size_and_dimension</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_molecule_radius</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_channel_x_dimension</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_y_dimension</span><span class="p">)</span>
-        <span class="n">H</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">9</span> <span class="o">/</span> <span class="mi">8</span> <span class="o">*</span> <span class="n">ratio_molecule_size_and_dimension</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">ratio_molecule_size_and_dimension</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.56034</span> <span class="o">*</span> <span class="n">ratio_molecule_size_and_dimension</span> <span class="o">+</span> \
-            <span class="mf">0.528155</span> <span class="o">*</span> <span class="n">ratio_molecule_size_and_dimension</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="mf">1.91521</span> <span class="o">*</span> <span class="n">ratio_molecule_size_and_dimension</span> <span class="o">**</span> <span class="mi">3</span> <span class="o">-</span> \
-            <span class="mf">2.81903</span> <span class="o">*</span> <span class="n">ratio_molecule_size_and_dimension</span> <span class="o">**</span> <span class="mi">4</span> <span class="o">+</span> <span class="mf">0.270788</span> <span class="o">*</span> <span class="n">ratio_molecule_size_and_dimension</span> <span class="o">**</span> <span class="mi">5</span> <span class="o">+</span> \
-            <span class="mf">1.10115</span> <span class="o">*</span> <span class="n">ratio_molecule_size_and_dimension</span> <span class="o">**</span> <span class="mi">6</span> <span class="o">-</span> <span class="mf">0.435933</span> <span class="o">*</span> <span class="n">ratio_molecule_size_and_dimension</span> <span class="o">**</span> <span class="mi">7</span>
-        <span class="k">return</span> <span class="n">H</span> <span class="o">/</span> <span class="n">equilibrium_partition_coefficient</span>
 
     <span class="k">def</span> <span class="nf">calculate_number_of_missing_data_points</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
@@ -389,7 +339,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.1.5',
+            VERSION:'0.1.6',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

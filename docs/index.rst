@@ -10,6 +10,7 @@ Welcome to particle-tracker-one-d's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   usage/Quickstart
    usage/ParticleTracker
    usage/Trajectory
 
