@@ -4,10 +4,9 @@ import matplotlib.pyplot as plt
 
 class Trajectory:
 
-    def __init__(self, time_step=1, position_step=1):
+    def __init__(self, position_step=1):
         self._particle_positions = np.empty((0,), dtype=[('frame_index', np.int16), ('time', np.float32), ('integer_position', np.int16), ('refined_position', np.float32)])
         self._velocities = np.empty((0, 0), dtype=np.float32)
-        self._diffusion_coefficient = 0
         self._time_steps = np.empty((0, 0), dtype=np.int16)
         self._position_steps = np.empty((0, 0), dtype=np.int16)
         self._time_step = time_step
