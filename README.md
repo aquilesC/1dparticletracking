@@ -1,7 +1,11 @@
 # 1D particle tracking
 
-Particle tracking in one dimension. 
+Particle tracking in kymographs. 
 
 ## Installation
 
-`pip install git+https://gitlab.com/langhammerlab/1d-particle-tracking.git`
+`pip install particle-tracker-one-d`
+
+## Documentation
+
+
