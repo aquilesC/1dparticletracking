@@ -45,11 +45,11 @@ class ParticleTracker:
         return self._averaged_intensity
 
     @property
-    def sigma_0(self):
+    def _sigma_0(self):
         return 0.1 * np.pi * self.integration_radius_of_intensity_peaks ** 2
 
     @property
-    def sigma_2(self):
+    def _sigma_2(self):
         return 0.1 * np.pi * self.integration_radius_of_intensity_peaks ** 2
 
     @property
@@ -263,11 +263,11 @@ class ParticleTracker:
         return score
 
     def _calculate_gaussian_moment(self, particle_position_1, particle_position_2):
-        return 1 / (2 * np.pi * self.sigma_0 * self.sigma_2 * self._particle_positions.shape[0]) * \
+        return 1 / (2 * np.pi * self._sigma_0 * self._sigma_2 * self._particle_positions.shape[0]) * \
                np.exp(-(self._calculate_first_order_intensity_moment(particle_position_1) - self._calculate_first_order_intensity_moment(particle_position_2)) ** 2 / (
-                       2 * self.sigma_0)
+                       2 * self._sigma_0)
                       - (self._calculate_second_order_intensity_moment(particle_position_1) - self._calculate_second_order_intensity_moment(particle_position_2)) ** 2 / (
-                              2 * self.sigma_2))
+                              2 * self._sigma_2))
 
     def _calculate_second_order_intensity_moment(self, particle_position):
         if particle_position['integer_position'] == 0:
