@@ -1,0 +1,422 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>particle_tracker_one_d.particle_tracker.trajectory &mdash; particle-tracker-one-d 0.1.5 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="particle-tracker-one-d 0.1.5 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> particle-tracker-one-d
+          
+
+          
+            
+            <img src="../../../_static/logo.png" class="logo" />
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1.5
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage/ParticleTracker.html">Particle Tracker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage/Trajectory.html">Trajectory</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">particle-tracker-one-d</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>particle_tracker_one_d.particle_tracker.trajectory</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for particle_tracker_one_d.particle_tracker.trajectory</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+
+<div class="viewcode-block" id="Trajectory"><a class="viewcode-back" href="../../../usage/Trajectory.html#particle_tracker_one_d.Trajectory">[docs]</a><span class="k">class</span> <span class="nc">Trajectory</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time_step</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">position_step</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">0</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;frame_index&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int16</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;integer_position&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int16</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;refined_position&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_velocities</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_diffusion_coefficient</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_time_steps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int16</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_position_steps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int16</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_time_step</span> <span class="o">=</span> <span class="n">time_step</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_position_step</span> <span class="o">=</span> <span class="n">position_step</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_hindrance_factor</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_channel_x_dimension</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_channel_y_dimension</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_molecule_radius</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">hindrance_factor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_x_dimension</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_y_dimension</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_molecule_radius</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_hindrance_factor</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">1</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">time_step</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_step</span>
+
+    <span class="nd">@time_step</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">time_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_time_step</span> <span class="o">=</span> <span class="n">time</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">position_step</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_position_step</span>
+
+    <span class="nd">@position_step</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">position_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_position_step</span> <span class="o">=</span> <span class="n">step</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">particle_positions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">channel_x_dimension</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_x_dimension</span>
+
+    <span class="nd">@channel_x_dimension</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">channel_x_dimension</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dimension</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_channel_x_dimension</span> <span class="o">=</span> <span class="n">dimension</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">channel_y_dimension</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_y_dimension</span>
+
+    <span class="nd">@channel_y_dimension</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">channel_y_dimension</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dimension</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_channel_y_dimension</span> <span class="o">=</span> <span class="n">dimension</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">molecule_radius</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_molecule_radius</span>
+
+    <span class="nd">@molecule_radius</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">molecule_radius</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">radius</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_molecule_radius</span> <span class="o">=</span> <span class="n">radius</span>
+
+    <span class="k">def</span> <span class="nf">_calculate_equilibrium_partition_coefficient</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_x_dimension</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_y_dimension</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_molecule_radius</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_molecule_radius</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_x_dimension</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_molecule_radius</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_x_dimension</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Channel dimensions or molecule radius has not been set.&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">append_position</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particle_position</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">,</span> <span class="n">particle_position</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">position_exists_in_trajectory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particle_position</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">particle_position</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="k">def</span> <span class="nf">_calculate_particle_velocities</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_time_steps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_position_steps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="s1">&#39;refined_position&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">position_step</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_velocities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_position_steps</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_steps</span>
+
+    <span class="k">def</span> <span class="nf">plot_trajectory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">()</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="s1">&#39;refined_position&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,)),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ax</span>
+
+    <span class="k">def</span> <span class="nf">plot_velocity_histogram</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">()</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_velocities</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ax</span>
+
+    <span class="k">def</span> <span class="nf">plot_velocity_auto_correlation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">()</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">acorr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_velocities</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ax</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_remove_non_unique_values</span><span class="p">(</span><span class="n">array</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">array</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_sort_values_low_to_high</span><span class="p">(</span><span class="n">array</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">array</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_find_frame_step_values_for_mean_square_displacement_function</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">frame_steps</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">first_position</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="k">for</span> <span class="n">second_position</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="n">index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:]:</span>
+                <span class="k">if</span> <span class="n">first_position</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">second_position</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">]:</span>
+                    <span class="n">frame_steps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">second_position</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">first_position</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">])</span>
+        <span class="n">frame_steps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">frame_steps</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int16</span><span class="p">)</span>
+        <span class="n">frame_steps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remove_non_unique_values</span><span class="p">(</span><span class="n">frame_steps</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sort_values_low_to_high</span><span class="p">(</span><span class="n">frame_steps</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_initialise_dictionary_for_mean_square_displacement_function</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">initial_dictionary</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">frame_steps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_frame_step_values_for_mean_square_displacement_function</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">frame_steps</span><span class="p">:</span>
+            <span class="n">initial_dictionary</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">step</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">initial_dictionary</span>
+
+    <span class="k">def</span> <span class="nf">calculate_mean_square_displacement_function</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">mean_square_displacement</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_initialise_dictionary_for_mean_square_displacement_function</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">mean_square_displacement</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">step</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="n">mean_square_displacement</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_mean_square_displacement_for_frame_step</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
+
+        <span class="n">time_step</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">times</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="o">*</span> <span class="n">time_step</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">mean_square_displacement</span><span class="o">.</span><span class="n">keys</span><span class="p">()])</span>
+        <span class="n">mean_square_displacements</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">mean_square_displacement</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">mean_square_displacement</span><span class="o">.</span><span class="n">keys</span><span class="p">()])</span>
+        <span class="k">return</span> <span class="n">times</span><span class="p">,</span> <span class="n">mean_square_displacements</span>
+
+    <span class="k">def</span> <span class="nf">_calculate_mean_square_displacement_for_frame_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
+        <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">mean_square_displacement</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">first_position</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="k">for</span> <span class="n">second_position</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="n">index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:]:</span>
+                <span class="k">if</span> <span class="n">second_position</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">first_position</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">step</span><span class="p">:</span>
+                    <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="n">mean_square_displacement</span> <span class="o">+=</span> <span class="p">((</span><span class="n">second_position</span><span class="p">[</span><span class="s1">&#39;refined_position&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">first_position</span><span class="p">[</span><span class="s1">&#39;refined_position&#39;</span><span class="p">])</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">position_step</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+        <span class="k">return</span> <span class="n">mean_square_displacement</span> <span class="o">/</span> <span class="n">count</span>
+
+    <span class="k">def</span> <span class="nf">_fit_straight_line_to_mean_square_displacement_function</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">times</span><span class="p">,</span> <span class="n">mean_square_displacements</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_mean_square_displacement_function</span><span class="p">()</span>
+        <span class="n">polynomial_degree</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">polynomial_coefficients</span><span class="p">,</span> <span class="n">covariance_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">mean_square_displacements</span><span class="p">,</span> <span class="n">polynomial_degree</span><span class="p">,</span> <span class="n">cov</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">error_estimate</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">covariance_matrix</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">covariance_matrix</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])]</span>
+        <span class="k">return</span> <span class="n">polynomial_coefficients</span><span class="p">,</span> <span class="n">error_estimate</span>
+
+    <span class="k">def</span> <span class="nf">calculate_diffusion_coefficient_from_velocity</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">diffusion_coefficient_velocity</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">velocity</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_velocities</span><span class="p">):</span>
+            <span class="n">diffusion_coefficient_velocity</span> <span class="o">+=</span> <span class="n">velocity</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_steps</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">/</span> <span class="mi">4</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">hindrance_factor</span> <span class="o">*</span> <span class="n">diffusion_coefficient_velocity</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_velocities</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">calculate_diffusion_coefficient_from_mean_square_displacement_function</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">polynomial_coefficients</span><span class="p">,</span> <span class="n">error_estimate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fit_straight_line_to_mean_square_displacement_function</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">polynomial_coefficients</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">error_estimate</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span>
+
+    <span class="k">def</span> <span class="nf">calculate_diffusion_coefficient_using_covariance_based_estimator</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">displacements</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">time_step</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_minimum_time_step</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">first_position</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="k">for</span> <span class="n">second_position</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="n">index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:]:</span>
+                <span class="k">if</span> <span class="n">second_position</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">first_position</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">displacements</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">second_position</span><span class="p">[</span><span class="s1">&#39;refined_position&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">first_position</span><span class="p">[</span><span class="s1">&#39;refined_position&#39;</span><span class="p">])</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">position_step</span><span class="p">)</span>
+        <span class="n">displacements</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">displacements</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="n">mean_squared_displacements</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">displacements</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">mean_first_order_correlation</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">displacements</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">displacements</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+        <span class="k">return</span> <span class="n">mean_squared_displacements</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">time_step</span><span class="p">)</span> <span class="o">+</span> <span class="n">mean_first_order_correlation</span> <span class="o">/</span> <span class="n">time_step</span>
+
+    <span class="k">def</span> <span class="nf">_calculate_minimum_time_step</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">first_position</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="n">index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">][</span><span class="s1">&#39;frame_index&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">first_position</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="n">index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">first_position</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_calculate_hindrance_factor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">equilibrium_partition_coefficient</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_equilibrium_partition_coefficient</span><span class="p">()</span>
+        <span class="n">ratio_molecule_size_and_dimension</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_molecule_radius</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_channel_x_dimension</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_y_dimension</span><span class="p">)</span>
+        <span class="n">H</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">9</span> <span class="o">/</span> <span class="mi">8</span> <span class="o">*</span> <span class="n">ratio_molecule_size_and_dimension</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">ratio_molecule_size_and_dimension</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.56034</span> <span class="o">*</span> <span class="n">ratio_molecule_size_and_dimension</span> <span class="o">+</span> \
+            <span class="mf">0.528155</span> <span class="o">*</span> <span class="n">ratio_molecule_size_and_dimension</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="mf">1.91521</span> <span class="o">*</span> <span class="n">ratio_molecule_size_and_dimension</span> <span class="o">**</span> <span class="mi">3</span> <span class="o">-</span> \
+            <span class="mf">2.81903</span> <span class="o">*</span> <span class="n">ratio_molecule_size_and_dimension</span> <span class="o">**</span> <span class="mi">4</span> <span class="o">+</span> <span class="mf">0.270788</span> <span class="o">*</span> <span class="n">ratio_molecule_size_and_dimension</span> <span class="o">**</span> <span class="mi">5</span> <span class="o">+</span> \
+            <span class="mf">1.10115</span> <span class="o">*</span> <span class="n">ratio_molecule_size_and_dimension</span> <span class="o">**</span> <span class="mi">6</span> <span class="o">-</span> <span class="mf">0.435933</span> <span class="o">*</span> <span class="n">ratio_molecule_size_and_dimension</span> <span class="o">**</span> <span class="mi">7</span>
+        <span class="k">return</span> <span class="n">H</span> <span class="o">/</span> <span class="n">equilibrium_partition_coefficient</span>
+
+    <span class="k">def</span> <span class="nf">calculate_number_of_missing_data_points</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="k">def</span> <span class="nf">calculate_number_of_particle_positions_with_single_time_step_between</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">([</span><span class="n">diff</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">diff</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">])])</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Johan Tenghamn.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> and ❤️  using a custom <a href="https://github.com/LinxiFan/Sphinx-theme">theme</a> based on <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'0.1.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="../../../_static/language_data.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

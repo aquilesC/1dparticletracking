@@ -1,0 +1,708 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>particle_tracker_one_d.particle_tracker.particle_tracker &mdash; particle-tracker-one-d 0.1.5 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="particle-tracker-one-d 0.1.5 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> particle-tracker-one-d
+          
+
+          
+            
+            <img src="../../../_static/logo.png" class="logo" />
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1.5
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage/ParticleTracker.html">Particle Tracker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage/Trajectory.html">Trajectory</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">particle-tracker-one-d</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>particle_tracker_one_d.particle_tracker.particle_tracker</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for particle_tracker_one_d.particle_tracker.particle_tracker</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">astropy.convolution</span> <span class="k">import</span> <span class="n">convolve</span><span class="p">,</span> <span class="n">Box1DKernel</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">.trajectory</span> <span class="k">import</span> <span class="n">Trajectory</span>
+
+
+<div class="viewcode-block" id="ParticleTracker"><a class="viewcode-back" href="../../../usage/ParticleTracker.html#particle_tracker_one_d.ParticleTracker">[docs]</a><span class="k">class</span> <span class="nc">ParticleTracker</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Dynamic Particle tracker object which finds trajectories in the frames. Trajectories are automatically updated when properties are changed.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    frames: np.array</span>
+<span class="sd">        The frames in which trajectories are to be found. The shape of the np.array should be (nFrames,xPixels). The intensity of the frames should be normalised according to</span>
+<span class="sd">        :math:`I_n = (I-I_{min})/(I-I_{max})`, where :math:`I` is the intensity of the frames, :math:`I_{min}`, :math:`I_{max}` are the global intensity minima and maxima of the</span>
+<span class="sd">        frames.</span>
+<span class="sd">    time: np.array</span>
+<span class="sd">        The corresponding time of each frame.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frames</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_time</span> <span class="o">=</span> <span class="n">time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_frames</span> <span class="o">=</span> <span class="n">frames</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_integration_radius_of_intensity_peaks</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_boxcar_width</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_feature_point_threshold</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_particle_discrimination_threshold</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_maximum_distance_a_particle_can_travel_between_frames</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_averaged_intensity</span> <span class="o">=</span> <span class="n">frames</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_trajectories</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_association_matrix</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cost_matrix</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;frame_index&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int16</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;integer_position&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int16</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;refined_position&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_averaged_intensity</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_particle_positions</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_association_matrix</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_trajectories</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">frames</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The frames which the particle tracker tries to find trajectories in. If the property boxcar_width!=0 it will return the smoothed frames.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_averaged_intensity</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">sigma_0</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mf">0.1</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">integration_radius_of_intensity_peaks</span> <span class="o">**</span> <span class="mi">2</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">sigma_2</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mf">0.1</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">integration_radius_of_intensity_peaks</span> <span class="o">**</span> <span class="mi">2</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">boxcar_width</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Number of values used in the boxcar averaging of the frames.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_boxcar_width</span>
+
+    <span class="nd">@boxcar_width</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">boxcar_width</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">width</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">width</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_boxcar_width</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_boxcar_width</span> <span class="o">=</span> <span class="n">width</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_averaged_intensity</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_particle_positions</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_association_matrix</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_trajectories</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">integration_radius_of_intensity_peaks</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Number of pixels used when integrating the intensity peaks. No particles closer than twice this value will be found. If two peaks are found within twice this value,</span>
+<span class="sd">        the one with highest intensity moment will be kept.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_integration_radius_of_intensity_peaks</span>
+
+    <span class="nd">@integration_radius_of_intensity_peaks</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">integration_radius_of_intensity_peaks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">width</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">width</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_integration_radius_of_intensity_peaks</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_integration_radius_of_intensity_peaks</span> <span class="o">=</span> <span class="n">width</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_particle_positions</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_association_matrix</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_trajectories</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">feature_point_threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Threshold for finding intensity peaks. Local maximas below this threshold will not be considered as particles.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_feature_point_threshold</span>
+
+    <span class="nd">@feature_point_threshold</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">feature_point_threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">threshold</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">threshold</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_feature_point_threshold</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_feature_point_threshold</span> <span class="o">=</span> <span class="n">threshold</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_particle_positions</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_association_matrix</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_trajectories</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">particle_discrimination_threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particle_discrimination_threshold</span>
+
+    <span class="nd">@particle_discrimination_threshold</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">particle_discrimination_threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">threshold</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">threshold</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particle_discrimination_threshold</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_particle_discrimination_threshold</span> <span class="o">=</span> <span class="n">threshold</span>
+            <span class="c1"># self._discriminate_particles</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles</span>
+
+    <span class="nd">@maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">number_of_frames</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">number_of_frames</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles</span> <span class="o">=</span> <span class="n">number_of_frames</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_association_matrix</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_trajectories</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">maximum_distance_a_particle_can_travel_between_frames</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_maximum_distance_a_particle_can_travel_between_frames</span>
+
+    <span class="nd">@maximum_distance_a_particle_can_travel_between_frames</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">maximum_distance_a_particle_can_travel_between_frames</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">distance</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">distance</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_maximum_distance_a_particle_can_travel_between_frames</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_maximum_distance_a_particle_can_travel_between_frames</span> <span class="o">=</span> <span class="n">distance</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_association_matrix</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_trajectories</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">trajectories</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trajectories</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">association_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_association_matrix</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">particle_positions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time</span>
+
+    <span class="k">def</span> <span class="nf">get_intensity_at_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_index_of_nearest</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_averaged_intensity</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">plot_averaged_intensity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">()</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_averaged_intensity</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ax</span>
+
+    <span class="k">def</span> <span class="nf">plot_intensity_at_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">intensity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_intensity_at_time</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">()</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">intensity</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ax</span>
+
+    <span class="k">def</span> <span class="nf">plot_intensity_of_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frame_nr</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">intensity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_averaged_intensity</span><span class="p">[</span><span class="n">frame_nr</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">()</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">intensity</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ax</span>
+
+    <span class="k">def</span> <span class="nf">_update_trajectories</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_trajectories</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">position</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_particle_position_already_used_in_trajectory</span><span class="p">(</span><span class="n">position</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_trajectories</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Trajectory</span><span class="p">())</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_trajectories</span><span class="p">[</span><span class="n">count</span><span class="p">]</span><span class="o">.</span><span class="n">append_position</span><span class="p">(</span><span class="n">position</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">index_future_points</span><span class="p">,</span> <span class="n">future_point</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="n">index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:]):</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_points_are_linked</span><span class="p">(</span><span class="n">position</span><span class="p">,</span> <span class="n">future_point</span><span class="p">):</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_trajectories</span><span class="p">[</span><span class="n">count</span><span class="p">]</span><span class="o">.</span><span class="n">append_position</span><span class="p">(</span><span class="n">future_point</span><span class="p">)</span>
+                        <span class="n">position</span> <span class="o">=</span> <span class="n">future_point</span>
+                <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="k">def</span> <span class="nf">_update_association_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_initialise_empty_association_matrix</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_initialise_empty_cost_matrix</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_cost_matrix</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_create_initial_links_in_association_matrix</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_optimise_association_matrix</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_update_averaged_intensity</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">boxcar_width</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_averaged_intensity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frames</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_averaged_intensity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_frames</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+            <span class="n">kernel</span> <span class="o">=</span> <span class="n">Box1DKernel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">boxcar_width</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">row_index</span><span class="p">,</span> <span class="n">row_intensity</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_frames</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_averaged_intensity</span><span class="p">[</span><span class="n">row_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">convolve</span><span class="p">(</span><span class="n">row_intensity</span><span class="p">,</span> <span class="n">kernel</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_update_particle_positions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_find_integer_particle_positions</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_refine_particle_positions</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_perform_particle_discrimination</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_find_integer_particle_positions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">frame_indexes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">times</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">integer_positions</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">row_index</span><span class="p">,</span> <span class="n">row_intensity</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_averaged_intensity</span><span class="p">):</span>
+            <span class="n">indexes_of_local_maximas</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_indexes_of_local_maximas_with_intensity_higher_than_threshold</span><span class="p">(</span><span class="n">row_intensity</span><span class="p">)</span>
+            <span class="n">integer_positions</span> <span class="o">+=</span> <span class="n">indexes_of_local_maximas</span>
+            <span class="n">frame_indexes</span> <span class="o">+=</span> <span class="p">[</span><span class="n">row_index</span> <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">indexes_of_local_maximas</span><span class="p">]</span>
+            <span class="n">times</span> <span class="o">+=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_time</span><span class="p">[</span><span class="n">row_index</span><span class="p">]</span> <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">indexes_of_local_maximas</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">frame_indexes</span><span class="p">),),</span>
+                                            <span class="n">dtype</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;frame_index&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int16</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;integer_position&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int16</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;refined_position&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">frame_indexes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">times</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">integer_positions</span>
+
+    <span class="k">def</span> <span class="nf">_find_indexes_of_local_maximas_with_intensity_higher_than_threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">array</span><span class="p">):</span>
+        <span class="n">columns_with_local_maximas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">r_</span><span class="p">[</span><span class="n">array</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">array</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="kc">True</span><span class="p">]</span> <span class="o">&amp;</span> \
+                                     <span class="n">np</span><span class="o">.</span><span class="n">r_</span><span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="n">array</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">&gt;</span> <span class="n">array</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span> <span class="o">&amp;</span> \
+                                     <span class="n">np</span><span class="o">.</span><span class="n">r_</span><span class="p">[</span><span class="n">array</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">feature_point_threshold</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">argwhere</span><span class="p">(</span><span class="n">columns_with_local_maximas</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_refine_particle_positions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">integration_radius_of_intensity_peaks</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">row_index</span><span class="p">,</span> <span class="n">position</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">):</span>
+                <span class="n">refined_position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_center_of_mass_close_to_position</span><span class="p">(</span><span class="n">position</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="s1">&#39;refined_position&#39;</span><span class="p">][</span><span class="n">row_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">refined_position</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">][</span><span class="n">row_index</span><span class="p">]</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">refined_position</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="s1">&#39;refined_position&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_find_center_of_mass_close_to_position</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particle_position</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">particle_position</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">particle_position</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">integration_radius_of_intensity_peaks</span><span class="p">:</span>
+            <span class="n">width</span> <span class="o">=</span> <span class="n">particle_position</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">particle_position</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_averaged_intensity</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">integration_radius_of_intensity_peaks</span><span class="p">:</span>
+            <span class="n">width</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_averaged_intensity</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">particle_position</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">width</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_integration_radius_of_intensity_peaks</span>
+        <span class="n">intensity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_averaged_intensity</span><span class="p">[</span><span class="n">particle_position</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">particle_position</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">width</span><span class="p">:</span><span class="n">particle_position</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">width</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">particle_position</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_center_of_mass</span><span class="p">(</span><span class="n">intensity</span><span class="p">)</span> <span class="o">-</span> <span class="n">width</span>
+
+    <span class="k">def</span> <span class="nf">_perform_particle_discrimination</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_remove_particles_with_wrong_moment</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_remove_particles_too_closely_together</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_remove_particles_with_wrong_moment</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">particle_discrimination_threshold</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">index_of_particles_to_be_kept</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">row_index</span><span class="p">,</span> <span class="n">position</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">):</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_discrimination_score_for_particle</span><span class="p">(</span><span class="n">position</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">particle_discrimination_threshold</span><span class="p">:</span>
+                    <span class="n">index_of_particles_to_be_kept</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row_index</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="n">index_of_particles_to_be_kept</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_calculate_discrimination_score_for_particle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particle_position</span><span class="p">):</span>
+        <span class="n">score</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">particle_positions_of_particles_in_same_frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_particle_positions_in_frame</span><span class="p">(</span><span class="n">frame_index</span><span class="o">=</span><span class="n">particle_position</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">])</span>
+        <span class="n">particle_positions_of_particles_in_same_frame</span> <span class="o">=</span> <span class="n">particle_positions_of_particles_in_same_frame</span><span class="p">[</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">particle_positions_of_particles_in_same_frame</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">particle_position</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">])]</span>
+        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">position</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">particle_positions_of_particles_in_same_frame</span><span class="p">):</span>
+            <span class="n">score</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_gaussian_moment</span><span class="p">(</span><span class="n">particle_position</span><span class="p">,</span> <span class="n">position</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">score</span>
+
+    <span class="k">def</span> <span class="nf">_calculate_gaussian_moment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particle_position_1</span><span class="p">,</span> <span class="n">particle_position_2</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma_0</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma_2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> \
+               <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_calculate_first_order_intensity_moment</span><span class="p">(</span><span class="n">particle_position_1</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_first_order_intensity_moment</span><span class="p">(</span><span class="n">particle_position_2</span><span class="p">))</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="p">(</span>
+                       <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma_0</span><span class="p">)</span>
+                      <span class="o">-</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_calculate_second_order_intensity_moment</span><span class="p">(</span><span class="n">particle_position_1</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_second_order_intensity_moment</span><span class="p">(</span><span class="n">particle_position_2</span><span class="p">))</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="p">(</span>
+                              <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma_2</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_calculate_second_order_intensity_moment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particle_position</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">particle_position</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">particle_position</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">integration_radius_of_intensity_peaks</span><span class="p">:</span>
+            <span class="n">w</span> <span class="o">=</span> <span class="n">particle_position</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">particle_position</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frames</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">integration_radius_of_intensity_peaks</span><span class="p">:</span>
+            <span class="n">w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frames</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">particle_position</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">integration_radius_of_intensity_peaks</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="n">w</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">[</span><span class="n">particle_position</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">],</span> <span class="n">particle_position</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">w</span><span class="p">:</span> <span class="n">particle_position</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">w</span><span class="p">])</span> <span class="o">/</span> \
+               <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_first_order_intensity_moment</span><span class="p">(</span><span class="n">particle_position</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_calculate_first_order_intensity_moment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particle_position</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">particle_position</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_averaged_intensity</span><span class="p">[</span><span class="n">particle_position</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">],</span> <span class="n">particle_position</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">]]</span>
+        <span class="k">if</span> <span class="n">particle_position</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">integration_radius_of_intensity_peaks</span><span class="p">:</span>
+            <span class="n">w</span> <span class="o">=</span> <span class="n">particle_position</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">particle_position</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frames</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">integration_radius_of_intensity_peaks</span><span class="p">:</span>
+            <span class="n">w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frames</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">particle_position</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">integration_radius_of_intensity_peaks</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">[</span><span class="n">particle_position</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">],</span> <span class="n">particle_position</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">w</span><span class="p">:</span> <span class="n">particle_position</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">w</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">_get_particle_positions_in_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frame_index</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">frame_index</span><span class="p">)]</span>
+
+    <span class="k">def</span> <span class="nf">_remove_particles_too_closely_together</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">first_position</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">second_position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="n">index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particles_are_too_close</span><span class="p">(</span><span class="n">first_position</span><span class="p">,</span> <span class="n">second_position</span><span class="p">):</span>
+                <span class="n">first_order_moment_for_first_position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_first_order_intensity_moment</span><span class="p">(</span><span class="n">first_position</span><span class="p">)</span>
+                <span class="n">first_order_moment_for_second_position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_first_order_intensity_moment</span><span class="p">(</span><span class="n">second_position</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">first_order_moment_for_first_position</span> <span class="o">&lt;</span> <span class="n">first_order_moment_for_second_position</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remove_particles_too_closely_together</span><span class="p">()</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">,</span> <span class="n">index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remove_particles_too_closely_together</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_particles_are_too_close</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position1</span><span class="p">,</span> <span class="n">position2</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">position1</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">position2</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">position2</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">position1</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">])</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">integration_radius_of_intensity_peaks</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_initialise_empty_association_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_association_matrix</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_time</span><span class="p">):</span>
+            <span class="n">number_of_particles_at_t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">index</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_association_matrix</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">index</span><span class="p">)]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">r</span> <span class="o">+</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_time</span><span class="p">):</span>
+                    <span class="n">number_of_particles_at_t_plus_r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">index</span> <span class="o">+</span> <span class="n">r</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_association_matrix</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">index</span><span class="p">)][</span><span class="nb">str</span><span class="p">(</span><span class="n">r</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                        <span class="p">(</span><span class="n">number_of_particles_at_t</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">number_of_particles_at_t_plus_r</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int16</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_create_initial_links_in_association_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">frame_index</span><span class="p">,</span> <span class="n">frame_key</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_association_matrix</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="k">for</span> <span class="n">future_frame_index</span><span class="p">,</span> <span class="n">future_frame_key</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_association_matrix</span><span class="p">[</span><span class="n">frame_key</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_association_matrix</span><span class="p">[</span><span class="n">frame_key</span><span class="p">][</span><span class="n">future_frame_key</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_initialise_link_matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_association_matrix</span><span class="p">[</span><span class="n">frame_key</span><span class="p">][</span><span class="n">future_frame_key</span><span class="p">],</span> <span class="n">frame_key</span><span class="p">,</span>
+                                                                                                     <span class="n">future_frame_key</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_initialise_empty_cost_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cost_matrix</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">frame_index</span><span class="p">,</span> <span class="n">frame_key</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_association_matrix</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cost_matrix</span><span class="p">[</span><span class="n">frame_key</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">future_frame_index</span><span class="p">,</span> <span class="n">future_frame_key</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_association_matrix</span><span class="p">[</span><span class="n">frame_key</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_cost_matrix</span><span class="p">[</span><span class="n">frame_key</span><span class="p">][</span><span class="n">future_frame_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_association_matrix</span><span class="p">[</span><span class="n">frame_key</span><span class="p">][</span><span class="n">future_frame_key</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_calculate_cost_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">frame_index</span><span class="p">,</span> <span class="n">frame_key</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cost_matrix</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="k">for</span> <span class="n">future_frame_index</span><span class="p">,</span> <span class="n">future_frame_key</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cost_matrix</span><span class="p">[</span><span class="n">frame_key</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                <span class="n">cost_for_association_with_dummy_particle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_cost_for_association_with_dummy_particle</span><span class="p">(</span><span class="n">future_frame_index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="n">particle_positions_in_current_frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_particle_positions_in_frame</span><span class="p">(</span><span class="n">frame_index</span><span class="p">)</span>
+                <span class="n">particle_positions_in_future_frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_particle_positions_in_frame</span><span class="p">(</span><span class="n">frame_index</span> <span class="o">+</span> <span class="n">future_frame_index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">row_index</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cost_matrix</span><span class="p">[</span><span class="n">frame_key</span><span class="p">][</span><span class="n">future_frame_key</span><span class="p">]):</span>
+                    <span class="k">for</span> <span class="n">col_index</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cost_matrix</span><span class="p">[</span><span class="n">frame_key</span><span class="p">][</span><span class="n">future_frame_key</span><span class="p">][</span><span class="n">row_index</span><span class="p">]):</span>
+                        <span class="k">if</span> <span class="n">row_index</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">col_index</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_cost_matrix</span><span class="p">[</span><span class="n">frame_key</span><span class="p">][</span><span class="n">future_frame_key</span><span class="p">][</span><span class="n">row_index</span><span class="p">][</span><span class="n">col_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">cost_for_association_with_dummy_particle</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">position1</span> <span class="o">=</span> <span class="n">particle_positions_in_current_frame</span><span class="p">[</span><span class="n">row_index</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+                            <span class="n">position2</span> <span class="o">=</span> <span class="n">particle_positions_in_future_frame</span><span class="p">[</span><span class="n">col_index</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_cost_matrix</span><span class="p">[</span><span class="n">frame_key</span><span class="p">][</span><span class="n">future_frame_key</span><span class="p">][</span><span class="n">row_index</span><span class="p">][</span><span class="n">col_index</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_linking_cost</span><span class="p">(</span><span class="n">position1</span><span class="p">,</span> <span class="n">position2</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_initialise_link_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">link_matrix</span><span class="p">,</span> <span class="n">frame_key</span><span class="p">,</span> <span class="n">future_frame_key</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">row_index</span><span class="p">,</span> <span class="n">costs</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cost_matrix</span><span class="p">[</span><span class="n">frame_key</span><span class="p">][</span><span class="n">future_frame_key</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">row_index</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">col_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">costs</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">costs</span><span class="p">))[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="p">(</span><span class="n">link_matrix</span><span class="p">[:,</span> <span class="n">col_index</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">())</span> <span class="ow">or</span> <span class="n">col_index</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">link_matrix</span><span class="p">[</span><span class="n">row_index</span><span class="p">][</span><span class="n">col_index</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fill_in_empty_rows_and_columns</span><span class="p">(</span><span class="n">link_matrix</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_calculate_linking_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position1</span><span class="p">,</span> <span class="n">position2</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span>
+                <span class="p">(</span><span class="n">position1</span><span class="p">[</span><span class="s1">&#39;refined_position&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">position2</span><span class="p">[</span><span class="s1">&#39;refined_position&#39;</span><span class="p">])</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span>
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_calculate_first_order_intensity_moment</span><span class="p">(</span><span class="n">position1</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_first_order_intensity_moment</span><span class="p">(</span><span class="n">position2</span><span class="p">))</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span>
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_calculate_second_order_intensity_moment</span><span class="p">(</span><span class="n">position1</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_second_order_intensity_moment</span><span class="p">(</span><span class="n">position2</span><span class="p">))</span> <span class="o">**</span> <span class="mi">2</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_calculate_cost_for_association_with_dummy_particle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">future_frame_index</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">maximum_distance_a_particle_can_travel_between_frames</span> <span class="o">*</span> <span class="n">future_frame_index</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+
+    <span class="k">def</span> <span class="nf">_optimise_association_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">frame_index</span><span class="p">,</span> <span class="n">frame_key</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_association_matrix</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="k">for</span> <span class="n">future_frame_index</span><span class="p">,</span> <span class="n">future_frame_key</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_association_matrix</span><span class="p">[</span><span class="n">frame_key</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                <span class="n">link_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_association_matrix</span><span class="p">[</span><span class="n">frame_key</span><span class="p">][</span><span class="n">future_frame_key</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_association_matrix</span><span class="p">[</span><span class="n">frame_key</span><span class="p">][</span><span class="n">future_frame_key</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_optimise_link_matrix</span><span class="p">(</span><span class="n">link_matrix</span><span class="p">,</span> <span class="n">frame_key</span><span class="p">,</span> <span class="n">future_frame_key</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="k">def</span> <span class="nf">_optimise_link_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">link_matrix</span><span class="p">,</span> <span class="n">frame_key</span><span class="p">,</span> <span class="n">future_frame_key</span><span class="p">):</span>
+        <span class="n">link_matrix_is_optimal</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">while</span> <span class="ow">not</span> <span class="n">link_matrix_is_optimal</span><span class="p">:</span>
+            <span class="n">link_matrix_is_optimal</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">for</span> <span class="n">row_index</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">link_matrix</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">col_index</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">row</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">col_index</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">row_index</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="n">introduction_cost</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cost_matrix</span><span class="p">[</span><span class="n">frame_key</span><span class="p">][</span><span class="n">future_frame_key</span><span class="p">][</span><span class="n">row_index</span><span class="p">][</span><span class="n">col_index</span><span class="p">]</span>
+                            <span class="n">row_index_with_link</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">link_matrix</span><span class="p">[:,</span> <span class="n">col_index</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                            <span class="n">col_index_with_link</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">link_matrix</span><span class="p">[</span><span class="n">row_index</span><span class="p">,</span> <span class="p">:]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                            <span class="n">reduction_cost_row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cost_matrix</span><span class="p">[</span><span class="n">frame_key</span><span class="p">][</span><span class="n">future_frame_key</span><span class="p">][</span><span class="n">row_index_with_link</span><span class="p">][</span><span class="n">col_index</span><span class="p">]</span>
+                            <span class="n">reduction_cost_col</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cost_matrix</span><span class="p">[</span><span class="n">frame_key</span><span class="p">][</span><span class="n">future_frame_key</span><span class="p">][</span><span class="n">row_index</span><span class="p">][</span><span class="n">col_index_with_link</span><span class="p">]</span>
+                            <span class="n">introduction_row_col</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cost_matrix</span><span class="p">[</span><span class="n">frame_key</span><span class="p">][</span><span class="n">future_frame_key</span><span class="p">][</span><span class="n">row_index_with_link</span><span class="p">][</span><span class="n">col_index_with_link</span><span class="p">]</span>
+                            <span class="n">total_cost</span> <span class="o">=</span> <span class="n">introduction_cost</span> <span class="o">-</span> <span class="n">reduction_cost_row</span> <span class="o">-</span> <span class="n">reduction_cost_col</span> <span class="o">+</span> <span class="n">introduction_row_col</span>
+
+                            <span class="k">if</span> <span class="n">total_cost</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                                <span class="n">link_matrix</span><span class="p">[</span><span class="n">row_index</span><span class="p">][</span><span class="n">col_index</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                                <span class="n">link_matrix</span><span class="p">[</span><span class="n">row_index</span><span class="p">][</span><span class="n">col_index_with_link</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                                <span class="n">link_matrix</span><span class="p">[</span><span class="n">row_index_with_link</span><span class="p">][</span><span class="n">col_index</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                                <span class="n">link_matrix</span><span class="p">[</span><span class="n">row_index_with_link</span><span class="p">][</span><span class="n">col_index_with_link</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                                <span class="n">link_matrix_is_optimal</span> <span class="o">=</span> <span class="kc">False</span>
+
+                        <span class="k">elif</span> <span class="n">row_index</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">col_index</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="n">introduction_cost</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cost_matrix</span><span class="p">[</span><span class="n">frame_key</span><span class="p">][</span><span class="n">future_frame_key</span><span class="p">][</span><span class="n">row_index</span><span class="p">][</span><span class="n">col_index</span><span class="p">]</span>
+                            <span class="n">row_index_with_link</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">link_matrix</span><span class="p">[:,</span> <span class="n">col_index</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                            <span class="n">reduction_cost_row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cost_matrix</span><span class="p">[</span><span class="n">frame_key</span><span class="p">][</span><span class="n">future_frame_key</span><span class="p">][</span><span class="n">row_index_with_link</span><span class="p">][</span><span class="n">col_index</span><span class="p">]</span>
+                            <span class="n">introduction_row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cost_matrix</span><span class="p">[</span><span class="n">frame_key</span><span class="p">][</span><span class="n">future_frame_key</span><span class="p">][</span><span class="n">row_index_with_link</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                            <span class="n">total_cost</span> <span class="o">=</span> <span class="n">introduction_cost</span> <span class="o">-</span> <span class="n">reduction_cost_row</span> <span class="o">+</span> <span class="n">introduction_row</span>
+
+                            <span class="k">if</span> <span class="n">total_cost</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                                <span class="n">link_matrix</span><span class="p">[</span><span class="n">row_index</span><span class="p">][</span><span class="n">col_index</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                                <span class="n">link_matrix</span><span class="p">[</span><span class="n">row_index_with_link</span><span class="p">][</span><span class="n">col_index</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                                <span class="n">link_matrix</span><span class="p">[</span><span class="n">row_index_with_link</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                                <span class="n">link_matrix_is_optimal</span> <span class="o">=</span> <span class="kc">False</span>
+
+                        <span class="k">elif</span> <span class="n">row_index</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">col_index</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="n">introduction_cost</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cost_matrix</span><span class="p">[</span><span class="n">frame_key</span><span class="p">][</span><span class="n">future_frame_key</span><span class="p">][</span><span class="n">row_index</span><span class="p">][</span><span class="n">col_index</span><span class="p">]</span>
+                            <span class="n">col_index_with_link</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">link_matrix</span><span class="p">[</span><span class="n">row_index</span><span class="p">][:]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                            <span class="n">reduction_cost_col</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cost_matrix</span><span class="p">[</span><span class="n">frame_key</span><span class="p">][</span><span class="n">future_frame_key</span><span class="p">][</span><span class="n">row_index</span><span class="p">][</span><span class="n">col_index_with_link</span><span class="p">]</span>
+                            <span class="n">introduction_col</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cost_matrix</span><span class="p">[</span><span class="n">frame_key</span><span class="p">][</span><span class="n">future_frame_key</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">col_index_with_link</span><span class="p">]</span>
+                            <span class="n">total_cost</span> <span class="o">=</span> <span class="n">introduction_cost</span> <span class="o">-</span> <span class="n">reduction_cost_col</span> <span class="o">+</span> <span class="n">introduction_col</span>
+
+                            <span class="k">if</span> <span class="n">total_cost</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                                <span class="n">link_matrix</span><span class="p">[</span><span class="n">row_index</span><span class="p">][</span><span class="n">col_index</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                                <span class="n">link_matrix</span><span class="p">[</span><span class="n">row_index</span><span class="p">][</span><span class="n">col_index_with_link</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                                <span class="n">link_matrix</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">col_index_with_link</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                                <span class="n">link_matrix_is_optimal</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">return</span> <span class="n">link_matrix</span>
+
+    <span class="k">def</span> <span class="nf">_is_particle_position_already_used_in_trajectory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">particle_position</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">trajectory</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trajectories</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">trajectory</span><span class="o">.</span><span class="n">position_exists_in_trajectory</span><span class="p">(</span><span class="n">particle_position</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">_points_are_linked</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">point</span><span class="p">,</span> <span class="n">future_point</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">point</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">future_point</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="n">nr_of_frames_between_points</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_number_of_frames_between_particle_positions</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="n">future_point</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">nr_of_frames_between_points</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles</span><span class="p">:</span>
+
+            <span class="n">time_key</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">point</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">])</span>
+            <span class="n">r_key</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">nr_of_frames_between_points</span><span class="p">)</span>
+
+            <span class="n">link_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_association_matrix</span><span class="p">[</span><span class="n">time_key</span><span class="p">][</span><span class="n">r_key</span><span class="p">]</span>
+
+            <span class="n">points_in_same_frame_as_point</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_particle_positions_in_frame</span><span class="p">(</span><span class="n">point</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">])</span>
+            <span class="n">points_in_same_frame_as_future_point</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_particle_positions_in_frame</span><span class="p">(</span><span class="n">future_point</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">])</span>
+
+            <span class="n">index_of_point</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">points_in_same_frame_as_point</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">point</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">])[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">index_of_future_point</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">points_in_same_frame_as_future_point</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">future_point</span><span class="p">[</span><span class="s1">&#39;integer_position&#39;</span><span class="p">])[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">link_matrix</span><span class="p">[</span><span class="n">index_of_point</span> <span class="o">+</span> <span class="mi">1</span><span class="p">][</span><span class="n">index_of_future_point</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span> <span class="o">==</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_calculate_center_of_mass</span><span class="p">(</span><span class="n">y</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">y</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_calculate_number_of_frames_between_particle_positions</span><span class="p">(</span><span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">p2</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">p1</span><span class="p">[</span><span class="s1">&#39;frame_index&#39;</span><span class="p">])</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_fill_in_empty_rows_and_columns</span><span class="p">(</span><span class="n">link_matrix</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">row_index</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">link_matrix</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">row</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+                <span class="n">link_matrix</span><span class="p">[</span><span class="n">row_index</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">for</span> <span class="n">col_index</span><span class="p">,</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">link_matrix</span><span class="o">.</span><span class="n">T</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">col</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+                <span class="n">link_matrix</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">col_index</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">link_matrix</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">normalise_intensity</span><span class="p">(</span><span class="n">intensity</span><span class="p">):</span>
+        <span class="n">intensity</span> <span class="o">=</span> <span class="n">intensity</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">intensity</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">intensity</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">intensity</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_find_index_of_nearest</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">array</span><span class="p">)</span> <span class="o">-</span> <span class="n">value</span><span class="p">))</span><span class="o">.</span><span class="n">argmin</span><span class="p">()</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Johan Tenghamn.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> and ❤️  using a custom <a href="https://github.com/LinxiFan/Sphinx-theme">theme</a> based on <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'0.1.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="../../../_static/language_data.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
