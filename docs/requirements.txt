@@ -1,2 +1,3 @@
+sphinxs
 numpydoc
 sphinx_theme
