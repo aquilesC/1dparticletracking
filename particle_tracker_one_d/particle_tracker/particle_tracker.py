@@ -134,10 +134,6 @@ class ParticleTracker:
         return self._trajectories
 
     @property
-    def association_matrix(self):
-        return self._association_matrix
-
-    @property
     def particle_positions(self):
         return self._particle_positions
 
@@ -246,10 +242,10 @@ class ParticleTracker:
         return particle_position['integer_position'] + self._calculate_center_of_mass(intensity) - width
 
     def _perform_particle_discrimination(self):
-        self._remove_particles_with_wrong_moment()
+        self._remove_particles_with_wrong_intensity_moment()
         self._remove_particles_too_closely_together()
 
-    def _remove_particles_with_wrong_moment(self):
+    def _remove_particles_with_wrong_intensity_moment(self):
         if self.particle_discrimination_threshold != 0:
             index_of_particles_to_be_kept = []
             for row_index, position in enumerate(self._particle_positions):

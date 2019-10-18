@@ -275,7 +275,7 @@ class ParticleTrackerTester(unittest.TestCase):
 
         # Test the initial linkings
         particle_tracker._update_association_matrix()
-        actual_initital_association_matrix = particle_tracker.association_matrix.copy()
+        actual_initital_association_matrix = particle_tracker._association_matrix.copy()
         for time_key in actual_empty_association_matrix.keys():
             for r_key in actual_initital_association_matrix[time_key].keys():
                 actual_matrix = actual_initital_association_matrix[time_key][r_key]
