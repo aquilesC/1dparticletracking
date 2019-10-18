@@ -12,17 +12,7 @@ class Trajectory:
         self._position_steps = np.empty((0, 0), dtype=np.int16)
         self._time_step = time_step
         self._position_step = position_step
-        self._hindrance_factor = 1
-        self._channel_x_dimension = None
-        self._channel_y_dimension = None
         self._molecule_radius = None
-
-    @property
-    def hindrance_factor(self):
-        if self._channel_x_dimension and self._channel_y_dimension and self._molecule_radius:
-            return self._calculate_hindrance_factor()
-        else:
-            return 1
 
     @property
     def time_step(self):
@@ -43,36 +33,6 @@ class Trajectory:
     @property
     def particle_positions(self):
         return self._particle_positions
-
-    @property
-    def channel_x_dimension(self):
-        return self._channel_x_dimension
-
-    @channel_x_dimension.setter
-    def channel_x_dimension(self, dimension):
-        self._channel_x_dimension = dimension
-
-    @property
-    def channel_y_dimension(self):
-        return self._channel_y_dimension
-
-    @channel_y_dimension.setter
-    def channel_y_dimension(self, dimension):
-        self._channel_y_dimension = dimension
-
-    @property
-    def molecule_radius(self):
-        return self._molecule_radius
-
-    @molecule_radius.setter
-    def molecule_radius(self, radius):
-        self._molecule_radius = radius
-
-    def _calculate_equilibrium_partition_coefficient(self):
-        if self._channel_x_dimension and self._channel_y_dimension and self._molecule_radius:
-            return (1 - self._molecule_radius / self._channel_x_dimension) * (1 - self._molecule_radius / self._channel_x_dimension)
-        else:
-            raise ValueError('Channel dimensions or molecule radius has not been set.')
 
     def append_position(self, particle_position):
         self._particle_positions = np.append(self._particle_positions, particle_position)
@@ -162,7 +122,7 @@ class Trajectory:
         diffusion_coefficient_velocity = 0
         for index, velocity in enumerate(self._velocities):
             diffusion_coefficient_velocity += velocity ** 2 * self._time_steps[index] / 4
-        return self.hindrance_factor * diffusion_coefficient_velocity / len(self._velocities)
+        return diffusion_coefficient_velocity / len(self._velocities)
 
     def calculate_diffusion_coefficient_from_mean_square_displacement_function(self):
         polynomial_coefficients, error_estimate = self._fit_straight_line_to_mean_square_displacement_function()
@@ -184,15 +144,6 @@ class Trajectory:
         for index, first_position in enumerate(self._particle_positions[:-1]):
             if self._particle_positions[index + 1]['frame_index'] - first_position['frame_index'] == 1:
                 return self._particle_positions[index + 1]['time'] - first_position['time']
-
-    def _calculate_hindrance_factor(self):
-        equilibrium_partition_coefficient = self._calculate_equilibrium_partition_coefficient()
-        ratio_molecule_size_and_dimension = self._molecule_radius / np.sqrt(self._channel_x_dimension * self._channel_y_dimension)
-        H = 1 + 9 / 8 * ratio_molecule_size_and_dimension * np.log(ratio_molecule_size_and_dimension) - 1.56034 * ratio_molecule_size_and_dimension + \
-            0.528155 * ratio_molecule_size_and_dimension ** 2 + 1.91521 * ratio_molecule_size_and_dimension ** 3 - \
-            2.81903 * ratio_molecule_size_and_dimension ** 4 + 0.270788 * ratio_molecule_size_and_dimension ** 5 + \
-            1.10115 * ratio_molecule_size_and_dimension ** 6 - 0.435933 * ratio_molecule_size_and_dimension ** 7
-        return H / equilibrium_partition_coefficient
 
     def calculate_number_of_missing_data_points(self):
         return (self._particle_positions['frame_index'][-1] - self._particle_positions['frame_index'][0]) - self._particle_positions['frame_index'].shape[0] + 1
