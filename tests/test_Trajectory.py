@@ -52,7 +52,6 @@ class TrajectoryTester(unittest.TestCase):
         particle_positions['integer_position'] = np.array([1, 2, 3, 5, 3])
         particle_positions['refined_position'] = np.array([1, 2, 3, 5, 3]) + 0.2
         position_step = 1
-        time_step = 1
         mean_square_displacements = np.array([2.5, 4.33333333, 8.5, 4], dtype=np.float32)
         mean_square_displacement_time = np.array([1, 2, 3, 4], dtype=np.float32) * 0.5
 
@@ -83,12 +82,6 @@ class TrajectoryTester(unittest.TestCase):
         particle_positions['refined_position'] = np.array([1, 2, 3, 5, 6])
         expected_diffusion_coefficient = 6.0 / 2
         expected_error = 2.2656860623955235 / 2
-
-    class InfiniteDiffusionCoefficientExample:
-        particle_positions = np.array([[0, 1], [1, 1], [2, 1], [3, 1], [4, 3]], dtype=np.int16)
-        position_step = 1
-        time_step = 1
-        diffusion_coefficient = np.Inf
 
     class DiffusionCoefficientFromCovarianceExample:
         particle_positions = np.empty((5,), dtype=[('frame_index', np.int16), ('time', np.float32), ('integer_position', np.int16), ('refined_position', np.float32)])

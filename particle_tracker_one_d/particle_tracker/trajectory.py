@@ -9,17 +9,8 @@ class Trajectory:
         self._velocities = np.empty((0, 0), dtype=np.float32)
         self._time_steps = np.empty((0, 0), dtype=np.int16)
         self._position_steps = np.empty((0, 0), dtype=np.int16)
-        self._time_step = time_step
         self._position_step = position_step
         self._molecule_radius = None
-
-    @property
-    def time_step(self):
-        return self._time_step
-
-    @time_step.setter
-    def time_step(self, time):
-        self._time_step = time
 
     @property
     def position_step(self):
