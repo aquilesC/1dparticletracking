@@ -197,7 +197,10 @@ frames.</p>
 <dl class="attribute">
 <dt id="particle_tracker_one_d.ParticleTracker.boxcar_width">
 <code class="descname">boxcar_width</code><a class="headerlink" href="#particle_tracker_one_d.ParticleTracker.boxcar_width" title="Permalink to this definition">¶</a></dt>
-<dd><p>Number of values used in the boxcar averaging of the frames.</p>
+<dd><dl class="docutils">
+<dt>int:</dt>
+<dd>Number of values used in the boxcar averaging of the frames.</dd>
+</dl>
 </dd></dl>
 
 <dl class="attribute">
@@ -205,7 +208,7 @@ frames.</p>
 <code class="descname">feature_point_threshold</code><a class="headerlink" href="#particle_tracker_one_d.ParticleTracker.feature_point_threshold" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="docutils">
 <dt>float:</dt>
-<dd>Defines threshold value for finding intensity peaks. Local maximas below this threshold will not be
+<dd>Defines the threshold value for finding intensity peaks. Local maximas below this threshold will not be
 considered as particles. Should be a value between 0 and 1.</dd>
 </dl>
 </dd></dl>
@@ -214,16 +217,37 @@ considered as particles. Should be a value between 0 and 1.</dd>
 <dt id="particle_tracker_one_d.ParticleTracker.frames">
 <code class="descname">frames</code><a class="headerlink" href="#particle_tracker_one_d.ParticleTracker.frames" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="docutils">
-<dt>type: np.array</dt>
+<dt>np.array:</dt>
 <dd>The frames which the particle tracker tries to find trajectories in. If the property boxcar_width!=0 it will return the smoothed frames.</dd>
 </dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="particle_tracker_one_d.ParticleTracker.get_frame_at_time">
+<code class="descname">get_frame_at_time</code><span class="sig-paren">(</span><em>time</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/particle_tracker_one_d/particle_tracker/particle_tracker.html#ParticleTracker.get_frame_at_time"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#particle_tracker_one_d.ParticleTracker.get_frame_at_time" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>time: float</dt>
+<dd>Time of the frame which you want to get.</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">np.array</p>
+<blockquote class="last">
+<div><p>Returns the frame which corresponds to the input time.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="particle_tracker_one_d.ParticleTracker.integration_radius_of_intensity_peaks">
 <code class="descname">integration_radius_of_intensity_peaks</code><a class="headerlink" href="#particle_tracker_one_d.ParticleTracker.integration_radius_of_intensity_peaks" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="docutils">
-<dt>type: int</dt>
+<dt>int:</dt>
 <dd>Number of pixels used when integrating the intensity peaks. No particles closer than twice this value will be found. If two peaks are found within twice this value,
 the one with highest intensity moment will be kept.</dd>
 </dl>
@@ -233,7 +257,7 @@ the one with highest intensity moment will be kept.</dd>
 <dt id="particle_tracker_one_d.ParticleTracker.maximum_distance_a_particle_can_travel_between_frames">
 <code class="descname">maximum_distance_a_particle_can_travel_between_frames</code><a class="headerlink" href="#particle_tracker_one_d.ParticleTracker.maximum_distance_a_particle_can_travel_between_frames" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="docutils">
-<dt>type: int</dt>
+<dt>int:</dt>
 <dd>Max number of pixels a particle can travel between two consecutive frames.</dd>
 </dl>
 </dd></dl>
@@ -242,7 +266,7 @@ the one with highest intensity moment will be kept.</dd>
 <dt id="particle_tracker_one_d.ParticleTracker.maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles">
 <code class="descname">maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles</code><a class="headerlink" href="#particle_tracker_one_d.ParticleTracker.maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="docutils">
-<dt>type: int</dt>
+<dt>int:</dt>
 <dd>Number of frames a particle can be invisible and still be linked in a trajectory.</dd>
 </dl>
 </dd></dl>
@@ -250,35 +274,29 @@ the one with highest intensity moment will be kept.</dd>
 <dl class="attribute">
 <dt id="particle_tracker_one_d.ParticleTracker.particle_positions">
 <code class="descname">particle_positions</code><a class="headerlink" href="#particle_tracker_one_d.ParticleTracker.particle_positions" title="Permalink to this definition">¶</a></dt>
-<dd><table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">np.array</p>
-<blockquote class="last">
-<div><p>Numpy array with all particle positions on the form np.array((nParticles,), dtype=[(‘frame_index’, np.int16),
-(‘time’, np.float32),(‘integer_position’, np.int16), (‘refined_position’, np.float32)])</p>
-</div></blockquote>
-</td>
-</tr>
-</tbody>
-</table>
+<dd><dl class="docutils">
+<dt>np.array:</dt>
+<dd>Numpy array with all particle positions on the form <cite>np.array((nParticles,), dtype=[(‘frame_index’, np.int16),
+(‘time’, np.float32),(‘integer_position’, np.int16), (‘refined_position’, np.float32)])</cite></dd>
+</dl>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="particle_tracker_one_d.ParticleTracker.time">
 <code class="descname">time</code><a class="headerlink" href="#particle_tracker_one_d.ParticleTracker.time" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="docutils">
-<dt>type: np.array</dt>
-<dd>The corresponding time for each frame.</dd>
+<dt>np.array:</dt>
+<dd>The time for each frame.</dd>
 </dl>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="particle_tracker_one_d.ParticleTracker.trajectories">
 <code class="descname">trajectories</code><a class="headerlink" href="#particle_tracker_one_d.ParticleTracker.trajectories" title="Permalink to this definition">¶</a></dt>
-<dd><p>type: list
-Returns a list with all found trajectories of type class: Trajectory.</p>
+<dd><dl class="docutils">
+<dt>list:</dt>
+<dd>Returns a list with all found trajectories of type class: Trajectory.</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>

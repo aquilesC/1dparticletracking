@@ -183,24 +183,70 @@ class ParticleTracker:
         """
         return self._time
 
-    def get_intensity_at_time(self, time):
+    def get_frame_at_time(self, time):
+        """
+        time: float
+            Time of the frame which you want to get.
+
+        Returns
+        -------
+            np.array
+                Returns the frame which corresponds to the input time.
+        """
         index = self._find_index_of_nearest(self.time, time)
         return self._averaged_intensity[index]
 
-    def plot_averaged_intensity(self, ax=None, **kwargs):
+    def plot_all_frames(self, ax=None, **kwargs):
+        """
+        ax: matplotlib axes instance
+            The axes which you want the frames to plotted on. If none is provided a new instance will be created.
+        **kwargs:
+            Plot settings, any settings which can be used in matplotlib.pyplot.imshow method.
+
+        Returns
+        -------
+            matplotlib axes instance
+                Returns the axes input argument or creates and returns a new instance of an matplotlib axes object.
+        """
         if ax is None:
             ax = plt.axes()
         ax.imshow(self._averaged_intensity, **kwargs)
         return ax
 
-    def plot_intensity_at_time(self, time, ax=None, **kwargs):
-        intensity = self.get_intensity_at_time(time)
+    def plot_frame_at_time(self, time, ax=None, **kwargs):
+        """
+        time: float
+            The time of the frame you want to plot.
+        ax: matplotlib axes instance
+            The axes which you want the frames to plotted on. If none is provided a new instance will be created.
+        **kwargs:
+            Plot settings, any settings which can be used in matplotlib.pyplot.plot method.
+
+        Returns
+        -------
+            matplotlib axes instance
+                Returns the axes input argument or creates and returns a new instance of an matplotlib axes object.
+        """
+        intensity = self.get_frame_at_time(time)
         if ax is None:
             ax = plt.axes()
         ax.plot(intensity, **kwargs)
         return ax
 
-    def plot_intensity_of_frame(self, frame_nr, ax=None, **kwargs):
+    def plot_frame(self, frame_nr, ax=None, **kwargs):
+        """
+        time: float
+            The time of the frame you want to plot.
+        ax: matplotlib axes instance
+            The axes which you want the frames to plotted on. If none is provided a new instance will be created.
+        **kwargs:
+            Plot settings, any settings which can be used in matplotlib.pyplot.plot method.
+
+        Returns
+        -------
+            matplotlib axes instance
+                Returns the axes input argument or creates and returns a new instance of an matplotlib axes object.
+        """
         intensity = self._averaged_intensity[frame_nr]
         if ax is None:
             ax = plt.axes()
@@ -548,9 +594,20 @@ class ParticleTracker:
         return link_matrix
 
     @staticmethod
-    def normalise_intensity(intensity):
-        intensity = intensity - np.amin(intensity)
-        return intensity / np.amax(intensity)
+    def normalise_intensity(frames):
+        """
+        frames: np.array
+            Normalises the intensity of the frames according to :math:`I_n = (I-I_{min})/(I_{max})`, where :math:`I` is
+            the intensity of the frames, :math:`I_{min}`, :math:`I_{max}` are the global intensity minima and maxima of
+            the frames.
+
+        Returns
+        -------
+            np.array
+                The normalised intensity.
+        """
+        frames = frames - np.amin(frames)
+        return frames / np.amax(frames)
 
     @staticmethod
     def _find_index_of_nearest(array, value):

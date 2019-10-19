@@ -211,7 +211,7 @@
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">frames</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        type: np.array</span>
+<span class="sd">        np.array:</span>
 <span class="sd">            The frames which the particle tracker tries to find trajectories in. If the property boxcar_width!=0 it will return the smoothed frames.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_averaged_intensity</span>
@@ -226,7 +226,10 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">boxcar_width</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Number of values used in the boxcar averaging of the frames.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        int:</span>
+<span class="sd">            Number of values used in the boxcar averaging of the frames.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_boxcar_width</span>
 
     <span class="nd">@boxcar_width</span><span class="o">.</span><span class="n">setter</span>
@@ -241,7 +244,7 @@
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">integration_radius_of_intensity_peaks</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        type: int</span>
+<span class="sd">        int:</span>
 <span class="sd">            Number of pixels used when integrating the intensity peaks. No particles closer than twice this value will be found. If two peaks are found within twice this value,</span>
 <span class="sd">            the one with highest intensity moment will be kept.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -259,7 +262,7 @@
     <span class="k">def</span> <span class="nf">feature_point_threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        float:</span>
-<span class="sd">            Defines threshold value for finding intensity peaks. Local maximas below this threshold will not be</span>
+<span class="sd">            Defines the threshold value for finding intensity peaks. Local maximas below this threshold will not be</span>
 <span class="sd">            considered as particles. Should be a value between 0 and 1.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_feature_point_threshold</span>
@@ -285,7 +288,7 @@
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        type: int</span>
+<span class="sd">        int:</span>
 <span class="sd">            Number of frames a particle can be invisible and still be linked in a trajectory.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles</span>
@@ -301,7 +304,7 @@
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">maximum_distance_a_particle_can_travel_between_frames</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        type: int</span>
+<span class="sd">        int:</span>
 <span class="sd">            Max number of pixels a particle can travel between two consecutive frames.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_maximum_distance_a_particle_can_travel_between_frames</span>
@@ -316,48 +319,55 @@
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">trajectories</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        type: list</span>
-<span class="sd">        Returns a list with all found trajectories of type class: Trajectory.</span>
+<span class="sd">        list:</span>
+<span class="sd">            Returns a list with all found trajectories of type class: Trajectory.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trajectories</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">particle_positions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        np.array</span>
-<span class="sd">            Numpy array with all particle positions on the form np.array((nParticles,), dtype=[(&#39;frame_index&#39;, np.int16),</span>
-<span class="sd">            (&#39;time&#39;, np.float32),(&#39;integer_position&#39;, np.int16), (&#39;refined_position&#39;, np.float32)])</span>
+<span class="sd">        np.array:</span>
+<span class="sd">            Numpy array with all particle positions on the form `np.array((nParticles,), dtype=[(&#39;frame_index&#39;, np.int16),</span>
+<span class="sd">            (&#39;time&#39;, np.float32),(&#39;integer_position&#39;, np.int16), (&#39;refined_position&#39;, np.float32)])`</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particle_positions</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        type: np.array</span>
-<span class="sd">            The corresponding time for each frame.</span>
+<span class="sd">        np.array:</span>
+<span class="sd">            The time for each frame.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time</span>
 
-    <span class="k">def</span> <span class="nf">get_intensity_at_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
-        <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_index_of_nearest</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_averaged_intensity</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+<div class="viewcode-block" id="ParticleTracker.get_frame_at_time"><a class="viewcode-back" href="../../../usage/ParticleTracker.html#particle_tracker_one_d.ParticleTracker.get_frame_at_time">[docs]</a>    <span class="k">def</span> <span class="nf">get_frame_at_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        time: float</span>
+<span class="sd">            Time of the frame which you want to get.</span>
 
-    <span class="k">def</span> <span class="nf">plot_averaged_intensity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            np.array</span>
+<span class="sd">                Returns the frame which corresponds to the input time.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_index_of_nearest</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_averaged_intensity</span><span class="p">[</span><span class="n">index</span><span class="p">]</span></div>
+
+    <span class="k">def</span> <span class="nf">plot_all_frames</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">()</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_averaged_intensity</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">ax</span>
 
-    <span class="k">def</span> <span class="nf">plot_intensity_at_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="n">intensity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_intensity_at_time</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">plot_frame_at_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">intensity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_frame_at_time</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">()</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">intensity</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">ax</span>
 
-    <span class="k">def</span> <span class="nf">plot_intensity_of_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frame_nr</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">plot_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frame_nr</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="n">intensity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_averaged_intensity</span><span class="p">[</span><span class="n">frame_nr</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">()</span>
