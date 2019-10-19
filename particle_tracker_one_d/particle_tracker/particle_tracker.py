@@ -31,7 +31,8 @@ class ParticleTracker:
         self._trajectories = []
         self._association_matrix = {}
         self._cost_matrix = {}
-        self._particle_positions = np.empty(1, dtype=[('frame_index', np.int16), ('time', np.float32), ('integer_position', np.int16), ('refined_position', np.float32)])
+        self._particle_positions = np.empty(1, dtype=[('frame_index', np.int16), ('time', np.float32),
+                                                      ('integer_position', np.int16), ('refined_position', np.float32)])
         self._update_averaged_intensity()
         self._update_particle_positions()
         self._update_association_matrix()
@@ -40,7 +41,8 @@ class ParticleTracker:
     @property
     def frames(self):
         """
-        The frames which the particle tracker tries to find trajectories in. If the property boxcar_width!=0 it will return the smoothed frames.
+        type: np.array
+            The frames which the particle tracker tries to find trajectories in. If the property boxcar_width!=0 it will return the smoothed frames.
         """
         return self._averaged_intensity
 
@@ -69,8 +71,9 @@ class ParticleTracker:
     @property
     def integration_radius_of_intensity_peaks(self):
         """
-        Number of pixels used when integrating the intensity peaks. No particles closer than twice this value will be found. If two peaks are found within twice this value,
-        the one with highest intensity moment will be kept.
+        type: int
+            Number of pixels used when integrating the intensity peaks. No particles closer than twice this value will be found. If two peaks are found within twice this value,
+            the one with highest intensity moment will be kept.
         """
         return self._integration_radius_of_intensity_peaks
 
@@ -85,7 +88,8 @@ class ParticleTracker:
     @property
     def feature_point_threshold(self):
         """
-        Threshold for finding intensity peaks. Local maximas below this threshold will not be considered as particles.
+        type: float, 0<x<1
+            Threshold for finding intensity peaks. Local maximas below this threshold will not be considered as particles.
         """
         return self._feature_point_threshold
 
@@ -105,14 +109,19 @@ class ParticleTracker:
     def particle_discrimination_threshold(self, threshold):
         if not threshold == self._particle_discrimination_threshold:
             self._particle_discrimination_threshold = threshold
-            # self._discriminate_particles
+            self._update_particle_positions()
 
     @property
     def maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles(self):
+        """
+        type: int
+            Number of frames a particle can be invisible and still be linked in a trajectory.
+        """
         return self._maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles
 
     @maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles.setter
-    def maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles(self, number_of_frames):
+    def maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles(self,
+                                                                                                 number_of_frames):
         if not number_of_frames == self._maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles:
             self._maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles = number_of_frames
             self._update_association_matrix()
@@ -120,6 +129,10 @@ class ParticleTracker:
 
     @property
     def maximum_distance_a_particle_can_travel_between_frames(self):
+        """
+        type: int
+            Max number of pixels a particle can travel between two consecutive frames.
+        """
         return self._maximum_distance_a_particle_can_travel_between_frames
 
     @maximum_distance_a_particle_can_travel_between_frames.setter
@@ -131,14 +144,27 @@ class ParticleTracker:
 
     @property
     def trajectories(self):
+        """
+        type: list
+        Returns a list with all found trajectories of type class: Trajectory.
+        """
         return self._trajectories
 
     @property
     def particle_positions(self):
+        """
+        type: np.array
+            Numpy array with all particle positions on the form np.array((nParticles,), dtype=[('frame_index', np.int16),
+            ('time', np.float32),('integer_position', np.int16), ('refined_position', np.float32)])
+        """
         return self._particle_positions
 
     @property
     def time(self):
+        """
+        type: np.array
+            The corresponding time for each frame.
+        """
         return self._time
 
     def get_intensity_at_time(self, time):
@@ -204,12 +230,14 @@ class ParticleTracker:
         times = []
         integer_positions = []
         for row_index, row_intensity in enumerate(self._averaged_intensity):
-            indexes_of_local_maximas = self._find_indexes_of_local_maximas_with_intensity_higher_than_threshold(row_intensity)
+            indexes_of_local_maximas = self._find_indexes_of_local_maximas_with_intensity_higher_than_threshold(
+                row_intensity)
             integer_positions += indexes_of_local_maximas
             frame_indexes += [row_index for index in indexes_of_local_maximas]
             times += [self._time[row_index] for index in indexes_of_local_maximas]
         self._particle_positions = np.empty((len(frame_indexes),),
-                                            dtype=[('frame_index', np.int16), ('time', np.float32), ('integer_position', np.int16), ('refined_position', np.float32)])
+                                            dtype=[('frame_index', np.int16), ('time', np.float32),
+                                                   ('integer_position', np.int16), ('refined_position', np.float32)])
         self._particle_positions['frame_index'] = frame_indexes
         self._particle_positions['time'] = times
         self._particle_positions['integer_position'] = integer_positions
@@ -234,11 +262,13 @@ class ParticleTracker:
             return 0
         if particle_position['integer_position'] <= self.integration_radius_of_intensity_peaks:
             width = particle_position['integer_position']
-        elif particle_position['integer_position'] >= self._averaged_intensity.shape[1] - self.integration_radius_of_intensity_peaks:
+        elif particle_position['integer_position'] >= self._averaged_intensity.shape[
+            1] - self.integration_radius_of_intensity_peaks:
             width = self._averaged_intensity.shape[1] - particle_position['integer_position']
         else:
             width = self._integration_radius_of_intensity_peaks
-        intensity = self._averaged_intensity[particle_position[0], particle_position['integer_position'] - width:particle_position['integer_position'] + width]
+        intensity = self._averaged_intensity[particle_position[0],
+                    particle_position['integer_position'] - width:particle_position['integer_position'] + width]
         return particle_position['integer_position'] + self._calculate_center_of_mass(intensity) - width
 
     def _perform_particle_discrimination(self):
@@ -249,24 +279,29 @@ class ParticleTracker:
         if self.particle_discrimination_threshold != 0:
             index_of_particles_to_be_kept = []
             for row_index, position in enumerate(self._particle_positions):
-                if self._calculate_discrimination_score_for_particle(position) >= self.particle_discrimination_threshold:
+                if self._calculate_discrimination_score_for_particle(
+                        position) >= self.particle_discrimination_threshold:
                     index_of_particles_to_be_kept.append(row_index)
             self._particle_positions = self._particle_positions[index_of_particles_to_be_kept]
 
     def _calculate_discrimination_score_for_particle(self, particle_position):
         score = 0
-        particle_positions_of_particles_in_same_frame = self._get_particle_positions_in_frame(frame_index=particle_position['frame_index'])
+        particle_positions_of_particles_in_same_frame = self._get_particle_positions_in_frame(
+            frame_index=particle_position['frame_index'])
         particle_positions_of_particles_in_same_frame = particle_positions_of_particles_in_same_frame[
-            np.where(particle_positions_of_particles_in_same_frame['integer_position'] != particle_position['integer_position'])]
+            np.where(particle_positions_of_particles_in_same_frame['integer_position'] != particle_position[
+                'integer_position'])]
         for index, position in enumerate(particle_positions_of_particles_in_same_frame):
             score += self._calculate_gaussian_moment(particle_position, position)
         return score
 
     def _calculate_gaussian_moment(self, particle_position_1, particle_position_2):
         return 1 / (2 * np.pi * self._sigma_0 * self._sigma_2 * self._particle_positions.shape[0]) * \
-               np.exp(-(self._calculate_first_order_intensity_moment(particle_position_1) - self._calculate_first_order_intensity_moment(particle_position_2)) ** 2 / (
-                       2 * self._sigma_0)
-                      - (self._calculate_second_order_intensity_moment(particle_position_1) - self._calculate_second_order_intensity_moment(particle_position_2)) ** 2 / (
+               np.exp(-(self._calculate_first_order_intensity_moment(
+                   particle_position_1) - self._calculate_first_order_intensity_moment(particle_position_2)) ** 2 / (
+                              2 * self._sigma_0)
+                      - (self._calculate_second_order_intensity_moment(
+                   particle_position_1) - self._calculate_second_order_intensity_moment(particle_position_2)) ** 2 / (
                               2 * self._sigma_2))
 
     def _calculate_second_order_intensity_moment(self, particle_position):
@@ -279,7 +314,9 @@ class ParticleTracker:
         else:
             w = self.integration_radius_of_intensity_peaks
         return np.sum(
-            np.arange(-w, w) ** 2 * self.frames[particle_position['frame_index'], particle_position['integer_position'] - w: particle_position['integer_position'] + w]) / \
+            np.arange(-w, w) ** 2 * self.frames[particle_position['frame_index'],
+                                    particle_position['integer_position'] - w: particle_position[
+                                                                                   'integer_position'] + w]) / \
                self._calculate_first_order_intensity_moment(particle_position)
 
     def _calculate_first_order_intensity_moment(self, particle_position):
@@ -291,7 +328,8 @@ class ParticleTracker:
             w = self._frames.shape[1] - particle_position['integer_position']
         else:
             w = self.integration_radius_of_intensity_peaks
-        return np.sum(self.frames[particle_position['frame_index'], particle_position['integer_position'] - w: particle_position['integer_position'] + w])
+        return np.sum(self.frames[particle_position['frame_index'],
+                      particle_position['integer_position'] - w: particle_position['integer_position'] + w])
 
     def _get_particle_positions_in_frame(self, frame_index):
         return self._particle_positions[np.where(self._particle_positions['frame_index'] == frame_index)]
@@ -311,46 +349,55 @@ class ParticleTracker:
 
     def _particles_are_too_close(self, position1, position2):
         return position1['frame_index'] == position2['frame_index'] and (
-                np.abs(position2['integer_position'] - position1['integer_position']) < self.integration_radius_of_intensity_peaks)
+                np.abs(position2['integer_position'] - position1[
+                    'integer_position']) < self.integration_radius_of_intensity_peaks)
 
     def _initialise_empty_association_matrix(self):
         self._association_matrix = {}
         for index, t in enumerate(self._time):
             number_of_particles_at_t = np.count_nonzero(self._particle_positions['frame_index'] == index)
             self._association_matrix[str(index)] = {}
-            for r in range(1, self.maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles + 1):
+            for r in range(1,
+                           self.maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles + 1):
                 if r + index < len(self._time):
-                    number_of_particles_at_t_plus_r = np.count_nonzero(self._particle_positions['frame_index'] == index + r)
+                    number_of_particles_at_t_plus_r = np.count_nonzero(
+                        self._particle_positions['frame_index'] == index + r)
                     self._association_matrix[str(index)][str(r)] = np.zeros(
                         (number_of_particles_at_t + 1, number_of_particles_at_t_plus_r + 1), dtype=np.int16)
 
     def _create_initial_links_in_association_matrix(self):
         for frame_index, frame_key in enumerate(self._association_matrix.keys()):
             for future_frame_index, future_frame_key in enumerate(self._association_matrix[frame_key].keys()):
-                self._association_matrix[frame_key][future_frame_key] = self._initialise_link_matrix(self._association_matrix[frame_key][future_frame_key], frame_key,
-                                                                                                     future_frame_key)
+                self._association_matrix[frame_key][future_frame_key] = self._initialise_link_matrix(
+                    self._association_matrix[frame_key][future_frame_key], frame_key,
+                    future_frame_key)
 
     def _initialise_empty_cost_matrix(self):
         self._cost_matrix = {}
         for frame_index, frame_key in enumerate(self._association_matrix.keys()):
             self._cost_matrix[frame_key] = {}
             for future_frame_index, future_frame_key in enumerate(self._association_matrix[frame_key].keys()):
-                self._cost_matrix[frame_key][future_frame_key] = np.zeros(self._association_matrix[frame_key][future_frame_key].shape, dtype=np.float32)
+                self._cost_matrix[frame_key][future_frame_key] = np.zeros(
+                    self._association_matrix[frame_key][future_frame_key].shape, dtype=np.float32)
 
     def _calculate_cost_matrix(self):
         for frame_index, frame_key in enumerate(self._cost_matrix.keys()):
             for future_frame_index, future_frame_key in enumerate(self._cost_matrix[frame_key].keys()):
-                cost_for_association_with_dummy_particle = self._calculate_cost_for_association_with_dummy_particle(future_frame_index + 1)
+                cost_for_association_with_dummy_particle = self._calculate_cost_for_association_with_dummy_particle(
+                    future_frame_index + 1)
                 particle_positions_in_current_frame = self._get_particle_positions_in_frame(frame_index)
-                particle_positions_in_future_frame = self._get_particle_positions_in_frame(frame_index + future_frame_index + 1)
+                particle_positions_in_future_frame = self._get_particle_positions_in_frame(
+                    frame_index + future_frame_index + 1)
                 for row_index, row in enumerate(self._cost_matrix[frame_key][future_frame_key]):
                     for col_index, value in enumerate(self._cost_matrix[frame_key][future_frame_key][row_index]):
                         if row_index == 0 or col_index == 0:
-                            self._cost_matrix[frame_key][future_frame_key][row_index][col_index] = cost_for_association_with_dummy_particle
+                            self._cost_matrix[frame_key][future_frame_key][row_index][
+                                col_index] = cost_for_association_with_dummy_particle
                         else:
                             position1 = particle_positions_in_current_frame[row_index - 1]
                             position2 = particle_positions_in_future_frame[col_index - 1]
-                            self._cost_matrix[frame_key][future_frame_key][row_index][col_index] = self._calculate_linking_cost(position1, position2)
+                            self._cost_matrix[frame_key][future_frame_key][row_index][
+                                col_index] = self._calculate_linking_cost(position1, position2)
 
     def _initialise_link_matrix(self, link_matrix, frame_key, future_frame_key):
         for row_index, costs in enumerate(self._cost_matrix[frame_key][future_frame_key]):
@@ -363,8 +410,10 @@ class ParticleTracker:
     def _calculate_linking_cost(self, position1, position2):
         return (
                 (position1['refined_position'] - position2['refined_position']) ** 2 +
-                (self._calculate_first_order_intensity_moment(position1) - self._calculate_first_order_intensity_moment(position2)) ** 2 +
-                (self._calculate_second_order_intensity_moment(position1) - self._calculate_second_order_intensity_moment(position2)) ** 2
+                (self._calculate_first_order_intensity_moment(position1) - self._calculate_first_order_intensity_moment(
+                    position2)) ** 2 +
+                (self._calculate_second_order_intensity_moment(
+                    position1) - self._calculate_second_order_intensity_moment(position2)) ** 2
         )
 
     def _calculate_cost_for_association_with_dummy_particle(self, future_frame_index):
@@ -374,7 +423,9 @@ class ParticleTracker:
         for frame_index, frame_key in enumerate(self._association_matrix.keys()):
             for future_frame_index, future_frame_key in enumerate(self._association_matrix[frame_key].keys()):
                 link_matrix = self._association_matrix[frame_key][future_frame_key]
-                self._association_matrix[frame_key][future_frame_key] = self._optimise_link_matrix(link_matrix, frame_key, future_frame_key)
+                self._association_matrix[frame_key][future_frame_key] = self._optimise_link_matrix(link_matrix,
+                                                                                                   frame_key,
+                                                                                                   future_frame_key)
         return
 
     def _optimise_link_matrix(self, link_matrix, frame_key, future_frame_key):
@@ -388,9 +439,12 @@ class ParticleTracker:
                             introduction_cost = self._cost_matrix[frame_key][future_frame_key][row_index][col_index]
                             row_index_with_link = np.where(link_matrix[:, col_index] == 1)[0][0]
                             col_index_with_link = np.where(link_matrix[row_index, :] == 1)[0][0]
-                            reduction_cost_row = self._cost_matrix[frame_key][future_frame_key][row_index_with_link][col_index]
-                            reduction_cost_col = self._cost_matrix[frame_key][future_frame_key][row_index][col_index_with_link]
-                            introduction_row_col = self._cost_matrix[frame_key][future_frame_key][row_index_with_link][col_index_with_link]
+                            reduction_cost_row = self._cost_matrix[frame_key][future_frame_key][row_index_with_link][
+                                col_index]
+                            reduction_cost_col = self._cost_matrix[frame_key][future_frame_key][row_index][
+                                col_index_with_link]
+                            introduction_row_col = self._cost_matrix[frame_key][future_frame_key][row_index_with_link][
+                                col_index_with_link]
                             total_cost = introduction_cost - reduction_cost_row - reduction_cost_col + introduction_row_col
 
                             if total_cost < 0:
@@ -403,7 +457,8 @@ class ParticleTracker:
                         elif row_index == 0 and col_index > 0:
                             introduction_cost = self._cost_matrix[frame_key][future_frame_key][row_index][col_index]
                             row_index_with_link = np.where(link_matrix[:, col_index] == 1)[0][0]
-                            reduction_cost_row = self._cost_matrix[frame_key][future_frame_key][row_index_with_link][col_index]
+                            reduction_cost_row = self._cost_matrix[frame_key][future_frame_key][row_index_with_link][
+                                col_index]
                             introduction_row = self._cost_matrix[frame_key][future_frame_key][row_index_with_link][0]
                             total_cost = introduction_cost - reduction_cost_row + introduction_row
 
@@ -416,7 +471,8 @@ class ParticleTracker:
                         elif row_index > 0 and col_index == 0:
                             introduction_cost = self._cost_matrix[frame_key][future_frame_key][row_index][col_index]
                             col_index_with_link = np.where(link_matrix[row_index][:] == 1)[0][0]
-                            reduction_cost_col = self._cost_matrix[frame_key][future_frame_key][row_index][col_index_with_link]
+                            reduction_cost_col = self._cost_matrix[frame_key][future_frame_key][row_index][
+                                col_index_with_link]
                             introduction_col = self._cost_matrix[frame_key][future_frame_key][0][col_index_with_link]
                             total_cost = introduction_cost - reduction_cost_col + introduction_col
 
@@ -448,8 +504,10 @@ class ParticleTracker:
             points_in_same_frame_as_point = self._get_particle_positions_in_frame(point['frame_index'])
             points_in_same_frame_as_future_point = self._get_particle_positions_in_frame(future_point['frame_index'])
 
-            index_of_point = np.where(points_in_same_frame_as_point['integer_position'] == point['integer_position'])[0][0]
-            index_of_future_point = np.where(points_in_same_frame_as_future_point['integer_position'] == future_point['integer_position'])[0][0]
+            index_of_point = \
+            np.where(points_in_same_frame_as_point['integer_position'] == point['integer_position'])[0][0]
+            index_of_future_point = \
+            np.where(points_in_same_frame_as_future_point['integer_position'] == future_point['integer_position'])[0][0]
             return int(link_matrix[index_of_point + 1][index_of_future_point + 1]) == 1
         else:
             return False

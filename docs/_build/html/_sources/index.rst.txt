@@ -18,6 +18,4 @@ Welcome to particle-tracker-one-d's documentation!
 Indices and tables
 ==================
 
-* :ref:`genindex`
-* :ref:`modindex`
 * :ref:`search`
