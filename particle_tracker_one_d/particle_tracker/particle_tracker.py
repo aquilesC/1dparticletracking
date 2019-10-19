@@ -53,7 +53,7 @@ class ParticleTracker:
     @property
     def frames(self):
         """
-        type: np.array
+        np.array:
             The frames which the particle tracker tries to find trajectories in. If the property boxcar_width!=0 it will return the smoothed frames.
         """
         return self._averaged_intensity
@@ -68,7 +68,10 @@ class ParticleTracker:
 
     @property
     def boxcar_width(self):
-        """Number of values used in the boxcar averaging of the frames."""
+        """
+        int:
+            Number of values used in the boxcar averaging of the frames.
+        """
         return self._boxcar_width
 
     @boxcar_width.setter
@@ -83,7 +86,7 @@ class ParticleTracker:
     @property
     def integration_radius_of_intensity_peaks(self):
         """
-        type: int
+        int:
             Number of pixels used when integrating the intensity peaks. No particles closer than twice this value will be found. If two peaks are found within twice this value,
             the one with highest intensity moment will be kept.
         """
@@ -100,8 +103,9 @@ class ParticleTracker:
     @property
     def feature_point_threshold(self):
         """
-        :float
-            Threshold for finding intensity peaks. Local maximas below this threshold will not be considered as particles.
+        float:
+            Defines the threshold value for finding intensity peaks. Local maximas below this threshold will not be
+            considered as particles. Should be a value between 0 and 1.
         """
         return self._feature_point_threshold
 
@@ -126,7 +130,7 @@ class ParticleTracker:
     @property
     def maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles(self):
         """
-        type: int
+        int:
             Number of frames a particle can be invisible and still be linked in a trajectory.
         """
         return self._maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles
@@ -142,7 +146,7 @@ class ParticleTracker:
     @property
     def maximum_distance_a_particle_can_travel_between_frames(self):
         """
-        type: int
+        int:
             Max number of pixels a particle can travel between two consecutive frames.
         """
         return self._maximum_distance_a_particle_can_travel_between_frames
@@ -157,27 +161,25 @@ class ParticleTracker:
     @property
     def trajectories(self):
         """
-        type: list
-        Returns a list with all found trajectories of type class: Trajectory.
+        list:
+            Returns a list with all found trajectories of type class: Trajectory.
         """
         return self._trajectories
 
     @property
     def particle_positions(self):
         """
-        Returns
-        -------
-        np.array
-            Numpy array with all particle positions on the form np.array((nParticles,), dtype=[('frame_index', np.int16),
-            ('time', np.float32),('integer_position', np.int16), ('refined_position', np.float32)])
+        np.array:
+            Numpy array with all particle positions on the form `np.array((nParticles,), dtype=[('frame_index', np.int16),
+            ('time', np.float32),('integer_position', np.int16), ('refined_position', np.float32)])`
         """
         return self._particle_positions
 
     @property
     def time(self):
         """
-        type: np.array
-            The corresponding time for each frame.
+        np.array:
+            The time for each frame.
         """
         return self._time
 
