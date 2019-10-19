@@ -16,6 +16,18 @@ class ParticleTracker:
         frames.
     time: np.array
         The corresponding time of each frame.
+
+    Attributes
+    ----------
+    frames
+    time
+    boxcar_width
+    integration_radius_of_intensity_peaks
+    feature_point_threshold
+    particle_discrimination_threshold
+    maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles
+    maximum_distance_a_particle_can_travel_between_frames
+    particle_positions
     """
 
     def __init__(self, frames, time):
@@ -88,7 +100,7 @@ class ParticleTracker:
     @property
     def feature_point_threshold(self):
         """
-        type: float, 0<x<1
+        :float
             Threshold for finding intensity peaks. Local maximas below this threshold will not be considered as particles.
         """
         return self._feature_point_threshold
@@ -153,7 +165,9 @@ class ParticleTracker:
     @property
     def particle_positions(self):
         """
-        type: np.array
+        Returns
+        -------
+        np.array
             Numpy array with all particle positions on the form np.array((nParticles,), dtype=[('frame_index', np.int16),
             ('time', np.float32),('integer_position', np.int16), ('refined_position', np.float32)])
         """
@@ -505,9 +519,9 @@ class ParticleTracker:
             points_in_same_frame_as_future_point = self._get_particle_positions_in_frame(future_point['frame_index'])
 
             index_of_point = \
-            np.where(points_in_same_frame_as_point['integer_position'] == point['integer_position'])[0][0]
+                np.where(points_in_same_frame_as_point['integer_position'] == point['integer_position'])[0][0]
             index_of_future_point = \
-            np.where(points_in_same_frame_as_future_point['integer_position'] == future_point['integer_position'])[0][0]
+                np.where(points_in_same_frame_as_future_point['integer_position'] == future_point['integer_position'])[0][0]
             return int(link_matrix[index_of_point + 1][index_of_future_point + 1]) == 1
         else:
             return False

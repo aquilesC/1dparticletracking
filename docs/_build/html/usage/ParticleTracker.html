@@ -182,6 +182,17 @@ frames.</p>
 </tbody>
 </table>
 <p class="rubric">Attributes</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="79%" />
+<col width="21%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>particle_discrimination_threshold</strong></td>
+<td>&#160;</td>
+</tr>
+</tbody>
+</table>
 <p class="rubric">Methods</p>
 <dl class="attribute">
 <dt id="particle_tracker_one_d.ParticleTracker.boxcar_width">
@@ -193,7 +204,7 @@ frames.</p>
 <dt id="particle_tracker_one_d.ParticleTracker.feature_point_threshold">
 <code class="descname">feature_point_threshold</code><a class="headerlink" href="#particle_tracker_one_d.ParticleTracker.feature_point_threshold" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="docutils">
-<dt>type: float, 0&lt;x&lt;1</dt>
+<dt>:float</dt>
 <dd>Threshold for finding intensity peaks. Local maximas below this threshold will not be considered as particles.</dd>
 </dl>
 </dd></dl>
@@ -238,11 +249,19 @@ the one with highest intensity moment will be kept.</dd>
 <dl class="attribute">
 <dt id="particle_tracker_one_d.ParticleTracker.particle_positions">
 <code class="descname">particle_positions</code><a class="headerlink" href="#particle_tracker_one_d.ParticleTracker.particle_positions" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="docutils">
-<dt>type: np.array</dt>
-<dd>Numpy array with all particle positions on the form np.array((nParticles,), dtype=[(‘frame_index’, np.int16),
-(‘time’, np.float32),(‘integer_position’, np.int16), (‘refined_position’, np.float32)])</dd>
-</dl>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">np.array</p>
+<blockquote class="last">
+<div><p>Numpy array with all particle positions on the form np.array((nParticles,), dtype=[(‘frame_index’, np.int16),
+(‘time’, np.float32),(‘integer_position’, np.int16), (‘refined_position’, np.float32)])</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
