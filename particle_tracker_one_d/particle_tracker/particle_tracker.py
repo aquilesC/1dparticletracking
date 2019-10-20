@@ -12,7 +12,7 @@ class ParticleTracker:
     ----------
     frames: np.array
         The frames in which trajectories are to be found. The shape of the np.array should be (nFrames,xPixels). The intensity of the frames should be normalised according to
-        :math:`I_n = (I-I_{min})/(I-I_{max})`, where :math:`I` is the intensity of the frames, :math:`I_{min}`, :math:`I_{max}` are the global intensity minima and maxima of the
+        :math:`I_n = (I-I_{min})/(I_{max}-I_{min})`, where :math:`I` is the intensity of the frames, :math:`I_{min}`, :math:`I_{max}` are the global intensity minima and maxima of the
         frames.
     time: np.array
         The corresponding time of each frame.
@@ -119,6 +119,10 @@ class ParticleTracker:
 
     @property
     def particle_discrimination_threshold(self):
+        """
+        float:
+            TODO
+        """
         return self._particle_discrimination_threshold
 
     @particle_discrimination_threshold.setter
@@ -597,7 +601,7 @@ class ParticleTracker:
     def normalise_intensity(frames):
         """
         frames: np.array
-            Normalises the intensity of the frames according to :math:`I_n = (I-I_{min})/(I_{max})`, where :math:`I` is
+            Normalises the intensity of the frames according to :math:`I_n = (I-I_{min})/(I_{max}-I_{min})`, where :math:`I` is
             the intensity of the frames, :math:`I_{min}`, :math:`I_{max}` are the global intensity minima and maxima of
             the frames.
 
