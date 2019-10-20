@@ -4,4 +4,4 @@
 *.pyc
 *.ipynb_checkpoints/
 *.DS_Store
-.docs/_build
+/docs/_build/*

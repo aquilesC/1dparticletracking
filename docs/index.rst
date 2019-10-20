@@ -6,9 +6,14 @@
 Welcome to particle-tracker-one-d's documentation!
 ==================================================
 
-This software was developed to track particles in Kymographs, eg. intensity graphs which change in time. It's uses
+This software was developed to track particles in Kymographs, eg. intensity graphs. It's uses
 inspiration from
-`Sbalzarini, Ivo F., and Petros Koumoutsakos., Journal of structural biology 151.2 (2005): 182-195.`__
+`Sbalzarini, Ivo F., and Petros Koumoutsakos., Journal of structural biology 151.2 (2005): 182-195`__
+to track feature points. These feature points are then linked together creating trajectories by minimising a cost
+function.
+
+From the trajectories one can easily plot the velocity auto correlation function and calculate the diffusion
+coefficient from either the mean squared displacement function or by a covariance based estimator.
 
 __ https://www.sciencedirect.com/science/article/pii/S1047847705001267
 
