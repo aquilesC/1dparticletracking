@@ -3,6 +3,21 @@ import matplotlib.pyplot as plt
 
 
 class Trajectory:
+    """
+    Object that describes a trajectory. With functions for checking if the trajectory describes real diffusion,
+    convenient plotting and calculations of diffusion coefficients.
+
+    Parameters
+    ----------
+    pixel_width: float
+        Defines the length one pixel corresponds to. This value will be used when calculating diffusion
+        coefficients. Default is 1.
+
+    Attributes
+    ----------
+    pixel_width
+    particle_positions
+    """
 
     def __init__(self, pixel_width=1):
         self._particle_positions = np.empty((0,), dtype=[('frame_index', np.int16), ('time', np.float32), ('integer_position', np.int16), ('refined_position', np.float32)])
@@ -35,6 +50,8 @@ class Trajectory:
 
     def plot_trajectory(self, ax=None, **kwargs):
         """
+        Plots the trajectory using the frame index and the refined particle position in pixels.
+
         ax: matplotlib axes instance
             The axes which you want the frames to plotted on. If none is provided a new instance will be created.
         **kwargs:
@@ -52,6 +69,9 @@ class Trajectory:
 
     def plot_velocity_auto_correlation(self, ax=None, **kwargs):
         """
+        Plots the particle velocity auto correlation function which can be used for examining if the trajectory
+        describes free diffusion.
+
         ax: matplotlib axes instance
             The axes which you want the frames to plotted on. If none is provided a new instance will be created.
         **kwargs:
@@ -143,16 +163,38 @@ class Trajectory:
         return polynomial_coefficients, error_estimate
 
     def calculate_diffusion_coefficient_from_velocity(self):
+        """
+        TODO: remove
+        """
         diffusion_coefficient_velocity = 0
         for index, velocity in enumerate(self._velocities):
             diffusion_coefficient_velocity += velocity ** 2 * self._time_steps[index] / 4
         return diffusion_coefficient_velocity / len(self._velocities)
 
     def calculate_diffusion_coefficient_from_mean_square_displacement_function(self):
+        """
+        Fits a straight line to the mean square displacement function and calculates the diffusion coefficient from the
+        gradient of the line. The mean squared displacement of the particle position is proportional to :math:`2Dt`
+        where :math:`D` is the diffusion coefficient and :math:`t` is the time.
+
+        Returns
+        -------
+            diffusion_coefficient: float
+                todo
+            error: float
+                todo
+        """
         polynomial_coefficients, error_estimate = self._fit_straight_line_to_mean_square_displacement_function()
         return polynomial_coefficients[0] / 2, error_estimate[0] / 2
 
     def calculate_diffusion_coefficient_using_covariance_based_estimator(self):
+        """
+        Unbiased estimator of the diffusion coefficient. More info at `https://www.nature.com/articles/nmeth.2904`
+
+        Returns
+        -------
+            diffusion_coefficient: float
+        """
         displacements = []
         time_step = self._calculate_minimum_time_step()
         for index, first_position in enumerate(self._particle_positions[:-1]):
@@ -170,7 +212,21 @@ class Trajectory:
                 return self._particle_positions[index + 1]['time'] - first_position['time']
 
     def calculate_number_of_missing_data_points(self):
-        return (self._particle_positions['frame_index'][-1] - self._particle_positions['frame_index'][0]) - self._particle_positions['frame_index'].shape[0] + 1
+        """
+        Calculates the number of frames which the particle is not found in.
+
+        Returns
+        -------
+            number: int
+        """
+        return int((self._particle_positions['frame_index'][-1] - self._particle_positions['frame_index'][0]) - self._particle_positions['frame_index'].shape[0] + 1)
 
     def calculate_number_of_particle_positions_with_single_time_step_between(self):
-        return np.sum([diff == 1 for diff in np.diff(self._particle_positions['frame_index'])])
+        """
+        Calculates how many times in the trajectory the particle position in found in consecutive frames..
+
+        Returns
+        -------
+            number: int
+        """
+        return int(np.sum([diff == 1 for diff in np.diff(self._particle_positions['frame_index'])]))
