@@ -9,8 +9,8 @@ Welcome to particle-tracker-one-d's documentation!
 This software was developed to track particles in Kymographs, eg. intensity graphs. It is based on the article
 `Sbalzarini, Ivo F., and Petros Koumoutsakos., Journal of structural biology 151.2 (2005): 182-195`__
 to track feature points but with the exception, that in this implementation the only noise filtering is the boxcar
-averaging. The feature that are found are linked together by minimising a cost function and results in several
-trajectories.
+averaging. The feature points that are found are linked together by minimising a cost function and results in one or
+more trajectories.
 
 From the trajectories one can easily plot the velocity auto correlation function and calculate the diffusion
 coefficient from either the mean squared displacement function or by a covariance based estimator.
