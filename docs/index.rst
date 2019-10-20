@@ -6,6 +6,12 @@
 Welcome to particle-tracker-one-d's documentation!
 ==================================================
 
+This software was developed to track particles in Kymographs, eg. intensity graphs which change in time. It's uses
+inspiration from
+`Sbalzarini, Ivo F., and Petros Koumoutsakos., Journal of structural biology 151.2 (2005): 182-195.`__
+
+__ https://www.sciencedirect.com/science/article/pii/S1047847705001267
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:

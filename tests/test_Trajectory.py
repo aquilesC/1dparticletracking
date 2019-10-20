@@ -118,7 +118,7 @@ class TrajectoryTester(unittest.TestCase):
         np.testing.assert_array_almost_equal(trajectory._velocities, self.SimpleParticlePositionsExample.velocities)
 
     def test_position_step(self):
-        trajectory = Trajectory(position_step=self.ChangingPositionStepExample.position_step)
+        trajectory = Trajectory(pixel_width=self.ChangingPositionStepExample.position_step)
         for position in self.ChangingPositionStepExample.particle_positions:
             trajectory._append_position(position)
         trajectory._calculate_particle_velocities()
@@ -145,7 +145,7 @@ class TrajectoryTester(unittest.TestCase):
         trajectory = Trajectory()
         for position in self.CalculateMeanSquareDisplacementWithTimeAndPositionStepExample.particle_positions:
             trajectory._append_position(position)
-        trajectory.position_step = self.CalculateMeanSquareDisplacementWithTimeAndPositionStepExample.position_step
+        trajectory.pixel_width = self.CalculateMeanSquareDisplacementWithTimeAndPositionStepExample.position_step
         trajectory._calculate_particle_velocities()
         time, mean_square_displacement = trajectory.calculate_mean_square_displacement_function()
         np.testing.assert_array_almost_equal(time, self.CalculateMeanSquareDisplacementWithTimeAndPositionStepExample.mean_square_displacement_time)
@@ -174,7 +174,7 @@ class TrajectoryTester(unittest.TestCase):
         trajectory = Trajectory()
         for position in self.DiffusionCoefficientFromCovarianceExample.particle_positions:
             trajectory._append_position(position)
-        trajectory.position_step = self.DiffusionCoefficientFromCovarianceExample.position_step
+        trajectory.pixel_width = self.DiffusionCoefficientFromCovarianceExample.position_step
         diffusion_coefficient = trajectory.calculate_diffusion_coefficient_using_covariance_based_estimator()
         self.assertAlmostEqual(diffusion_coefficient, self.DiffusionCoefficientFromCovarianceExample.expected_diffusion_coefficient)
 

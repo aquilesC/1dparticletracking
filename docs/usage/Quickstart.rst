@@ -1,9 +1,10 @@
 Quick start
 ===========
 
-This software was developed to track particles in Kymographs, eg. intensity graphs which change in time.
+1. Start by finding trajectories
 
-code-block:: python
+.. code-block:: python
+
     import matplotlib.pyplot as plt
     import numpy as np
     from particle_tracker_one_d import ParticleTracker
@@ -35,3 +36,24 @@ code-block:: python
     # Plot all the trajectories
     for t in pt.trajectories:
         t.plot_trajectory(ax=ax, marker='o')
+
+
+2. Analyse one of the trajectories
+
+.. code-block:: python
+
+    # Select one of the trajectories
+    trajectory = pt.trajectories[0]
+
+    # Set the pixel width
+    trajectory.pixel_width = 5e-4
+
+    # Create a figure
+    plt.figure(figsize=(10,10))
+    ax=plt.axes()
+
+    # Plot the velocity auto correlation function to make sure particle steps are uncorrelated
+    trajectory.plot_velocity_auto_correlation(ax=ax, aspect='auto')
+
+    # Calculate the diffusion coefficient using a covariance based estimator
+    print(trajectory.calculate_diffusion_coefficient_using_covariance_based_estimator())

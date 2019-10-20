@@ -4,25 +4,25 @@ import matplotlib.pyplot as plt
 
 class Trajectory:
 
-    def __init__(self, position_step=1):
+    def __init__(self, pixel_width=1):
         self._particle_positions = np.empty((0,), dtype=[('frame_index', np.int16), ('time', np.float32), ('integer_position', np.int16), ('refined_position', np.float32)])
         self._velocities = np.empty((0, 0), dtype=np.float32)
         self._time_steps = np.empty((0, 0), dtype=np.int16)
         self._position_steps = np.empty((0, 0), dtype=np.int16)
-        self._position_step = position_step
+        self._pixel_width = pixel_width
 
     @property
-    def position_step(self):
+    def pixel_width(self):
         """
         float:
             Defines the length one pixel corresponds to. This value will be used when calculating diffusion
             coefficients. Default is 1.
         """
-        return self._position_step
+        return self._pixel_width
 
-    @position_step.setter
-    def position_step(self, step):
-        self._position_step = step
+    @pixel_width.setter
+    def pixel_width(self, width):
+        self._pixel_width = width
 
     @property
     def particle_positions(self):
@@ -73,6 +73,7 @@ class Trajectory:
         -------
             time: np.array
                 The time corresponding to the mean squared displacements.
+
             msd: np.array
                 The mean squared displacements of the trajectory.
         """
@@ -96,7 +97,7 @@ class Trajectory:
 
     def _calculate_particle_velocities(self):
         self._time_steps = np.diff(self._particle_positions['time'])
-        self._position_steps = np.diff(self._particle_positions['refined_position'] * self.position_step)
+        self._position_steps = np.diff(self._particle_positions['refined_position'] * self.pixel_width)
         self._velocities = self._position_steps / self._time_steps
 
     @staticmethod
@@ -131,7 +132,7 @@ class Trajectory:
             for second_position in self._particle_positions[index + 1:]:
                 if second_position['frame_index'] - first_position['frame_index'] == step:
                     count += 1
-                    mean_square_displacement += ((second_position['refined_position'] - first_position['refined_position']) * self.position_step) ** 2
+                    mean_square_displacement += ((second_position['refined_position'] - first_position['refined_position']) * self.pixel_width) ** 2
         return mean_square_displacement / count
 
     def _fit_straight_line_to_mean_square_displacement_function(self):
@@ -157,7 +158,7 @@ class Trajectory:
         for index, first_position in enumerate(self._particle_positions[:-1]):
             for second_position in self._particle_positions[index + 1:]:
                 if second_position['frame_index'] - first_position['frame_index'] == 1:
-                    displacements.append((second_position['refined_position'] - first_position['refined_position']) * self.position_step)
+                    displacements.append((second_position['refined_position'] - first_position['refined_position']) * self.pixel_width)
         displacements = np.array(displacements, dtype=np.float32)
         mean_squared_displacements = np.mean(displacements ** 2)
         mean_first_order_correlation = np.mean(displacements[:-1] * displacements[1:])
