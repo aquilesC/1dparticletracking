@@ -107,27 +107,27 @@ class TrajectoryTester(unittest.TestCase):
     def test_append_particle_positions(self):
         trajectory = Trajectory()
         for position in self.SimpleParticlePositionsExample.particle_positions:
-            trajectory.append_position(position)
+            trajectory._append_position(position)
         np.testing.assert_array_equal(trajectory._particle_positions, self.SimpleParticlePositionsExample.particle_positions)
 
     def test_particle_velocities(self):
         trajectory = Trajectory()
         for position in self.SimpleParticlePositionsExample.particle_positions:
-            trajectory.append_position(position)
+            trajectory._append_position(position)
         trajectory._calculate_particle_velocities()
         np.testing.assert_array_almost_equal(trajectory._velocities, self.SimpleParticlePositionsExample.velocities)
 
     def test_position_step(self):
         trajectory = Trajectory(position_step=self.ChangingPositionStepExample.position_step)
         for position in self.ChangingPositionStepExample.particle_positions:
-            trajectory.append_position(position)
+            trajectory._append_position(position)
         trajectory._calculate_particle_velocities()
         np.testing.assert_array_almost_equal(trajectory._velocities, self.ChangingPositionStepExample.velocities)
 
     def test_initialise_dictionary_for_mean_square_displacement_function(self):
         trajectory = Trajectory()
         for position in self.InitialiseMeanSquareDisplacementDictionaryExample.particle_positions:
-            trajectory.append_position(position)
+            trajectory._append_position(position)
         initial_mean_square_displacement_dictionary = trajectory._initialise_dictionary_for_mean_square_displacement_function()
         self.assertEqual(initial_mean_square_displacement_dictionary.keys(),
                          self.InitialiseMeanSquareDisplacementDictionaryExample.initial_mean_square_displacement_dictionary.keys())
@@ -135,7 +135,7 @@ class TrajectoryTester(unittest.TestCase):
     def test_calculate_mean_square_displacement_function(self):
         trajectory = Trajectory()
         for position in self.CalculateMeanSquareDisplacementExample.particle_positions:
-            trajectory.append_position(position)
+            trajectory._append_position(position)
         trajectory._calculate_particle_velocities()
         time, mean_square_displacement = trajectory.calculate_mean_square_displacement_function()
         np.testing.assert_array_equal(time, self.CalculateMeanSquareDisplacementExample.mean_square_displacement_time)
@@ -144,7 +144,7 @@ class TrajectoryTester(unittest.TestCase):
     def test_calculate_mean_square_displacement_function_with_time_and_position_step(self):
         trajectory = Trajectory()
         for position in self.CalculateMeanSquareDisplacementWithTimeAndPositionStepExample.particle_positions:
-            trajectory.append_position(position)
+            trajectory._append_position(position)
         trajectory.position_step = self.CalculateMeanSquareDisplacementWithTimeAndPositionStepExample.position_step
         trajectory._calculate_particle_velocities()
         time, mean_square_displacement = trajectory.calculate_mean_square_displacement_function()
@@ -154,7 +154,7 @@ class TrajectoryTester(unittest.TestCase):
     def test_fit_a_straight_line_to_mean_square_displacement_function(self):
         trajectory = Trajectory()
         for position in self.FitLineToMeanSquareDisplacementFunctionExample.particle_positions:
-            trajectory.append_position(position)
+            trajectory._append_position(position)
         trajectory._calculate_particle_velocities()
         fit_coefficients, error = trajectory._fit_straight_line_to_mean_square_displacement_function()
         self.assertAlmostEqual(fit_coefficients[0], self.FitLineToMeanSquareDisplacementFunctionExample.expected_fit_coefficients[0])
@@ -165,7 +165,7 @@ class TrajectoryTester(unittest.TestCase):
     def test_calculating_diffusion_coefficient_from_mean_square_displacement_function(self):
         trajectory = Trajectory()
         for position in self.CalculateDiffusionCoefficientExample.particle_positions:
-            trajectory.append_position(position)
+            trajectory._append_position(position)
         trajectory._calculate_particle_velocities()
         diffusion_coefficient, error_estimate = trajectory.calculate_diffusion_coefficient_from_mean_square_displacement_function()
         self.assertAlmostEqual(diffusion_coefficient, self.CalculateDiffusionCoefficientExample.expected_diffusion_coefficient)
@@ -173,7 +173,7 @@ class TrajectoryTester(unittest.TestCase):
     def test_calculating_diffusion_coefficient_covariance_based_estimator(self):
         trajectory = Trajectory()
         for position in self.DiffusionCoefficientFromCovarianceExample.particle_positions:
-            trajectory.append_position(position)
+            trajectory._append_position(position)
         trajectory.position_step = self.DiffusionCoefficientFromCovarianceExample.position_step
         diffusion_coefficient = trajectory.calculate_diffusion_coefficient_using_covariance_based_estimator()
         self.assertAlmostEqual(diffusion_coefficient, self.DiffusionCoefficientFromCovarianceExample.expected_diffusion_coefficient)
@@ -181,6 +181,6 @@ class TrajectoryTester(unittest.TestCase):
     def test_calculating_number_of_missing_data_points(self):
         trajectory = Trajectory()
         for position in self.SparseFrameIndexExample.particle_positions:
-            trajectory.append_position(position)
+            trajectory._append_position(position)
         self.assertEqual(trajectory.calculate_number_of_missing_data_points(),self.SparseFrameIndexExample.number_of_missing_data_points)
         self.assertEqual(trajectory.calculate_number_of_particle_positions_with_single_time_step_between(),self.SparseFrameIndexExample.number_of_particle_positions_with_single_time_step_between)

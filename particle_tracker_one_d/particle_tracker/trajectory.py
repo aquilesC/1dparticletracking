@@ -10,10 +10,14 @@ class Trajectory:
         self._time_steps = np.empty((0, 0), dtype=np.int16)
         self._position_steps = np.empty((0, 0), dtype=np.int16)
         self._position_step = position_step
-        self._molecule_radius = None
 
     @property
     def position_step(self):
+        """
+        float:
+            Defines the length one pixel corresponds to. This value will be used when calculating diffusion
+            coefficients. Default is 1.
+        """
         return self._position_step
 
     @position_step.setter
@@ -22,12 +26,70 @@ class Trajectory:
 
     @property
     def particle_positions(self):
+        """
+        np.array:
+            Numpy array with all particle positions in the trajectory on the form `np.array((nParticles,), dtype=[('frame_index', np.int16),
+            ('time', np.float32),('integer_position', np.int16), ('refined_position', np.float32)])`
+        """
         return self._particle_positions
 
-    def append_position(self, particle_position):
+    def plot_trajectory(self, ax=None, **kwargs):
+        """
+        ax: matplotlib axes instance
+            The axes which you want the frames to plotted on. If none is provided a new instance will be created.
+        **kwargs:
+            Plot settings, any settings which can be used in matplotlib.pyplot.plot method.
+
+        Returns
+        -------
+            matplotlib axes instance
+                Returns the axes input argument or creates and returns a new instance of a matplotlib axes object.
+        """
+        if ax is None:
+            ax = plt.axes()
+        ax.plot(self._particle_positions['refined_position'], self._particle_positions['frame_index'], np.ones((1,)), **kwargs)
+        return ax
+
+    def plot_velocity_auto_correlation(self, ax=None, **kwargs):
+        """
+        ax: matplotlib axes instance
+            The axes which you want the frames to plotted on. If none is provided a new instance will be created.
+        **kwargs:
+            Plot settings, any settings which can be used in matplotlib.pyplot.plot method.
+
+        Returns
+        -------
+            matplotlib axes instance
+                Returns the axes input argument or creates and returns a new instance of a matplotlib axes object.
+        """
+        if ax is None:
+            ax = plt.axes()
+        ax.acorr(self._velocities, **kwargs)
+        return ax
+
+    def calculate_mean_square_displacement_function(self):
+        """
+        Returns
+        -------
+            time: np.array
+                The time corresponding to the mean squared displacements.
+            msd: np.array
+                The mean squared displacements of the trajectory.
+        """
+        mean_square_displacement = self._initialise_dictionary_for_mean_square_displacement_function()
+        for key in mean_square_displacement.keys():
+            step = int(key)
+            mean_square_displacement[key] = self._calculate_mean_square_displacement_for_frame_step(step)
+
+        time_step = self._particle_positions['time'][1] - self._particle_positions['time'][0]
+        times = np.array([int(key) * time_step for key in mean_square_displacement.keys()])
+        mean_square_displacements = np.array([mean_square_displacement[key] for key in mean_square_displacement.keys()])
+        return times, mean_square_displacements
+
+    def _append_position(self, particle_position):
         self._particle_positions = np.append(self._particle_positions, particle_position)
 
-    def position_exists_in_trajectory(self, particle_position):
+    def _position_exists_in_trajectory(self, particle_position):
         for p in self._particle_positions:
             if np.array_equal(p, particle_position):
                 return True
@@ -36,24 +98,6 @@ class Trajectory:
         self._time_steps = np.diff(self._particle_positions['time'])
         self._position_steps = np.diff(self._particle_positions['refined_position'] * self.position_step)
         self._velocities = self._position_steps / self._time_steps
-
-    def plot_trajectory(self, ax=None, **kwargs):
-        if ax is None:
-            ax = plt.axes()
-        ax.plot(self._particle_positions['refined_position'], self._particle_positions['frame_index'], np.ones((1,)), **kwargs)
-        return ax
-
-    def plot_velocity_histogram(self, ax=None, **kwargs):
-        if ax is None:
-            ax = plt.axes()
-        ax.hist(self._velocities, **kwargs)
-        return ax
-
-    def plot_velocity_auto_correlation(self, ax=None, **kwargs):
-        if ax is None:
-            ax = plt.axes()
-        ax.acorr(self._velocities, **kwargs)
-        return ax
 
     @staticmethod
     def _remove_non_unique_values(array):
@@ -79,17 +123,6 @@ class Trajectory:
         for step in frame_steps:
             initial_dictionary[str(step)] = None
         return initial_dictionary
-
-    def calculate_mean_square_displacement_function(self):
-        mean_square_displacement = self._initialise_dictionary_for_mean_square_displacement_function()
-        for key in mean_square_displacement.keys():
-            step = int(key)
-            mean_square_displacement[key] = self._calculate_mean_square_displacement_for_frame_step(step)
-
-        time_step = self._particle_positions['time'][1] - self._particle_positions['time'][0]
-        times = np.array([int(key) * time_step for key in mean_square_displacement.keys()])
-        mean_square_displacements = np.array([mean_square_displacement[key] for key in mean_square_displacement.keys()])
-        return times, mean_square_displacements
 
     def _calculate_mean_square_displacement_for_frame_step(self, step):
         count = 0

@@ -259,10 +259,10 @@ class ParticleTracker:
         for index, position in enumerate(self._particle_positions):
             if not self._is_particle_position_already_used_in_trajectory(position):
                 self._trajectories.append(Trajectory())
-                self._trajectories[count].append_position(position)
+                self._trajectories[count]._append_position(position)
                 for index_future_points, future_point in enumerate(self._particle_positions[index + 1:]):
                     if self._points_are_linked(position, future_point):
-                        self._trajectories[count].append_position(future_point)
+                        self._trajectories[count]._append_position(future_point)
                         position = future_point
                 count += 1
 
@@ -548,7 +548,7 @@ class ParticleTracker:
 
     def _is_particle_position_already_used_in_trajectory(self, particle_position):
         for trajectory in self._trajectories:
-            if trajectory.position_exists_in_trajectory(particle_position):
+            if trajectory._position_exists_in_trajectory(particle_position):
                 return True
         return False
 
