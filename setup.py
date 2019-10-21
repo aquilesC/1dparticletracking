@@ -8,6 +8,8 @@ try:
 
     with open("README.md", "r") as fh:
         long_description = fh.read()
+except:
+    print('Not finding requirements or readme')
 
 if __name__ == "__main__":
 
