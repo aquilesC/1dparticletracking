@@ -1,14 +1,16 @@
 from setuptools import setup, find_packages
 
-version = '0.1.9'
+version = '0.2.0'
 
-with open('requirements.txt') as f:
-    requirements = f.read().splitlines()
+try:
+    with open('requirements.txt') as f:
+        requirements = f.read().splitlines()
 
-with open("README.md", "r") as fh:
-    long_description = fh.read()
+    with open("README.md", "r") as fh:
+        long_description = fh.read()
 
 if __name__ == "__main__":
+
 
     setup(name='particle_tracker_one_d',
           version=version,
