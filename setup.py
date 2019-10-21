@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version = '0.2.0'
+version = '0.2.1'
 
 try:
     with open('requirements.txt') as f:
@@ -10,6 +10,8 @@ try:
         long_description = fh.read()
 except:
     print('Not finding requirements or readme')
+    requirements = ''
+    long_description = ''
 
 if __name__ == "__main__":
 
