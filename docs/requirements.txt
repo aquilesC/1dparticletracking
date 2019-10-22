@@ -1,3 +1,12 @@
 sphinx
 numpydoc
 sphinx_theme
+numpy
+matplotlib
+scipy
+astropy
+setuptools>=38.6.0
+wheel==0.31.0
+twine==1.11.0
+readme_renderer>=21.0
+ipywidgets
