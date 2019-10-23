@@ -23,28 +23,6 @@ class TrajectoryTester(unittest.TestCase):
         position_step = 0.1
         velocities = np.array([0.24, 0.12, 0.04])
 
-    class InitialiseMeanSquareDisplacementDictionaryExample:
-        particle_positions = np.empty((7,), dtype=[('frame_index', np.int16), ('time', np.float32), ('integer_position', np.int16), ('refined_position', np.float32)])
-        particle_positions['frame_index'] = np.array([0, 1, 2, 3, 4, 6, 20])
-        particle_positions['time'] = np.array([0, 1, 2, 3, 4, 6, 20]) * 0.5
-        particle_positions['integer_position'] = np.array([1, 2, 3, 5, 3, 3, 3])
-        particle_positions['refined_position'] = np.array([1, 2, 3, 5, 3, 3, 3]) + 0.2
-
-        initial_mean_square_displacement_dictionary = {
-            '1': None,
-            '2': None,
-            '3': None,
-            '4': None,
-            '5': None,
-            '6': None,
-            '14': None,
-            '16': None,
-            '17': None,
-            '18': None,
-            '19': None,
-            '20': None
-        }
-
     class CalculateMeanSquareDisplacementExample:
         particle_positions = np.empty((5,), dtype=[('frame_index', np.int16), ('time', np.float32), ('integer_position', np.int16), ('refined_position', np.float32)])
         particle_positions['frame_index'] = np.array([0, 1, 2, 3, 4])
@@ -123,14 +101,6 @@ class TrajectoryTester(unittest.TestCase):
             trajectory._append_position(position)
         trajectory._calculate_particle_velocities()
         np.testing.assert_array_almost_equal(trajectory._velocities, self.ChangingPositionStepExample.velocities)
-
-    def test_initialise_dictionary_for_mean_square_displacement_function(self):
-        trajectory = Trajectory()
-        for position in self.InitialiseMeanSquareDisplacementDictionaryExample.particle_positions:
-            trajectory._append_position(position)
-        initial_mean_square_displacement_dictionary = trajectory._initialise_dictionary_for_mean_square_displacement_function()
-        self.assertEqual(initial_mean_square_displacement_dictionary.keys(),
-                         self.InitialiseMeanSquareDisplacementDictionaryExample.initial_mean_square_displacement_dictionary.keys())
 
     def test_calculate_mean_square_displacement_function(self):
         trajectory = Trajectory()

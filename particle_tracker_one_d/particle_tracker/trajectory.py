@@ -97,15 +97,24 @@ class Trajectory:
             msd: np.array
                 The mean squared displacements of the trajectory.
         """
-        mean_square_displacement = self._initialise_dictionary_for_mean_square_displacement_function()
-        for key in mean_square_displacement.keys():
-            step = int(key)
-            mean_square_displacement[key] = self._calculate_mean_square_displacement_for_frame_step(step)
 
-        time_step = self._particle_positions['time'][1] - self._particle_positions['time'][0]
-        times = np.array([int(key) * time_step for key in mean_square_displacement.keys()])
-        mean_square_displacements = np.array([mean_square_displacement[key] for key in mean_square_displacement.keys()])
-        return times, mean_square_displacements
+        mean_square_displacements = np.zeros((self.particle_positions['frame_index'][-1] - self.particle_positions['frame_index'][0] + 1,),
+                                             dtype=[('msd', np.float32), ('nr_of_values', np.int16)])
+        times = np.arange(0, self.particle_positions['frame_index'][-1] - self.particle_positions['frame_index'][0] + 1, dtype=np.float32) * self._calculate_time_step()
+
+
+        for first_index, first_position in enumerate(self.particle_positions[:-1]):
+            for second_index, second_position in enumerate(self.particle_positions[first_index + 1:]):
+                index_difference = second_position['frame_index'] - first_position['frame_index']
+                mean_square_displacements['msd'][index_difference] += ((second_position['refined_position'] - first_position['refined_position']) * self.pixel_width) ** 2
+                mean_square_displacements['nr_of_values'][index_difference] += 1
+
+        for index, msd in enumerate(mean_square_displacements):
+            if mean_square_displacements['nr_of_values'][index] != 0:
+                mean_square_displacements['msd'][index] = msd['msd'] / mean_square_displacements['nr_of_values'][index].astype(np.float32)
+
+        non_zeros_indices = np.nonzero(mean_square_displacements['nr_of_values'])
+        return times[non_zeros_indices], mean_square_displacements['msd'][non_zeros_indices]
 
     def _append_position(self, particle_position):
         self._particle_positions = np.append(self._particle_positions, particle_position)
@@ -127,33 +136,6 @@ class Trajectory:
     @staticmethod
     def _sort_values_low_to_high(array):
         return np.sort(array)
-
-    def _find_frame_step_values_for_mean_square_displacement_function(self):
-        frame_steps = []
-        for index, first_position in enumerate(self._particle_positions[:-1]):
-            for second_position in self._particle_positions[index + 1:]:
-                if first_position['frame_index'] != second_position['frame_index']:
-                    frame_steps.append(second_position['frame_index'] - first_position['frame_index'])
-        frame_steps = np.array(frame_steps, dtype=np.int16)
-        frame_steps = self._remove_non_unique_values(frame_steps)
-        return self._sort_values_low_to_high(frame_steps)
-
-    def _initialise_dictionary_for_mean_square_displacement_function(self):
-        initial_dictionary = {}
-        frame_steps = self._find_frame_step_values_for_mean_square_displacement_function()
-        for step in frame_steps:
-            initial_dictionary[str(step)] = None
-        return initial_dictionary
-
-    def _calculate_mean_square_displacement_for_frame_step(self, step):
-        count = 0
-        mean_square_displacement = 0
-        for index, first_position in enumerate(self._particle_positions[:-1]):
-            for second_position in self._particle_positions[index + 1:]:
-                if second_position['frame_index'] - first_position['frame_index'] == step:
-                    count += 1
-                    mean_square_displacement += ((second_position['refined_position'] - first_position['refined_position']) * self.pixel_width) ** 2
-        return mean_square_displacement / count
 
     def _fit_straight_line_to_mean_square_displacement_function(self):
         times, mean_square_displacements = self.calculate_mean_square_displacement_function()
@@ -196,7 +178,7 @@ class Trajectory:
             diffusion_coefficient: float
         """
         displacements = []
-        time_step = self._calculate_minimum_time_step()
+        time_step = self._calculate_time_step()
         for index, first_position in enumerate(self._particle_positions[:-1]):
             for second_position in self._particle_positions[index + 1:]:
                 if second_position['frame_index'] - first_position['frame_index'] == 1:
@@ -206,10 +188,8 @@ class Trajectory:
         mean_first_order_correlation = np.mean(displacements[:-1] * displacements[1:])
         return mean_squared_displacements / (2 * time_step) + mean_first_order_correlation / time_step
 
-    def _calculate_minimum_time_step(self):
-        for index, first_position in enumerate(self._particle_positions[:-1]):
-            if self._particle_positions[index + 1]['frame_index'] - first_position['frame_index'] == 1:
-                return self._particle_positions[index + 1]['time'] - first_position['time']
+    def _calculate_time_step(self):
+        return (self.particle_positions['time'][1] - self.particle_positions['time'][0]) / (self.particle_positions['frame_index'][1] - self.particle_positions['frame_index'][0])
 
     def calculate_number_of_missing_data_points(self):
         """
