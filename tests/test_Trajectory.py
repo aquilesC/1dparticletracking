@@ -75,6 +75,28 @@ class TrajectoryTester(unittest.TestCase):
         number_of_missing_data_points = 6
         number_of_particle_positions_with_single_time_step_between = 2
 
+    class AdditionOfTrajectories:
+        particle_positions_first_trajectory = np.empty((3,),
+                                                       dtype=[('frame_index', np.int16), ('time', np.float32), ('integer_position', np.int16), ('refined_position', np.float32)])
+        particle_positions_first_trajectory['frame_index'] = np.array([0, 2, 5])
+        particle_positions_first_trajectory['time'] = np.array([0, 2, 5]) * 0.8
+        particle_positions_first_trajectory['integer_position'] = np.array([1, 2, 3])
+        particle_positions_first_trajectory['refined_position'] = np.array([1, 2, 3])
+
+        particle_positions_second_trajectory = np.empty((3,),
+                                                        dtype=[('frame_index', np.int16), ('time', np.float32), ('integer_position', np.int16), ('refined_position', np.float32)])
+        particle_positions_second_trajectory['frame_index'] = np.array([6, 10, 11])
+        particle_positions_second_trajectory['time'] = np.array([6, 10, 11]) * 0.8
+        particle_positions_second_trajectory['integer_position'] = np.array([5, 3, 8])
+        particle_positions_second_trajectory['refined_position'] = np.array([5, 3, 8])
+
+        particle_positions_final_trajectory = np.empty((6,),
+                                                       dtype=[('frame_index', np.int16), ('time', np.float32), ('integer_position', np.int16), ('refined_position', np.float32)])
+        particle_positions_final_trajectory['frame_index'] = np.array([0, 2, 5, 6, 10, 11])
+        particle_positions_final_trajectory['time'] = np.array([0, 2, 5, 6, 10, 11]) * 0.8
+        particle_positions_final_trajectory['integer_position'] = np.array([1, 2, 3, 5, 3, 8])
+        particle_positions_final_trajectory['refined_position'] = np.array([1, 2, 3, 5, 3, 8])
+
     def test_append_particle_positions(self):
         trajectory = Trajectory()
         for position in self.SimpleParticlePositionsExample.particle_positions:
@@ -140,3 +162,13 @@ class TrajectoryTester(unittest.TestCase):
         self.assertEqual(trajectory.calculate_number_of_missing_data_points(), self.SparseFrameIndexExample.number_of_missing_data_points)
         self.assertEqual(trajectory.calculate_number_of_particle_positions_with_single_time_step_between(),
                          self.SparseFrameIndexExample.number_of_particle_positions_with_single_time_step_between)
+
+    def test_adding_trajectories_together(self):
+        first_trajectory = Trajectory()
+        for position in self.AdditionOfTrajectories.particle_positions_first_trajectory:
+            first_trajectory._append_position(position)
+        second_trajectory = Trajectory()
+        for position in self.AdditionOfTrajectories.particle_positions_second_trajectory:
+            second_trajectory._append_position(position)
+        final_trajectory = first_trajectory + second_trajectory
+        np.testing.assert_array_equal(final_trajectory.particle_positions, self.AdditionOfTrajectories.particle_positions_final_trajectory)

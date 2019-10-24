@@ -26,6 +26,21 @@ class Trajectory:
         self._position_steps = np.empty((0, 0), dtype=np.int16)
         self._pixel_width = pixel_width
 
+    def __add__(self, other):
+        if self.pixel_width != other.pixel_width:
+            raise ValueError('Pixel width must be equal when adding trajectories together.')
+        elif (self.particle_positions['frame_index'][0] > other.particle_positions['frame_index'][-1]) or (self.particle_positions['frame_index'][0] > other.particle_positions['frame_index'][-1]):
+            raise ValueError('Particle positions are overlapping')
+
+        if self.particle_positions['frame_index'][0] < other.particle_positions['frame_index'][0]:
+            for position in other.particle_positions:
+                self._append_position(position)
+            return self
+        else:
+            for position in self.particle_positions:
+                other._append_position(position)
+            return other
+
     @property
     def pixel_width(self):
         """
