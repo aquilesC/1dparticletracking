@@ -102,7 +102,6 @@ class Trajectory:
                                              dtype=[('msd', np.float32), ('nr_of_values', np.int16)])
         times = np.arange(0, self.particle_positions['frame_index'][-1] - self.particle_positions['frame_index'][0] + 1, dtype=np.float32) * self._calculate_time_step()
 
-
         for first_index, first_position in enumerate(self.particle_positions[:-1]):
             for second_index, second_position in enumerate(self.particle_positions[first_index + 1:]):
                 index_difference = second_position['frame_index'] - first_position['frame_index']
@@ -137,13 +136,6 @@ class Trajectory:
     def _sort_values_low_to_high(array):
         return np.sort(array)
 
-    def _fit_straight_line_to_mean_square_displacement_function(self):
-        times, mean_square_displacements = self.calculate_mean_square_displacement_function()
-        polynomial_degree = 1
-        polynomial_coefficients, covariance_matrix = np.polyfit(times, mean_square_displacements, polynomial_degree, cov=True)
-        error_estimate = [np.sqrt(covariance_matrix[0, 0]), np.sqrt(covariance_matrix[1, 1])]
-        return polynomial_coefficients, error_estimate
-
     def calculate_diffusion_coefficient_from_velocity(self):
         """
         TODO: remove
@@ -153,11 +145,14 @@ class Trajectory:
             diffusion_coefficient_velocity += velocity ** 2 * self._time_steps[index] / 4
         return diffusion_coefficient_velocity / len(self._velocities)
 
-    def calculate_diffusion_coefficient_from_mean_square_displacement_function(self):
+    def calculate_diffusion_coefficient_from_mean_square_displacement_function(self, fit_range=None):
         """
         Fits a straight line to the mean square displacement function and calculates the diffusion coefficient from the
         gradient of the line. The mean squared displacement of the particle position is proportional to :math:`2Dt`
         where :math:`D` is the diffusion coefficient and :math:`t` is the time.
+
+        fit_range: list, None (default)
+            Define the range of the fit, the data for the fit will be `time[fit_range[0]:fit_range[1]`` and `mean_squared_displacement[fit_range[0]:fit_range[1]]`.
 
         Returns
         -------
@@ -166,8 +161,18 @@ class Trajectory:
             error: float
                 todo
         """
-        polynomial_coefficients, error_estimate = self._fit_straight_line_to_mean_square_displacement_function()
+        time, mean_square_displacement = self.calculate_mean_square_displacement_function()
+        if fit_range is None:
+            polynomial_coefficients, error_estimate = self._fit_straight_line_to_data(time, mean_square_displacement)
+        else:
+            polynomial_coefficients, error_estimate = self._fit_straight_line_to_data(time[fit_range[0]:fit_range[1]], mean_square_displacement[fit_range[0]:fit_range[1]])
         return polynomial_coefficients[0] / 2, error_estimate[0] / 2
+
+    @staticmethod
+    def _fit_straight_line_to_data(x, y):
+        polynomial_coefficients, covariance_matrix = np.polyfit(x, y, 1, cov=True)
+        error_estimate = [np.sqrt(covariance_matrix[0, 0]), np.sqrt(covariance_matrix[1, 1])]
+        return polynomial_coefficients, error_estimate
 
     def calculate_diffusion_coefficient_using_covariance_based_estimator(self):
         """

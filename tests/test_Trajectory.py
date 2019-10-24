@@ -43,15 +43,6 @@ class TrajectoryTester(unittest.TestCase):
         mean_square_displacements = np.array([0.09999999, 0.17333329, 0.33999994, 0.15999998], dtype=np.float32)
         mean_square_displacement_time = np.array([0.5, 1.0, 1.5, 2.0], dtype=np.float32)
 
-    class FitLineToMeanSquareDisplacementFunctionExample:
-        particle_positions = np.empty((5,), dtype=[('frame_index', np.int16), ('time', np.float32), ('integer_position', np.int16), ('refined_position', np.float32)])
-        particle_positions['frame_index'] = np.array([0, 1, 2, 4, 5])
-        particle_positions['time'] = np.array([0, 1, 2, 4, 5])
-        particle_positions['integer_position'] = np.array([1, 2, 3, 5, 6])
-        particle_positions['refined_position'] = np.array([1, 2, 3, 5, 6])
-        expected_fit_coefficients = [6.0, -7.0]
-        expected_errors = [0.6831300510639731, 2.2656860623955235]
-
     class CalculateDiffusionCoefficientExample:
         particle_positions = np.empty((5,), dtype=[('frame_index', np.int16), ('time', np.float32), ('integer_position', np.int16), ('refined_position', np.float32)])
         particle_positions['frame_index'] = np.array([0, 1, 2, 4, 5])
@@ -60,6 +51,9 @@ class TrajectoryTester(unittest.TestCase):
         particle_positions['refined_position'] = np.array([1, 2, 3, 5, 6])
         expected_diffusion_coefficient = 6.0 / 2
         expected_error = 2.2656860623955235 / 2
+        fit_range = [0, 3]
+        expected_diffusion_coefficient_with_fit_range = 2.0
+        expected_errors_with_fit_range = [0.6831300510639731, 2.2656860623955235]
 
     class DiffusionCoefficientFromCovarianceExample:
         particle_positions = np.empty((5,), dtype=[('frame_index', np.int16), ('time', np.float32), ('integer_position', np.int16), ('refined_position', np.float32)])
@@ -80,7 +74,6 @@ class TrajectoryTester(unittest.TestCase):
         expected_diffusion_coefficient = 0.04583333836247547
         number_of_missing_data_points = 6
         number_of_particle_positions_with_single_time_step_between = 2
-
 
     def test_append_particle_positions(self):
         trajectory = Trajectory()
@@ -121,17 +114,6 @@ class TrajectoryTester(unittest.TestCase):
         np.testing.assert_array_almost_equal(time, self.CalculateMeanSquareDisplacementWithTimeAndPositionStepExample.mean_square_displacement_time)
         np.testing.assert_array_almost_equal(mean_square_displacement, self.CalculateMeanSquareDisplacementWithTimeAndPositionStepExample.mean_square_displacements)
 
-    def test_fit_a_straight_line_to_mean_square_displacement_function(self):
-        trajectory = Trajectory()
-        for position in self.FitLineToMeanSquareDisplacementFunctionExample.particle_positions:
-            trajectory._append_position(position)
-        trajectory._calculate_particle_velocities()
-        fit_coefficients, error = trajectory._fit_straight_line_to_mean_square_displacement_function()
-        self.assertAlmostEqual(fit_coefficients[0], self.FitLineToMeanSquareDisplacementFunctionExample.expected_fit_coefficients[0])
-        self.assertAlmostEqual(fit_coefficients[1], self.FitLineToMeanSquareDisplacementFunctionExample.expected_fit_coefficients[1])
-        self.assertAlmostEqual(error[0], self.FitLineToMeanSquareDisplacementFunctionExample.expected_errors[0])
-        self.assertAlmostEqual(error[1], self.FitLineToMeanSquareDisplacementFunctionExample.expected_errors[1])
-
     def test_calculating_diffusion_coefficient_from_mean_square_displacement_function(self):
         trajectory = Trajectory()
         for position in self.CalculateDiffusionCoefficientExample.particle_positions:
@@ -139,6 +121,9 @@ class TrajectoryTester(unittest.TestCase):
         trajectory._calculate_particle_velocities()
         diffusion_coefficient, error_estimate = trajectory.calculate_diffusion_coefficient_from_mean_square_displacement_function()
         self.assertAlmostEqual(diffusion_coefficient, self.CalculateDiffusionCoefficientExample.expected_diffusion_coefficient)
+        diffusion_coefficient, error_estimate = trajectory.calculate_diffusion_coefficient_from_mean_square_displacement_function(
+            fit_range=self.CalculateDiffusionCoefficientExample.fit_range)
+        self.assertAlmostEqual(diffusion_coefficient, self.CalculateDiffusionCoefficientExample.expected_diffusion_coefficient_with_fit_range)
 
     def test_calculating_diffusion_coefficient_covariance_based_estimator(self):
         trajectory = Trajectory()
@@ -152,5 +137,6 @@ class TrajectoryTester(unittest.TestCase):
         trajectory = Trajectory()
         for position in self.SparseFrameIndexExample.particle_positions:
             trajectory._append_position(position)
-        self.assertEqual(trajectory.calculate_number_of_missing_data_points(),self.SparseFrameIndexExample.number_of_missing_data_points)
-        self.assertEqual(trajectory.calculate_number_of_particle_positions_with_single_time_step_between(),self.SparseFrameIndexExample.number_of_particle_positions_with_single_time_step_between)
+        self.assertEqual(trajectory.calculate_number_of_missing_data_points(), self.SparseFrameIndexExample.number_of_missing_data_points)
+        self.assertEqual(trajectory.calculate_number_of_particle_positions_with_single_time_step_between(),
+                         self.SparseFrameIndexExample.number_of_particle_positions_with_single_time_step_between)
