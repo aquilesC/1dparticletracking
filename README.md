@@ -1,6 +1,6 @@
 # 1D particle tracking
 
-Particle tracking in kymographs. 
+Particle tracking in kymographs, under development. Expect changes in the code.
 
 ## Installation
 
