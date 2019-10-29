@@ -32,14 +32,19 @@ class Trajectory:
         elif (self.particle_positions['frame_index'][0] > other.particle_positions['frame_index'][-1]) or (self.particle_positions['frame_index'][0] > other.particle_positions['frame_index'][-1]):
             raise ValueError('Particle positions are overlapping')
 
+        new_trajectory = Trajectory(pixel_width=self.pixel_width)
+
         if self.particle_positions['frame_index'][0] < other.particle_positions['frame_index'][0]:
-            for position in other.particle_positions:
-                self._append_position(position)
-            return self
-        else:
             for position in self.particle_positions:
-                other._append_position(position)
-            return other
+                new_trajectory._append_position(position)
+            for position in other.particle_positions:
+                new_trajectory._append_position(position)
+        else:
+            for position in other.particle_positions:
+                new_trajectory._append_position(position)
+            for position in self.particle_positions:
+                new_trajectory._append_position(position)
+        return new_trajectory
 
     @property
     def pixel_width(self):
