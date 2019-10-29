@@ -1,6 +1,6 @@
 # 1D particle tracking
 
-Particle tracking in kymographs, under development. Expect changes in the code.
+Software for particle tracking where particles are restricted to move in only one dimension.
 
 ## Installation
 
