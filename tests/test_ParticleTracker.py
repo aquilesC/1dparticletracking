@@ -176,8 +176,8 @@ class ParticleTrackerTester(unittest.TestCase):
         expected_positions = np.empty((1,), dtype=[('frame_index', np.int16), ('time', np.float32), ('integer_position', np.int16), ('refined_position', np.float32)])
         expected_positions['frame_index'] = np.array([0])
         expected_positions['time'] = np.array([0])
-        expected_positions['integer_position'] = np.array([108])
-        expected_positions['refined_position'] = np.array([108.462814])
+        expected_positions['integer_position'] = np.array([107])
+        expected_positions['refined_position'] = np.array([106.99162])
 
     class TestFindingNonIntegerParticlePositions:
         intensity = np.array([

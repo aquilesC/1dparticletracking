@@ -335,7 +335,7 @@ class ParticleTracker:
             width = self._integration_radius_of_intensity_peaks
         intensity = self._averaged_intensity[particle_position[0],
                     particle_position['integer_position'] - width:particle_position['integer_position'] + width]
-        return particle_position['integer_position'] + self._calculate_center_of_mass(intensity) - width
+        return particle_position['integer_position'] + self._calculate_center_of_mass(intensity-np.min(intensity)) - width
 
     def _perform_particle_discrimination(self):
         self._remove_particles_with_wrong_intensity_moment()
