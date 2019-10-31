@@ -262,7 +262,7 @@ class ParticleTracker:
         count = 0
         particle_has_been_used = np.zeros((self.particle_positions.shape[0],),dtype=bool)
         for index, position in enumerate(self._particle_positions):
-            if not particle_has_been_used(position):
+            if not particle_has_been_used[index]:
                 self._trajectories.append(Trajectory())
                 self._trajectories[count]._append_position(position)
                 for index_future_points, future_point in enumerate(self._particle_positions[index + 1:]):
