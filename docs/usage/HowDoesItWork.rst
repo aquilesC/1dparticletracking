@@ -7,14 +7,29 @@ Note also that some parts differ from the algorithm in the paper and I will henc
 
 __ https://www.sciencedirect.com/science/article/pii/S1047847705001267
 
+Definitions
+-----------
+A particle observation or feature point :math:`p = [t,\hat{x_p}]` where :math:`t` is the frame index and :math:`\hat{x_p}` is the estimated position comes with associated
+intensity moments defined as the 0th order moment
+
+.. math::
+
+    m_0(p) = \sum_{i^2 \leq w^2} I^t (\hat{x_p} + i)
+
+and the 2nd order moment
+
+.. math::
+
+    m_2(p) = \sum_{i^2 \leq w^2} i^2 I^t (\hat{x_p} + i).
+
 
 Finding particle positions
 --------------------------
 
-To find particle positions the tracker first finds local intensity maximas with intensities higher than the attribute `feature_point_threshold`. These positions
+To find particle positions the tracker first finds local intensity maximas with intensities higher than the attribute :code:`feature_point_threshold`. These positions
 are assumed to be particle observations. To get closer to the actual particle position a refinement of these positions is done by finding the center of mass in the range
-`integration_radius_of_intensity_peaks` around the initial position. If two local maximas are found within the distance of two times the `integration_radius_of_intensity_peaks`,
-the one with lowest first intensity moment is discarded. This discrimination is not in the paper but was necessary in the case of very noisy data.
+:code:`integration_radius_of_intensity_peaks` around the initial position. If two local maximas are found within the distance of two times the :code:`integration_radius_of_intensity_peaks`,
+the one with lowest 0th intensity moment is discarded. This discrimination is not in the paper but was necessary in the case of very noisy data.
 
 Linking feature points
 ----------------------
@@ -26,10 +41,12 @@ links between particle positions and has the form
 
     G^{t}_{r} = g_{ij} = \begin{cases} 1 & \text{if there is a link between particle }i \text{ in frame } t \text{ and particle j in frame } t+r \\ 0 & \text{else} \end{cases}.
 
-The first row :math: `g_{0j}` and the first column :math: `g_{i0}` represents dummy particles and allows for particles to disappear (getting out of focus or similar) in a few frames
-and still being able to be used in trajectories when it reappears.
-The corresponding cost matrix has the same shape as the association matrix but instead contains values descibing the cost to link particle :math: `i` in frame :math: `t` with particle
-:math: `j` in frame :math: `t+r`.
+The first row :math:`g_{0j}` and the first column :math:`g_{i0}` represents dummy particles and allows for particles to disappear (getting out of focus or similar) in a few frames
+and still being able to be used in trajectories when it reappears. The attribute :code:`maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles` corresponds
+to the max value of :math:`r`.
+
+The corresponding cost matrix has the same shape as the association matrix but instead contains values describing the cost to link particle :math:`i` in frame :math:`t` with particle
+:math:`j` in frame :math:`t+r`.
 
 Cost function
 -------------
