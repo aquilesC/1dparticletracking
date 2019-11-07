@@ -19,14 +19,17 @@ the one with lowest first intensity moment is discarded. This discrimination is 
 Linking feature points
 ----------------------
 
-When the particle positions are found an association matrix is created with a corresponding corresponding cost matrix. The association matrix contains information about
+When the particle positions are found an association matrix is created with a corresponding cost matrix. The association matrix contains information about
 links between particle positions and has the form
 
 .. math::
 
-    G^{t}_{r} = g_{ij} = \begin{cases} 1 & \\ 0 \end{cases}
+    G^{t}_{r} = g_{ij} = \begin{cases} 1 & \text{if there is a link between particle }i \text{ in frame } t \text{ and particle j in frame } t+r \\ 0 & \text{else} \end{cases}.
 
-The cost matrix contains the cost for linking two particles in a trajectory. By plain recursion the association with the lowest cost is found.
+The first row :math: `g_{0j}` and the first column :math: `g_{i0}` represents dummy particles and allows for particles to disappear (getting out of focus or similar) in a few frames
+and still being able to be used in trajectories when it reappears.
+The corresponding cost matrix has the same shape as the association matrix but instead contains values descibing the cost to link particle :math: `i` in frame :math: `t` with particle
+:math: `j` in frame :math: `t+r`.
 
 Cost function
 -------------
