@@ -219,7 +219,7 @@ class Trajectory:
         diffusion_coefficient = np.mean(squared_displacements) / (2 * time_step) + np.mean(covariance_term) / time_step
 
         if R is not None:
-            localisation_error = R * np.mean(squared_displacements) + (2 * R - 1) * covariance_term
+            localisation_error = R * np.mean(squared_displacements) + (2 * R - 1) * np.mean(covariance_term)
             epsilon = localisation_error ** 2 / (diffusion_coefficient * time_step) - 2 * R
             variance_estimate = diffusion_coefficient ** 2 * ((6 + 4 * epsilon + 2 * epsilon ** 2) / number_of_points_used + 4 * (1 + epsilon) ** 2 / (number_of_points_used ** 2))
             return diffusion_coefficient, variance_estimate
