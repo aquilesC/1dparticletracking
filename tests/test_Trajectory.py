@@ -62,7 +62,7 @@ class TrajectoryTester(unittest.TestCase):
         particle_positions['integer_position'] = np.array([1, 2, 3, 5, 3])
         particle_positions['refined_position'] = np.array([1, 2, 3, 5, 3])
         position_step = 0.2
-        expected_diffusion_coefficient = 0.04583333836247547
+        expected_diffusion_coefficient = 0.03333333333
 
     class SparseFrameIndexExample:
         particle_positions = np.empty((6,), dtype=[('frame_index', np.int16), ('time', np.float32), ('integer_position', np.int16), ('refined_position', np.float32)])

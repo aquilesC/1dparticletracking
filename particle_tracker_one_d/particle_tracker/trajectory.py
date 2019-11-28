@@ -29,7 +29,8 @@ class Trajectory:
     def __add__(self, other):
         if self.pixel_width != other.pixel_width:
             raise ValueError('Pixel width must be equal when adding trajectories together.')
-        elif (self.particle_positions['frame_index'][0] > other.particle_positions['frame_index'][-1]) or (self.particle_positions['frame_index'][0] > other.particle_positions['frame_index'][-1]):
+        elif (self.particle_positions['frame_index'][0] > other.particle_positions['frame_index'][-1]) or (
+                self.particle_positions['frame_index'][0] > other.particle_positions['frame_index'][-1]):
             raise ValueError('Particle positions are overlapping')
 
         new_trajectory = Trajectory(pixel_width=self.pixel_width)
@@ -194,7 +195,7 @@ class Trajectory:
         error_estimate = [np.sqrt(covariance_matrix[0, 0]), np.sqrt(covariance_matrix[1, 1])]
         return polynomial_coefficients, error_estimate
 
-    def calculate_diffusion_coefficient_using_covariance_based_estimator(self):
+    def calculate_diffusion_coefficient_using_covariance_based_estimator(self, R=None):
         """
         Unbiased estimator of the diffusion coefficient. More info at `https://www.nature.com/articles/nmeth.2904`
 
@@ -202,16 +203,28 @@ class Trajectory:
         -------
             diffusion_coefficient: float
         """
-        displacements = []
+        squared_displacements = []
+        covariance_term = []
+
+        for index, first_position in enumerate(self.particle_positions[:-2]):
+            second_position = self.particle_positions[index + 1]
+            third_position = self.particle_positions[index + 2]
+            if first_position['frame_index'] - second_position['frame_index'] == -1 and first_position['frame_index'] - third_position['frame_index'] == -2:
+                squared_displacements.append((self.pixel_width * (second_position['refined_position'] - first_position['refined_position'])) ** 2)
+                covariance_term.append((second_position['refined_position'] - first_position['refined_position']) * (
+                        third_position['refined_position'] - second_position['refined_position']) * self.pixel_width ** 2)
+
         time_step = self._calculate_time_step()
-        for index, first_position in enumerate(self._particle_positions[:-1]):
-            for second_position in self._particle_positions[index + 1:]:
-                if second_position['frame_index'] - first_position['frame_index'] == 1:
-                    displacements.append((second_position['refined_position'] - first_position['refined_position']) * self.pixel_width)
-        displacements = np.array(displacements, dtype=np.float32)
-        mean_squared_displacements = np.mean(displacements ** 2)
-        mean_first_order_correlation = np.mean(displacements[:-1] * displacements[1:])
-        return mean_squared_displacements / (2 * time_step) + mean_first_order_correlation / time_step
+        number_of_points_used = len(squared_displacements)
+        diffusion_coefficient = np.mean(squared_displacements) / (2 * time_step) + np.mean(covariance_term) / time_step
+
+        if R is not None:
+            localisation_error = R * np.mean(squared_displacements) + (2 * R - 1) * covariance_term
+            epsilon = localisation_error ** 2 / (diffusion_coefficient * time_step) - 2 * R
+            variance_estimate = diffusion_coefficient ** 2 * ((6 + 4 * epsilon + 2 * epsilon ** 2) / number_of_points_used + 4 * (1 + epsilon) ** 2 / (number_of_points_used ** 2))
+            return diffusion_coefficient, variance_estimate
+
+        return diffusion_coefficient
 
     def _calculate_time_step(self):
         return (self.particle_positions['time'][1] - self.particle_positions['time'][0]) / (self.particle_positions['frame_index'][1] - self.particle_positions['frame_index'][0])

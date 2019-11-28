@@ -51,8 +51,13 @@ The corresponding cost matrix has the same shape as the association matrix but i
 Cost function
 -------------
 
-The cost function is a function of two particle positions and their associated intensity and describes how costly it is to link two particles into a trajectory.
-The default cost function is
+The cost function is the function that describes the cost to link two particles. As default the cost function is
+
+.. math::
+
+    cost{p_i,p_j} = (\hat{x_p_i} - \hat{x_p_j})^2 + (m_0(p_i) - m_0(p_j))^2 + (m_2(p_i) - m_2(p_j))^2.
+
+For the dumm
 
 Optimisation
 ------------
