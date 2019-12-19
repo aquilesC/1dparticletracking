@@ -55,13 +55,18 @@ The cost function is the function that describes the cost to link two particles.
 
 .. math::
 
-    cost{p_i,p_j} = (\hat{x_p_i} - \hat{x_p_j})^2 + (m_0(p_i) - m_0(p_j))^2 + (m_2(p_i) - m_2(p_j))^2.
+    cost(p_i,p_j) = (\hat{x_{p_i}} - \hat{x_{p_j}})^2 + (m_0(p_i) - m_0(p_j))^2 + (m_2(p_i) - m_2(p_j))^2.
 
-For the dumm
+For the dummy particle the cost is
+
+.. math::
+    cost(p_i,p_{dummy}) = cost(p_{dummy},p_i) = (rL)^2
+
+where :math:`r` is the number of frames between particle :math:`p_i` and the dummy particle and :math:`L` is the max distance a particle can travel between two frames, set by the
+class attribute :code:`maximum_distance_a_particle_can_travel_between_frames`.
 
 Optimisation
 ------------
-
 
 Analysing the trajectories
 --------------------------
