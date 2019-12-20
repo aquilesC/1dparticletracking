@@ -196,21 +196,21 @@ class ParticleTrackerTester(unittest.TestCase):
 
     def test_finding_particle_position(self):
         particle_tracker = ParticleTracker(frames=self.TestFindingParticlePositionExample.intensity, time=self.TestFindingParticlePositionExample.time)
-        particle_tracker.feature_point_threshold = self.TestFindingParticlePositionExample.feature_point_threshold
-        particle_tracker.integration_radius_of_intensity_peaks = self.TestFindingParticlePositionExample.expected_width_of_particle
+        particle_tracker.particle_detection_threshold = self.TestFindingParticlePositionExample.feature_point_threshold
+        particle_tracker._integration_radius_of_intensity_peaks = self.TestFindingParticlePositionExample.expected_width_of_particle
         np.testing.assert_array_equal(self.TestFindingParticlePositionExample.expected_positions, particle_tracker.particle_positions)
 
     def test_finding_non_integer_particle_position(self):
         particle_tracker = ParticleTracker(frames=self.TestFindingNonIntegerParticlePositions.intensity, time=self.TestFindingNonIntegerParticlePositions.time)
-        particle_tracker.integration_radius_of_intensity_peaks = self.TestFindingNonIntegerParticlePositions.expected_width_of_particle
-        particle_tracker.feature_point_threshold = self.TestFindingNonIntegerParticlePositions.feature_point_threshold
+        particle_tracker._integration_radius_of_intensity_peaks = self.TestFindingNonIntegerParticlePositions.expected_width_of_particle
+        particle_tracker.particle_detection_threshold = self.TestFindingNonIntegerParticlePositions.feature_point_threshold
         particle_tracker._update_particle_positions()
         print(particle_tracker.particle_positions)
         np.testing.assert_array_equal(particle_tracker.particle_positions, self.TestFindingNonIntegerParticlePositions.expected_positions)
 
     def test_finding_intensity_maximas(self):
         particle_tracker = ParticleTracker(frames=self.TestFindingIntensityMaximasExample.intensity, time=self.TestFindingIntensityMaximasExample.time)
-        particle_tracker.feature_point_threshold = 0.6
+        particle_tracker.particle_detection_threshold = 0.6
         np.testing.assert_array_equal(particle_tracker._particle_positions, self.TestFindingIntensityMaximasExample.expected_positions)
 
     def test_center_of_mass_calculation(self):
@@ -228,14 +228,14 @@ class ParticleTrackerTester(unittest.TestCase):
 
     def test_finding_particle_positions(self):
         particle_tracker = ParticleTracker(self.IntensityExample.intensity, self.IntensityExample.time)
-        particle_tracker.feature_point_threshold = 0.2
+        particle_tracker.particle_detection_threshold = 0.2
         self.assertEqual(self.IntensityExample.particle_positions.shape, particle_tracker._particle_positions.shape)
         np.testing.assert_array_equal(particle_tracker._particle_positions, self.IntensityExample.particle_positions)
 
     def test_discrimnation_of_feature_points(self):
         particle_tracker = ParticleTracker(self.IntensityTwoParticlesCloseTooEachOtherExample.intensity, self.IntensityTwoParticlesCloseTooEachOtherExample.time)
-        particle_tracker.feature_point_threshold = 0.3
-        particle_tracker.integration_radius_of_intensity_peaks = 20
+        particle_tracker.particle_detection_threshold = 0.3
+        particle_tracker._integration_radius_of_intensity_peaks = 20
         particle_tracker.particle_discrimination_threshold = 0
 
         particle_tracker._find_integer_particle_positions()
@@ -247,9 +247,9 @@ class ParticleTrackerTester(unittest.TestCase):
 
     def test_initialising_association_matrix(self):
         particle_tracker = ParticleTracker(self.IntensityExample.intensity, self.IntensityExample.time)
-        particle_tracker.integration_radius_of_intensity_peaks = 1
+        particle_tracker._integration_radius_of_intensity_peaks = 1
         particle_tracker.boxcar_width = 0
-        particle_tracker.feature_point_threshold = 0.2
+        particle_tracker.particle_detection_threshold = 0.2
         particle_tracker.maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles = 2
         particle_tracker.maximum_distance_a_particle_can_travel_between_frames = 2
         np.testing.assert_array_equal(particle_tracker._time, self.AssociationMatrixExample.time)

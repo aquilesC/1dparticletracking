@@ -103,20 +103,98 @@ class SetAttributeTester(unittest.TestCase):
 
         for time_and_frames in non_valid_times_and_frames:
             with self.assertRaises(ValueError):
-                ParticleTracker._test_if_time_and_frames_has_same_length(time_and_frames['time'],time_and_frames['frames'])
+                ParticleTracker._test_if_time_and_frames_has_same_length(time_and_frames['time'], time_and_frames['frames'])
 
-    def test_set_boxcar_width(self):
+    def test_validation_of_setting_the_integration_radius_of_intensity_peaks(self):
         """
-        Test that the boxcar_width is an integer larger than 0 but smaller than the half the number of pixels in a frame.
+        Tests the setting of the class attribute integration_radius_of_intensity_peaks. Should be an integer smaller than half of the number of pixels in a frame.
         """
-        frames = np.zeros(1)
+        frames = np.array([
+            [0, 0.1, 0.2, 0.1],
+            [0, 0.2, 0.3, 0.4],
+            [0.2, 0.5, 0.6, 1],
+            [0, 0.1, 0.2, 0.1]
+        ], dtype=np.float32)
+        time = np.array([0, 1, 2, 3])
 
-    def test_set_integration_radius(self):
-        """
+        valid_integration_radius = [0, 1, 2]
+        non_valid_type_of_integration_radius = [1.5, '1', [1, 2]]
+        non_valid_values_of_integration_radius = [-1, 3, 100]
 
-        :return:
+        pt = ParticleTracker(frames=frames, time=time)
+
+        for radius in valid_integration_radius:
+            pt.integration_radius_of_intensity_peaks = radius
+            self.assertEqual(pt.integration_radius_of_intensity_peaks, radius)
+
+        for radius in non_valid_type_of_integration_radius:
+            with self.assertRaises(TypeError, msg=radius):
+                pt.integration_radius_of_intensity_peaks = radius
+
+        for radius in non_valid_values_of_integration_radius:
+            with self.assertRaises(ValueError, msg=radius):
+                pt.integration_radius_of_intensity_peaks = radius
+
+    def test_validation_of_setting_boxcar_width(self):
         """
-        valid_values = [1, 10, 13]
+        Tests the setting of the class attribute boxcar_width. Should be an integer smaller than the number of pixels in a frame.
+        """
+        frames = np.array([
+            [0, 0.1, 0.2, 0.1],
+            [0, 0.2, 0.3, 0.4],
+            [0.2, 0.5, 0.6, 1],
+            [0, 0.1, 0.2, 0.1]
+        ], dtype=np.float32)
+        time = np.array([0, 1, 2, 3])
+
+        valid_boxcar_widths = [0, 1, 2, 3, 4]
+        non_valid_type_of_boxcar_widths = [1.5, '1', [1, 2]]
+        non_valid_values_of_boxcar_widths = [-1, 5, 100]
+
+        pt = ParticleTracker(frames=frames, time=time)
+
+        for width in valid_boxcar_widths:
+            pt.boxcar_width = width
+            self.assertEqual(pt.boxcar_width, width)
+
+        for width in non_valid_type_of_boxcar_widths:
+            with self.assertRaises(TypeError, msg=width):
+                pt.boxcar_width = width
+
+        for width in non_valid_values_of_boxcar_widths:
+            with self.assertRaises(ValueError, msg=width):
+                pt.boxcar_width = width
+
+    def test_validation_of_setting_particle_detection_threshold(self):
+        """
+        Tests the setting of the class attribute particle_detection_threshold. Should be a numerical value between 0 and 1.
+        """
+        frames = np.array([
+            [0, 0.1, 0.2, 0.1],
+            [0, 0.2, 0.3, 0.4],
+            [0.2, 0.5, 0.6, 1],
+            [0, 0.1, 0.2, 0.1]
+        ], dtype=np.float32)
+        time = np.array([0, 1, 2, 3])
+
+        valid_particle_detection_thresholds = [0, 0.1, 0.22, 0.93, 1]
+        non_valid_type_detection_thresholds = ['1', [1, 2], None]
+        non_valid_values_of_detection_thresholds = [-1, 5, 100]
+
+        pt = ParticleTracker(frames=frames, time=time)
+
+        for threshold in valid_particle_detection_thresholds:
+            pt.particle_detection_threshold = threshold
+            self.assertEqual(pt.particle_detection_threshold, threshold)
+
+        for threshold in non_valid_type_detection_thresholds:
+            with self.assertRaises(TypeError, msg=threshold):
+                pt.particle_detection_threshold = threshold
+
+        for threshold in non_valid_values_of_detection_thresholds:
+            with self.assertRaises(ValueError, msg=threshold):
+                pt.particle_detection_threshold = threshold
+
 
 
 if __name__ == '__main__':
