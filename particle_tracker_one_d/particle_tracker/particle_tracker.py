@@ -31,11 +31,12 @@ class ParticleTracker:
     """
 
     def __init__(self, frames, time):
-        self._time = time
+        ParticleTracker._validate_class_arguments(frames, time)
         self._frames = frames
+        self._time = time
         self._integration_radius_of_intensity_peaks = 1
         self._boxcar_width = 0
-        self._feature_point_threshold = 1
+        self._particle_detection_threshold = 1
         self._particle_discrimination_threshold = 0
         self._maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles = 1
         self._maximum_distance_a_particle_can_travel_between_frames = 1
@@ -60,11 +61,11 @@ class ParticleTracker:
 
     @property
     def _sigma_0(self):
-        return 0.1 * np.pi * self.integration_radius_of_intensity_peaks ** 2
+        return 0.1 * np.pi * self._integration_radius_of_intensity_peaks ** 2
 
     @property
     def _sigma_2(self):
-        return 0.1 * np.pi * self.integration_radius_of_intensity_peaks ** 2
+        return 0.1 * np.pi * self._integration_radius_of_intensity_peaks ** 2
 
     @property
     def boxcar_width(self):
@@ -76,6 +77,11 @@ class ParticleTracker:
 
     @boxcar_width.setter
     def boxcar_width(self, width):
+        if type(width) is not int:
+            raise TypeError('Attribute boxcar_width should be of type int')
+        if not -1 < width <= self.frames.shape[1]:
+            raise ValueError('Attribute boxcar_width should be a positive integer less or equal the number of pixels in each frame.')
+
         if not width == self._boxcar_width:
             self._boxcar_width = width
             self._update_averaged_intensity()
@@ -93,26 +99,35 @@ class ParticleTracker:
         return self._integration_radius_of_intensity_peaks
 
     @integration_radius_of_intensity_peaks.setter
-    def integration_radius_of_intensity_peaks(self, width):
-        if not width == self._integration_radius_of_intensity_peaks:
-            self._integration_radius_of_intensity_peaks = width
+    def integration_radius_of_intensity_peaks(self, radius):
+        if type(radius) is not int:
+            raise TypeError('Attribute integration_radius_of_intensity_peaks should be of type int')
+        if not -1 < radius <= self.frames.shape[1] / 2:
+            raise ValueError('Attribute integration_radius_of_intensity_peaks should be a positive integer less or equal the half of the number of pixels in each frame.')
+
+        if not radius == self._integration_radius_of_intensity_peaks:
+            self._integration_radius_of_intensity_peaks = radius
             self._update_particle_positions()
             self._update_association_matrix()
             self._update_trajectories()
 
     @property
-    def feature_point_threshold(self):
+    def particle_detection_threshold(self):
         """
         float:
             Defines the threshold value for finding intensity peaks. Local maximas below this threshold will not be
             considered as particles. Should be a value between 0 and 1.
         """
-        return self._feature_point_threshold
+        return self._particle_detection_threshold
 
-    @feature_point_threshold.setter
-    def feature_point_threshold(self, threshold):
-        if not threshold == self._feature_point_threshold:
-            self._feature_point_threshold = threshold
+    @particle_detection_threshold.setter
+    def particle_detection_threshold(self, threshold):
+        if not (type(threshold) == int or type(threshold) == float):
+            raise TypeError('Attribute particle_detection_threshold should be a numerical value between 0 and 1.')
+        if not 0 <= threshold <= 1:
+            raise ValueError('Attribute particle_detection_threshold should be a value between 0 and 1.')
+        if not threshold == self._particle_detection_threshold:
+            self._particle_detection_threshold = threshold
             self._update_particle_positions()
             self._update_association_matrix()
             self._update_trajectories()
@@ -142,6 +157,11 @@ class ParticleTracker:
     @maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles.setter
     def maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles(self,
                                                                                                  number_of_frames):
+        if type(number_of_frames) is not int:
+            raise TypeError('Attribute maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles should be an integer.')
+        if not 0 <= number_of_frames < self.frames.shape[0]:
+            raise ValueError(
+                'Attribute maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles should be larger or equal to 0 and smaller than the number of frames.')
         if not number_of_frames == self._maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles:
             self._maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles = number_of_frames
             self._update_association_matrix()
@@ -157,6 +177,10 @@ class ParticleTracker:
 
     @maximum_distance_a_particle_can_travel_between_frames.setter
     def maximum_distance_a_particle_can_travel_between_frames(self, distance):
+        if not (type(distance) == int or type(distance) == float):
+            raise TypeError('Attribute maximum_distance_a_particle_can_travel_between_frames should be a numerical value.')
+        if not 0 < distance < self.frames.shape[1]:
+            raise ValueError('Attribute maximum_distance_a_particle_can_travel_between_frames should be larger than 0 and smaller than the number of pixels in each frames.')
         if not distance == self._maximum_distance_a_particle_can_travel_between_frames:
             self._maximum_distance_a_particle_can_travel_between_frames = distance
             self._update_association_matrix()
@@ -260,7 +284,7 @@ class ParticleTracker:
     def _update_trajectories(self):
         self._trajectories = []
         count = 0
-        particle_has_been_used = np.zeros((self.particle_positions.shape[0],),dtype=bool)
+        particle_has_been_used = np.zeros((self.particle_positions.shape[0],), dtype=bool)
         for index, position in enumerate(self._particle_positions):
             if not particle_has_been_used[index]:
                 self._trajectories.append(Trajectory())
@@ -313,11 +337,11 @@ class ParticleTracker:
     def _find_indexes_of_local_maximas_with_intensity_higher_than_threshold(self, array):
         columns_with_local_maximas = np.r_[array[:-1] > array[1:], True] & \
                                      np.r_[True, array[1:] > array[:-1]] & \
-                                     np.r_[array > self.feature_point_threshold]
+                                     np.r_[array > self.particle_detection_threshold]
         return np.argwhere(columns_with_local_maximas).flatten().tolist()
 
     def _refine_particle_positions(self):
-        if self.integration_radius_of_intensity_peaks != 0:
+        if self._integration_radius_of_intensity_peaks != 0:
             for row_index, position in enumerate(self._particle_positions):
                 refined_position = self._find_center_of_mass_close_to_position(position)
                 self._particle_positions['refined_position'][row_index] = refined_position
@@ -328,16 +352,16 @@ class ParticleTracker:
     def _find_center_of_mass_close_to_position(self, particle_position):
         if particle_position['integer_position'] == 0:
             return 0
-        if particle_position['integer_position'] <= self.integration_radius_of_intensity_peaks:
+        if particle_position['integer_position'] <= self._integration_radius_of_intensity_peaks:
             width = particle_position['integer_position']
         elif particle_position['integer_position'] >= self._averaged_intensity.shape[
-            1] - self.integration_radius_of_intensity_peaks:
+            1] - self._integration_radius_of_intensity_peaks:
             width = self._averaged_intensity.shape[1] - particle_position['integer_position']
         else:
             width = self._integration_radius_of_intensity_peaks
         intensity = self._averaged_intensity[particle_position[0],
                     particle_position['integer_position'] - width:particle_position['integer_position'] + width]
-        return particle_position['integer_position'] + self._calculate_center_of_mass(intensity-np.min(intensity)) - width
+        return particle_position['integer_position'] + self._calculate_center_of_mass(intensity - np.min(intensity)) - width
 
     def _perform_particle_discrimination(self):
         self._remove_particles_with_wrong_intensity_moment()
@@ -375,12 +399,12 @@ class ParticleTracker:
     def _calculate_second_order_intensity_moment(self, particle_position):
         if particle_position['integer_position'] == 0:
             return 0
-        if particle_position['integer_position'] < self.integration_radius_of_intensity_peaks:
+        if particle_position['integer_position'] < self._integration_radius_of_intensity_peaks:
             w = particle_position['integer_position']
-        elif particle_position['integer_position'] > self._frames.shape[1] - self.integration_radius_of_intensity_peaks:
+        elif particle_position['integer_position'] > self._frames.shape[1] - self._integration_radius_of_intensity_peaks:
             w = self._frames.shape[1] - particle_position['integer_position']
         else:
-            w = self.integration_radius_of_intensity_peaks
+            w = self._integration_radius_of_intensity_peaks
         return np.sum(
             np.arange(-w, w) ** 2 * self.frames[particle_position['frame_index'],
                                     particle_position['integer_position'] - w: particle_position[
@@ -390,12 +414,12 @@ class ParticleTracker:
     def _calculate_first_order_intensity_moment(self, particle_position):
         if particle_position['integer_position'] == 0:
             return self._averaged_intensity[particle_position['frame_index'], particle_position['integer_position']]
-        if particle_position['integer_position'] < self.integration_radius_of_intensity_peaks:
+        if particle_position['integer_position'] < self._integration_radius_of_intensity_peaks:
             w = particle_position['integer_position']
-        elif particle_position['integer_position'] > self._frames.shape[1] - self.integration_radius_of_intensity_peaks:
+        elif particle_position['integer_position'] > self._frames.shape[1] - self._integration_radius_of_intensity_peaks:
             w = self._frames.shape[1] - particle_position['integer_position']
         else:
-            w = self.integration_radius_of_intensity_peaks
+            w = self._integration_radius_of_intensity_peaks
         return np.sum(self.frames[particle_position['frame_index'],
                       particle_position['integer_position'] - w: particle_position['integer_position'] + w])
 
@@ -418,7 +442,7 @@ class ParticleTracker:
     def _particles_are_too_close(self, position1, position2):
         return position1['frame_index'] == position2['frame_index'] and (
                 np.abs(position2['integer_position'] - position1[
-                    'integer_position']) < self.integration_radius_of_intensity_peaks)
+                    'integer_position']) < self._integration_radius_of_intensity_peaks)
 
     def _initialise_empty_association_matrix(self):
         self._association_matrix = {}
@@ -618,3 +642,36 @@ class ParticleTracker:
     @staticmethod
     def _find_index_of_nearest(array, value):
         return (np.abs(np.array(array) - value)).argmin()
+
+    @staticmethod
+    def _validate_class_arguments(frames, time):
+        ParticleTracker._test_if_frames_have_correct_format(frames)
+        ParticleTracker._test_if_time_has_correct_format(time)
+        ParticleTracker._test_if_time_and_frames_has_same_length(time, frames)
+
+    @staticmethod
+    def _test_if_frames_have_correct_format(frames):
+        if type(frames) is not np.ndarray:
+            raise TypeError('Class argument frames not of type np.ndarray')
+        if not (len(frames.shape) == 2 and frames.shape[0] > 1 and frames.shape[1] > 2):
+            raise ValueError('Class argument frames need to be of shape (nFrames,nPixels) with nFrames > 1 and nPixels >2')
+        if not (np.max(frames.flatten()) == 1 and np.min(frames.flatten()) == 0):
+            raise ValueError('Class argument frames not normalised. Max value of frames should be 1 and min value should be 0.')
+
+        return True
+
+    @staticmethod
+    def _test_if_time_has_correct_format(time):
+        if type(time) is not np.ndarray:
+            raise TypeError('Class argument frames not of type np.ndarray')
+        if not (len(time.shape) == 1 and time.shape[0] > 1):
+            raise ValueError('Class argument time need to be of shape (nFrames,) with nFrames > 1.')
+        if not all(np.diff(time) > 0):
+            raise ValueError('Class argument time not increasing monotonically.')
+        return True
+
+    @staticmethod
+    def _test_if_time_and_frames_has_same_length(time, frames):
+        if not time.shape[0] == frames.shape[0]:
+            raise ValueError('Class arguments time and frames does not of equal length.')
+        return True
