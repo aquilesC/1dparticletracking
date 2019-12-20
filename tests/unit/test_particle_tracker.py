@@ -225,6 +225,37 @@ class SetAttributeTester(unittest.TestCase):
             with self.assertRaises(ValueError, msg=number):
                 pt.maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles = number
 
+    def test_validation_of_setting_maximum_distance_a_particle_can_travel_between_frames(self):
+        """
+        Tests the setting of the class attribute maximum_distance_a_particle_can_travel_between_frames. Should be a numerical value between 0 and number of pixels in each frame.
+        """
+        frames = np.array([
+            [0, 0.1, 0.2, 0.1],
+            [0, 0.2, 0.3, 0.4],
+            [0.2, 0.5, 0.6, 1],
+            [0, 0.1, 0.2, 0.1]
+        ], dtype=np.float32)
+        time = np.array([0, 1, 2, 3])
+
+        valid_maximum_distance_a_particle_can_travel_between_frames = [0.4, 1.4, 2, 3]
+        non_valid_type_maximum_distance_a_particle_can_travel_between_frames = ['1', [1, 2], None]
+        non_valid_values_of_maximum_distance_a_particle_can_travel_between_frames = [-1, 5, 100]
+
+        pt = ParticleTracker(frames=frames, time=time)
+
+        for distance in valid_maximum_distance_a_particle_can_travel_between_frames:
+            pt.maximum_distance_a_particle_can_travel_between_frames = distance
+            self.assertEqual(pt.maximum_distance_a_particle_can_travel_between_frames, distance)
+
+        for distance in non_valid_type_maximum_distance_a_particle_can_travel_between_frames:
+            with self.assertRaises(TypeError, msg=distance):
+                pt.maximum_distance_a_particle_can_travel_between_frames = distance
+
+        for distance in non_valid_values_of_maximum_distance_a_particle_can_travel_between_frames:
+            with self.assertRaises(ValueError, msg=distance):
+                pt.maximum_distance_a_particle_can_travel_between_frames = distance
+
+
 
 if __name__ == '__main__':
     unittest.main()

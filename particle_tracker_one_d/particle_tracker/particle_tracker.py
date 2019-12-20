@@ -122,7 +122,7 @@ class ParticleTracker:
 
     @particle_detection_threshold.setter
     def particle_detection_threshold(self, threshold):
-        if not (type(threshold) == int or type(threshold)== float):
+        if not (type(threshold) == int or type(threshold) == float):
             raise TypeError('Attribute particle_detection_threshold should be a numerical value between 0 and 1.')
         if not 0 <= threshold <= 1:
             raise ValueError('Attribute particle_detection_threshold should be a value between 0 and 1.')
@@ -160,7 +160,8 @@ class ParticleTracker:
         if type(number_of_frames) is not int:
             raise TypeError('Attribute maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles should be an integer.')
         if not 0 <= number_of_frames < self.frames.shape[0]:
-            raise ValueError('Attribute maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles should be larger or equal to 0 and smaller than the number of frames.')
+            raise ValueError(
+                'Attribute maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles should be larger or equal to 0 and smaller than the number of frames.')
         if not number_of_frames == self._maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles:
             self._maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles = number_of_frames
             self._update_association_matrix()
@@ -176,6 +177,10 @@ class ParticleTracker:
 
     @maximum_distance_a_particle_can_travel_between_frames.setter
     def maximum_distance_a_particle_can_travel_between_frames(self, distance):
+        if not (type(distance) == int or type(distance) == float):
+            raise TypeError('Attribute maximum_distance_a_particle_can_travel_between_frames should be a numerical value.')
+        if not 0 < distance < self.frames.shape[1]:
+            raise ValueError('Attribute maximum_distance_a_particle_can_travel_between_frames should be larger than 0 and smaller than the number of pixels in each frames.')
         if not distance == self._maximum_distance_a_particle_can_travel_between_frames:
             self._maximum_distance_a_particle_can_travel_between_frames = distance
             self._update_association_matrix()
