@@ -157,6 +157,10 @@ class ParticleTracker:
     @maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles.setter
     def maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles(self,
                                                                                                  number_of_frames):
+        if type(number_of_frames) is not int:
+            raise TypeError('Attribute maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles should be an integer.')
+        if not 0 <= number_of_frames < self.frames.shape[0]:
+            raise ValueError('Attribute maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles should be larger or equal to 0 and smaller than the number of frames.')
         if not number_of_frames == self._maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles:
             self._maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles = number_of_frames
             self._update_association_matrix()
