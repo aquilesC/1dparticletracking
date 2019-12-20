@@ -31,8 +31,11 @@ class ParticleTracker:
     """
 
     def __init__(self, frames, time):
-        self._time = time
+        self._test_if_frames_have_correct_format(frames)
+        self._test_if_time_has_correct_format(time)
+        self._test_if_time_and_frames_has_same_length(time, frames)
         self._frames = frames
+        self._time = time
         self._integration_radius_of_intensity_peaks = 1
         self._boxcar_width = 0
         self._feature_point_threshold = 1
@@ -260,7 +263,7 @@ class ParticleTracker:
     def _update_trajectories(self):
         self._trajectories = []
         count = 0
-        particle_has_been_used = np.zeros((self.particle_positions.shape[0],),dtype=bool)
+        particle_has_been_used = np.zeros((self.particle_positions.shape[0],), dtype=bool)
         for index, position in enumerate(self._particle_positions):
             if not particle_has_been_used[index]:
                 self._trajectories.append(Trajectory())
@@ -337,7 +340,7 @@ class ParticleTracker:
             width = self._integration_radius_of_intensity_peaks
         intensity = self._averaged_intensity[particle_position[0],
                     particle_position['integer_position'] - width:particle_position['integer_position'] + width]
-        return particle_position['integer_position'] + self._calculate_center_of_mass(intensity-np.min(intensity)) - width
+        return particle_position['integer_position'] + self._calculate_center_of_mass(intensity - np.min(intensity)) - width
 
     def _perform_particle_discrimination(self):
         self._remove_particles_with_wrong_intensity_moment()
@@ -618,3 +621,30 @@ class ParticleTracker:
     @staticmethod
     def _find_index_of_nearest(array, value):
         return (np.abs(np.array(array) - value)).argmin()
+
+    @staticmethod
+    def _test_if_frames_have_correct_format(frames):
+        if type(frames) is not np.ndarray:
+            raise TypeError('Class argument frames not of type np.ndarray')
+        if not (len(frames.shape) == 2 and frames.shape[0] > 1 and frames.shape[1] > 2):
+            raise ValueError('Class argument frames need to be of shape (nFrames,nPixels) with nFrames > 1 and nPixels >2')
+        if not (np.max(frames.flatten()) == 1 and np.min(frames.flatten()) == 0):
+            raise ValueError('Class argument frames not normalised. Max value of frames should be 1 and min value should be 0.')
+
+        return True
+
+    @staticmethod
+    def _test_if_time_has_correct_format(time):
+        if type(time) is not np.ndarray:
+            raise TypeError('Class argument frames not of type np.ndarray')
+        if not (len(time.shape) == 1 and time.shape[0] > 1):
+            raise ValueError('Class argument time need to be of shape (nFrames,) with nFrames > 1.')
+        if not all(np.diff(time) > 0):
+            raise ValueError('Class argument time not increasing monotonically.')
+        return True
+
+    @staticmethod
+    def _test_if_time_and_frames_has_same_length(time, frames):
+        if not time.shape[0] == frames.shape[0]:
+            raise ValueError('Class arguments time and frames does not of equal length.')
+        return True
