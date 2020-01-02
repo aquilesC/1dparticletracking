@@ -41,15 +41,10 @@ class ParticleTracker:
         self._maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles = 1
         self._maximum_distance_a_particle_can_travel_between_frames = 1
         self._averaged_intensity = frames
+        self._particle_positions = [None] * self.frames.shape[0]
         self._trajectories = []
-        self._association_matrix = {}
         self._cost_matrix = {}
-        self._particle_positions = np.empty(1, dtype=[('frame_index', np.int16), ('time', np.float32),
-                                                      ('integer_position', np.int16), ('refined_position', np.float32)])
-        self._update_averaged_intensity()
-        self._update_particle_positions()
-        self._update_association_matrix()
-        self._update_trajectories()
+        self._association_matrix = {}
 
     @property
     def frames(self):
@@ -603,6 +598,14 @@ class ParticleTracker:
             return int(link_matrix[index_of_point + 1][index_of_future_point + 1]) == 1
         else:
             return False
+
+    @staticmethod
+    def _find_local_maximas(y):
+        local_maximas = np.where(
+            np.r_[True, y[1:] > y[:-1]] &
+            np.r_[y[:-1] > y[1:], True]
+        )
+        return local_maximas[0]
 
     @staticmethod
     def _calculate_center_of_mass(y):

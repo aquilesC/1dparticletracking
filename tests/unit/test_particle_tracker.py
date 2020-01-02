@@ -256,6 +256,43 @@ class SetAttributeTester(unittest.TestCase):
                 pt.maximum_distance_a_particle_can_travel_between_frames = distance
 
 
+class FindParticlePositionsTester(unittest.TestCase):
+
+    def test_finding_local_maximas_function(self):
+        intensity_examples = [
+            np.array([1, 0, 0], dtype=np.float32),
+            np.array([0, 1, 0], dtype=np.float32),
+            np.array([0, 0, 1], dtype=np.float32),
+            np.array([0, 0, 0], dtype=np.float32),
+            np.array([0, 1, 1], dtype=np.float32),
+            np.array([1, 1, 0], dtype=np.float32),
+            np.array([1, 1, 1], dtype=np.float32),
+            np.array([1, 0, 1], dtype=np.float32),
+            np.array([1, 0, 1, 0], dtype=np.float32),
+            np.array([1, 1, 0, 0], dtype=np.float32),
+            np.array([1, 0, 0, 1], dtype=np.float32),
+            np.array([0, 0, 1, 0], dtype=np.float32),
+            np.array([0, 0, 0.3, 0], dtype=np.float32),
+        ]
+        expected_positions = [
+            np.array([0], dtype=np.int64),
+            np.array([1], dtype=np.int64),
+            np.array([2], dtype=np.int64),
+            np.array([], dtype=np.int64),
+            np.array([], dtype=np.int64),
+            np.array([], dtype=np.int64),
+            np.array([], dtype=np.int64),
+            np.array([0, 2], dtype=np.int64),
+            np.array([0, 2], dtype=np.int64),
+            np.array([], dtype=np.int64),
+            np.array([0, 3], dtype=np.int64),
+            np.array([2], dtype=np.int64),
+            np.array([2], dtype=np.int64)
+        ]
+
+        for index, intensity in enumerate(intensity_examples):
+            np.testing.assert_array_equal(expected_positions[index], ParticleTracker._find_local_maximas(intensity))
+
 
 if __name__ == '__main__':
     unittest.main()
