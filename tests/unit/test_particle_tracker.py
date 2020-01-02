@@ -105,6 +105,20 @@ class SetAttributeTester(unittest.TestCase):
             with self.assertRaises(ValueError):
                 ParticleTracker._test_if_time_and_frames_has_same_length(time_and_frames['time'], time_and_frames['frames'])
 
+    def test_validation_of_automatic_update(self):
+
+        valid_automatic_update_arguments = [True, False]
+
+        non_valid_automatic_update_arguments = [0, 1, 'True', 'False', np.array, []]
+
+        for automatic_update in valid_automatic_update_arguments:
+            self.assertTrue(ParticleTracker._test_if_automatic_update_has_correct_format(automatic_update))
+
+        for automatic_update in non_valid_automatic_update_arguments:
+            with self.assertRaises(ValueError):
+                ParticleTracker._test_if_automatic_update_has_correct_format(automatic_update)
+
+
     def test_validation_of_setting_the_integration_radius_of_intensity_peaks(self):
         """
         Tests the setting of the class attribute integration_radius_of_intensity_peaks. Should be an integer smaller than half of the number of pixels in a frame.
@@ -116,12 +130,13 @@ class SetAttributeTester(unittest.TestCase):
             [0, 0.1, 0.2, 0.1]
         ], dtype=np.float32)
         time = np.array([0, 1, 2, 3])
+        automatic_update = False
 
         valid_integration_radius = [0, 1, 2]
         non_valid_type_of_integration_radius = [1.5, '1', [1, 2]]
         non_valid_values_of_integration_radius = [-1, 3, 100]
 
-        pt = ParticleTracker(frames=frames, time=time)
+        pt = ParticleTracker(frames=frames, time=time, automatic_update=automatic_update)
 
         for radius in valid_integration_radius:
             pt.integration_radius_of_intensity_peaks = radius
@@ -146,12 +161,14 @@ class SetAttributeTester(unittest.TestCase):
             [0, 0.1, 0.2, 0.1]
         ], dtype=np.float32)
         time = np.array([0, 1, 2, 3])
+        automatic_update = False
+
 
         valid_boxcar_widths = [0, 1, 2, 3, 4]
         non_valid_type_of_boxcar_widths = [1.5, '1', [1, 2]]
         non_valid_values_of_boxcar_widths = [-1, 5, 100]
 
-        pt = ParticleTracker(frames=frames, time=time)
+        pt = ParticleTracker(frames=frames, time=time, automatic_update=automatic_update)
 
         for width in valid_boxcar_widths:
             pt.boxcar_width = width
@@ -176,12 +193,13 @@ class SetAttributeTester(unittest.TestCase):
             [0, 0.1, 0.2, 0.1]
         ], dtype=np.float32)
         time = np.array([0, 1, 2, 3])
+        automatic_update = False
 
         valid_particle_detection_thresholds = [0, 0.1, 0.22, 0.93, 1]
         non_valid_type_detection_thresholds = ['1', [1, 2], None]
         non_valid_values_of_detection_thresholds = [-1, 5, 100]
 
-        pt = ParticleTracker(frames=frames, time=time)
+        pt = ParticleTracker(frames=frames, time=time, automatic_update=automatic_update)
 
         for threshold in valid_particle_detection_thresholds:
             pt.particle_detection_threshold = threshold
@@ -206,12 +224,13 @@ class SetAttributeTester(unittest.TestCase):
             [0, 0.1, 0.2, 0.1]
         ], dtype=np.float32)
         time = np.array([0, 1, 2, 3])
+        automatic_update = False
 
         valid_maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles = [0, 1, 2, 3]
         non_valid_type_maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles = ['1', [1, 2], None, 1.2]
         non_valid_values_of_maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles = [-1, 5, 100]
 
-        pt = ParticleTracker(frames=frames, time=time)
+        pt = ParticleTracker(frames=frames, time=time, automatic_update=automatic_update)
 
         for number in valid_maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles:
             pt.maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles = number
@@ -236,12 +255,13 @@ class SetAttributeTester(unittest.TestCase):
             [0, 0.1, 0.2, 0.1]
         ], dtype=np.float32)
         time = np.array([0, 1, 2, 3])
+        automatic_update = False
 
         valid_maximum_distance_a_particle_can_travel_between_frames = [0.4, 1.4, 2, 3]
         non_valid_type_maximum_distance_a_particle_can_travel_between_frames = ['1', [1, 2], None]
         non_valid_values_of_maximum_distance_a_particle_can_travel_between_frames = [-1, 5, 100]
 
-        pt = ParticleTracker(frames=frames, time=time)
+        pt = ParticleTracker(frames=frames, time=time, automatic_update=automatic_update)
 
         for distance in valid_maximum_distance_a_particle_can_travel_between_frames:
             pt.maximum_distance_a_particle_can_travel_between_frames = distance
@@ -259,6 +279,9 @@ class SetAttributeTester(unittest.TestCase):
 class FindParticlePositionsTester(unittest.TestCase):
 
     def test_finding_local_maximas_function(self):
+        """
+        Tests finding particle positions. All local maximas should be found, that is, the value should be higher than both the neighbouring value to left and right.
+        """
         intensity_examples = [
             np.array([1, 0, 0], dtype=np.float32),
             np.array([0, 1, 0], dtype=np.float32),
@@ -291,8 +314,115 @@ class FindParticlePositionsTester(unittest.TestCase):
         ]
 
         for index, intensity in enumerate(intensity_examples):
-            np.testing.assert_array_equal(expected_positions[index], ParticleTracker._find_local_maximas(intensity))
+            np.testing.assert_array_equal(expected_positions[index], ParticleTracker._find_local_maximas_larger_than_threshold(intensity, 0))
+
+    def test_finding_initial_particle_positions_function(self):
+        """
+        Tests finding the initial particle positions before any discrimination and refinement of positions.
+        """
+        frames_examples = np.array([
+            [0, 0.1, 0.5],
+            [0, 0.6, 0.2],
+            [1, 0.1, 0.1],
+            [0.1, 0.1, 0.2],
+            [0.7, 0.2, 0.7]
+        ], dtype=np.float32)
+
+        times_examples = np.array([0, 1, 2, 3, 4])
+
+        expected_positions = [
+            np.array([2], dtype=np.float32),
+            np.array([1], dtype=np.float32),
+            np.array([0], dtype=np.float32),
+            np.array([], dtype=np.float32),
+            np.array([0, 2], dtype=np.float32)
+        ]
+
+        automatic_update = False
+
+        pt = ParticleTracker(time=times_examples, frames=frames_examples, automatic_update=automatic_update)
+        pt.particle_detection_threshold = 0.3
+        pt._find_initial_particle_positions()
+
+        self.assertEqual(len(pt.particle_positions), len(expected_positions))
+
+        for index, position in enumerate(pt.particle_positions):
+            np.testing.assert_array_equal(expected_positions[index], position)
+
+    def test_find_center_of_mass_function(self):
+        """
+        Test finding the center of mass close to the initial particle positions.
+        """
+
+        intensity_examples = [
+            np.array([1, 0, 0], dtype=np.float32),
+            np.array([0, 1, 0], dtype=np.float32),
+            np.array([0, 0, 1], dtype=np.float32),
+            np.array([1, 1, 0], dtype=np.float32)
+        ]
+
+        expected_center_of_mass = np.array([0, 1, 2, 0.5], dtype=np.float32)
+
+        for index, intensity in enumerate(intensity_examples):
+            self.assertEqual(ParticleTracker._calculate_center_of_mass(intensity),expected_center_of_mass[index])
+
+    def test_the_refining_of_particle_positions(self):
+        """
+        Test that the refinement of particle positions work. That is, by finding the center of mass close to the initial particle position.
+        """
+        automatic_update = False
+
+        frames_example = np.array([
+            [0, 0.1, 0.5],
+            [0, 0.6, 0.2],
+            [1, 0.1, 0.1],
+            [0.1, 0.1, 0.2],
+            [0.7, 0.2, 0.7]
+        ], dtype=np.float32)
+
+        times_example = np.array([0, 1, 2, 3, 4])
+
+        expected_positions = [
+            np.array([2], dtype=np.float32),
+            np.array([1], dtype=np.float32),
+            np.array([0], dtype=np.float32),
+            np.array([], dtype=np.float32),
+            np.array([0, 2], dtype=np.float32)
+        ]
+
+        pt = ParticleTracker(time=times_example, frames=frames_example, automatic_update=automatic_update)
+        pt.particle_detection_threshold = 0.3
+        pt.integration_radius_of_intensity_peaks = 1
+        pt._find_initial_particle_positions()
+        pt._refine_particle_positions()
+
+        self.assertEqual(len(pt.particle_positions), len(expected_positions))
+
+        for index, position in enumerate(pt.particle_positions):
+            np.testing.assert_array_equal(expected_positions[index], position)
+
+class AssociationMatrixTester:
+
+    def test_the_initialisation_of_the_association_matrix(self):
+        """
+        Test that the initialised association matrix has the correct shape.
+        """
+
+        frames_example = np.array([
+            [0, 0.1, 0.5],
+            [0, 0.6, 0.2],
+            [1, 0.1, 0.1],
+            [0.1, 0.1, 0.2],
+            [0.7, 0.2, 0.7]
+        ], dtype=np.float32)
+
+        times_example = np.array([0, 1, 2, 3, 4])
+
+        pt = ParticleTracker(time=times_example, frames=frames_example)
+        pt.particle_detection_threshold = 0.3
+        pt.integration_radius_of_intensity_peaks = 1
 
 
-if __name__ == '__main__':
-    unittest.main()
+
+    if __name__ == '__main__':
+        unittest.main()

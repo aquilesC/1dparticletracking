@@ -30,8 +30,9 @@ class ParticleTracker:
     particle_positions
     """
 
-    def __init__(self, frames, time):
-        ParticleTracker._validate_class_arguments(frames, time)
+    def __init__(self, frames, time, automatic_update=True):
+        ParticleTracker._validate_class_arguments(frames, time, automatic_update)
+        self._automatic_update = automatic_update
         self._frames = frames
         self._time = time
         self._integration_radius_of_intensity_peaks = 1
@@ -79,10 +80,11 @@ class ParticleTracker:
 
         if not width == self._boxcar_width:
             self._boxcar_width = width
-            self._update_averaged_intensity()
-            self._find_particle_positions()
-            self._update_association_matrix()
-            self._update_trajectories()
+            if self._automatic_update:
+                self._update_averaged_intensity()
+                self._find_particle_positions()
+                self._update_association_matrix()
+                self._update_trajectories()
 
     @property
     def integration_radius_of_intensity_peaks(self):
@@ -100,11 +102,12 @@ class ParticleTracker:
         if not -1 < radius <= self.frames.shape[1] / 2:
             raise ValueError('Attribute integration_radius_of_intensity_peaks should be a positive integer less or equal the half of the number of pixels in each frame.')
 
-        if not radius == self._integration_radius_of_intensity_peaks:
+        if not radius == self._integration_radius_of_intensity_peaks :
             self._integration_radius_of_intensity_peaks = radius
-            self._find_particle_positions()
-            self._update_association_matrix()
-            self._update_trajectories()
+            if self._automatic_update:
+                self._find_particle_positions()
+                self._update_association_matrix()
+                self._update_trajectories()
 
     @property
     def particle_detection_threshold(self):
@@ -123,9 +126,10 @@ class ParticleTracker:
             raise ValueError('Attribute particle_detection_threshold should be a value between 0 and 1.')
         if not threshold == self._particle_detection_threshold:
             self._particle_detection_threshold = threshold
-            self._find_particle_positions()
-            self._update_association_matrix()
-            self._update_trajectories()
+            if self._automatic_update:
+                self._find_particle_positions()
+                self._update_association_matrix()
+                self._update_trajectories()
 
     @property
     def particle_discrimination_threshold(self):
@@ -139,7 +143,8 @@ class ParticleTracker:
     def particle_discrimination_threshold(self, threshold):
         if not threshold == self._particle_discrimination_threshold:
             self._particle_discrimination_threshold = threshold
-            self._find_particle_positions()
+            if self._automatic_update:
+                self._find_particle_positions()
 
     @property
     def maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles(self):
@@ -159,8 +164,9 @@ class ParticleTracker:
                 'Attribute maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles should be larger or equal to 0 and smaller than the number of frames.')
         if not number_of_frames == self._maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles:
             self._maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles = number_of_frames
-            self._update_association_matrix()
-            self._update_trajectories()
+            if self._automatic_update:
+                self._update_association_matrix()
+                self._update_trajectories()
 
     @property
     def maximum_distance_a_particle_can_travel_between_frames(self):
@@ -178,8 +184,9 @@ class ParticleTracker:
             raise ValueError('Attribute maximum_distance_a_particle_can_travel_between_frames should be larger than 0 and smaller than the number of pixels in each frames.')
         if not distance == self._maximum_distance_a_particle_can_travel_between_frames:
             self._maximum_distance_a_particle_can_travel_between_frames = distance
-            self._update_association_matrix()
-            self._update_trajectories()
+            if self._automatic_update:
+                self._update_association_matrix()
+                self._update_trajectories()
 
     @property
     def trajectories(self):
@@ -310,6 +317,7 @@ class ParticleTracker:
     def _find_particle_positions(self):
         self._find_initial_particle_positions()
         self._refine_particle_positions()
+        # TODO
         #self._perform_particle_discrimination()
 
     def _find_initial_particle_positions(self):
@@ -644,10 +652,11 @@ class ParticleTracker:
         return (np.abs(np.array(array) - value)).argmin()
 
     @staticmethod
-    def _validate_class_arguments(frames, time):
+    def _validate_class_arguments(frames, time, automatic_update):
         ParticleTracker._test_if_frames_have_correct_format(frames)
         ParticleTracker._test_if_time_has_correct_format(time)
         ParticleTracker._test_if_time_and_frames_has_same_length(time, frames)
+        ParticleTracker._test_if_automatic_update_has_correct_format(automatic_update)
 
     @staticmethod
     def _test_if_frames_have_correct_format(frames):
@@ -674,4 +683,10 @@ class ParticleTracker:
     def _test_if_time_and_frames_has_same_length(time, frames):
         if not time.shape[0] == frames.shape[0]:
             raise ValueError('Class arguments time and frames does not of equal length.')
+        return True
+
+    @staticmethod
+    def _test_if_automatic_update_has_correct_format(automatic_update):
+        if not type(automatic_update) == bool:
+            raise ValueError('Class argument automatic_update must be True or False.')
         return True
