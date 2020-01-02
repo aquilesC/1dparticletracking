@@ -188,7 +188,7 @@ class ParticleTrackerTester(unittest.TestCase):
         particle_tracker = ParticleTracker(frames=self.TestFindingNonIntegerParticlePositions.intensity, time=self.TestFindingNonIntegerParticlePositions.time)
         particle_tracker._integration_radius_of_intensity_peaks = self.TestFindingNonIntegerParticlePositions.expected_width_of_particle
         particle_tracker.particle_detection_threshold = self.TestFindingNonIntegerParticlePositions.feature_point_threshold
-        particle_tracker._update_particle_positions()
+        particle_tracker._find_particle_positions()
         print(particle_tracker.particle_positions)
         np.testing.assert_array_equal(particle_tracker.particle_positions, self.TestFindingNonIntegerParticlePositions.expected_positions)
 

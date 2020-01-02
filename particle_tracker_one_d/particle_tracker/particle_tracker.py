@@ -80,7 +80,7 @@ class ParticleTracker:
         if not width == self._boxcar_width:
             self._boxcar_width = width
             self._update_averaged_intensity()
-            self._update_particle_positions()
+            self._find_particle_positions()
             self._update_association_matrix()
             self._update_trajectories()
 
@@ -102,7 +102,7 @@ class ParticleTracker:
 
         if not radius == self._integration_radius_of_intensity_peaks:
             self._integration_radius_of_intensity_peaks = radius
-            self._update_particle_positions()
+            self._find_particle_positions()
             self._update_association_matrix()
             self._update_trajectories()
 
@@ -123,7 +123,7 @@ class ParticleTracker:
             raise ValueError('Attribute particle_detection_threshold should be a value between 0 and 1.')
         if not threshold == self._particle_detection_threshold:
             self._particle_detection_threshold = threshold
-            self._update_particle_positions()
+            self._find_particle_positions()
             self._update_association_matrix()
             self._update_trajectories()
 
@@ -139,7 +139,7 @@ class ParticleTracker:
     def particle_discrimination_threshold(self, threshold):
         if not threshold == self._particle_discrimination_threshold:
             self._particle_discrimination_threshold = threshold
-            self._update_particle_positions()
+            self._find_particle_positions()
 
     @property
     def maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles(self):
@@ -307,27 +307,15 @@ class ParticleTracker:
             for row_index, row_intensity in enumerate(self._frames):
                 self._averaged_intensity[row_index] = convolve(row_intensity, kernel)
 
-    def _update_particle_positions(self):
-        self._find_integer_particle_positions()
+    def _find_particle_positions(self):
+        self._find_initial_particle_positions()
         self._refine_particle_positions()
-        self._perform_particle_discrimination()
+        #self._perform_particle_discrimination()
 
-    def _find_integer_particle_positions(self):
-        frame_indexes = []
-        times = []
-        integer_positions = []
-        for row_index, row_intensity in enumerate(self._averaged_intensity):
-            indexes_of_local_maximas = self._find_indexes_of_local_maximas_with_intensity_higher_than_threshold(
-                row_intensity)
-            integer_positions += indexes_of_local_maximas
-            frame_indexes += [row_index for index in indexes_of_local_maximas]
-            times += [self._time[row_index] for index in indexes_of_local_maximas]
-        self._particle_positions = np.empty((len(frame_indexes),),
-                                            dtype=[('frame_index', np.int16), ('time', np.float32),
-                                                   ('integer_position', np.int16), ('refined_position', np.float32)])
-        self._particle_positions['frame_index'] = frame_indexes
-        self._particle_positions['time'] = times
-        self._particle_positions['integer_position'] = integer_positions
+    def _find_initial_particle_positions(self):
+        self._particle_positions = [None] * self.frames.shape[0]
+        for index, frame in enumerate(self._averaged_intensity):
+            self._particle_positions[index] = self._find_local_maximas_larger_than_threshold(frame, self.particle_detection_threshold)
 
     def _find_indexes_of_local_maximas_with_intensity_higher_than_threshold(self, array):
         columns_with_local_maximas = np.r_[array[:-1] > array[1:], True] & \
@@ -336,13 +324,21 @@ class ParticleTracker:
         return np.argwhere(columns_with_local_maximas).flatten().tolist()
 
     def _refine_particle_positions(self):
-        if self._integration_radius_of_intensity_peaks != 0:
-            for row_index, position in enumerate(self._particle_positions):
-                refined_position = self._find_center_of_mass_close_to_position(position)
-                self._particle_positions['refined_position'][row_index] = refined_position
-                self._particle_positions['integer_position'][row_index] = round(refined_position)
-        else:
-            self._particle_positions['refined_position'] = self._particle_positions['integer_position']
+        if self._integration_radius_of_intensity_peaks == 0:
+            return
+        for frame_index, positions in enumerate(self._particle_positions):
+            for index, position in enumerate(positions):
+                if position == 0:
+                    continue
+                elif position <= self.integration_radius_of_intensity_peaks:
+                    integration_radius = position
+                elif position >= self._frames.shape[1] - self._integration_radius_of_intensity_peaks:
+                    integration_radius = self._frames.shape[1] - position
+                else:
+                    integration_radius = self.integration_radius_of_intensity_peaks
+                intensity = self._averaged_intensity[frame_index][int(position - integration_radius):int(position + integration_radius)]
+                intensity = intensity - np.min(intensity)
+                self._particle_positions[frame_index][index] = position + self._calculate_center_of_mass(intensity) - integration_radius
 
     def _find_center_of_mass_close_to_position(self, particle_position):
         if particle_position['integer_position'] == 0:
@@ -600,12 +596,13 @@ class ParticleTracker:
             return False
 
     @staticmethod
-    def _find_local_maximas(y):
+    def _find_local_maximas_larger_than_threshold(y, threshold):
         local_maximas = np.where(
             np.r_[True, y[1:] > y[:-1]] &
-            np.r_[y[:-1] > y[1:], True]
+            np.r_[y[:-1] > y[1:], True] &
+            np.r_[y > threshold]
         )
-        return local_maximas[0]
+        return local_maximas[0].astype(np.float32)
 
     @staticmethod
     def _calculate_center_of_mass(y):
