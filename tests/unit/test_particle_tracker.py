@@ -118,7 +118,6 @@ class SetAttributeTester(unittest.TestCase):
             with self.assertRaises(ValueError):
                 ParticleTracker._test_if_automatic_update_has_correct_format(automatic_update)
 
-
     def test_validation_of_setting_the_integration_radius_of_intensity_peaks(self):
         """
         Tests the setting of the class attribute integration_radius_of_intensity_peaks. Should be an integer smaller than half of the number of pixels in a frame.
@@ -162,7 +161,6 @@ class SetAttributeTester(unittest.TestCase):
         ], dtype=np.float32)
         time = np.array([0, 1, 2, 3])
         automatic_update = False
-
 
         valid_boxcar_widths = [0, 1, 2, 3, 4]
         non_valid_type_of_boxcar_widths = [1.5, '1', [1, 2]]
@@ -364,7 +362,7 @@ class FindParticlePositionsTester(unittest.TestCase):
         expected_center_of_mass = np.array([0, 1, 2, 0.5], dtype=np.float32)
 
         for index, intensity in enumerate(intensity_examples):
-            self.assertEqual(ParticleTracker._calculate_center_of_mass(intensity),expected_center_of_mass[index])
+            self.assertEqual(ParticleTracker._calculate_center_of_mass(intensity), expected_center_of_mass[index])
 
     def test_the_refining_of_particle_positions(self):
         """
@@ -384,7 +382,7 @@ class FindParticlePositionsTester(unittest.TestCase):
 
         expected_positions = [
             np.array([2], dtype=np.float32),
-            np.array([1], dtype=np.float32),
+            np.array([1.25], dtype=np.float32),
             np.array([0], dtype=np.float32),
             np.array([], dtype=np.float32),
             np.array([0, 2], dtype=np.float32)
@@ -401,13 +399,112 @@ class FindParticlePositionsTester(unittest.TestCase):
         for index, position in enumerate(pt.particle_positions):
             np.testing.assert_array_equal(expected_positions[index], position)
 
-class AssociationMatrixTester:
+        print(pt._particle_positions)
 
-    def test_the_initialisation_of_the_association_matrix(self):
+
+class AssociationAndCostMatrixTester(unittest.TestCase):
+
+    def test_the_initialisation_of_the_association_and_cost_matrix(self):
         """
         Test that the initialised association matrix has the correct shape.
         """
+        automatic_update = False
 
+        frames_example = np.array([
+            [0, 0.1, 0.5],
+            [0, 0.6, 0.2],
+            [1, 0.1, 0.1],
+            [0.1, 0.1, 0.2],
+        ], dtype=np.float32)
+
+        times_example = np.array([0, 1, 2, 3])
+
+        particle_positions = [
+            np.array([], dtype=np.float32),
+            np.array([1], dtype=np.float32),
+            np.array([0, 2], dtype=np.float32),
+            np.array([0, 2, 3], dtype=np.float32),
+        ]
+
+        expected_association_matrix = [
+            [
+                np.zeros((1, 2), dtype=bool),
+                np.zeros((1, 3), dtype=bool),
+                np.zeros((1, 4), dtype=bool)
+            ],
+            [
+                np.zeros((2, 3), dtype=bool),
+                np.zeros((2, 4), dtype=bool)
+            ],
+            [
+                np.zeros((3, 4), dtype=bool)
+            ],
+            []
+        ]
+
+        expected_cost_matrix = [
+            [
+                np.zeros((1, 2), dtype=np.float32),
+                np.zeros((1, 3), dtype=np.float32),
+                np.zeros((1, 4), dtype=np.float32)
+            ],
+            [
+                np.zeros((2, 3), dtype=np.float32),
+                np.zeros((2, 4), dtype=np.float32)
+            ],
+            [
+                np.zeros((3, 4), dtype=np.float32)
+            ],
+            []
+        ]
+
+        pt = ParticleTracker(time=times_example, frames=frames_example, automatic_update=automatic_update)
+        pt.maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles = 2
+        pt._particle_positions = particle_positions
+
+        pt._initialise_association_and_cost_matrix()
+
+        self.assertEqual(len(expected_association_matrix), len(pt._association_matrix))
+        self.assertEqual(len(expected_cost_matrix), len(pt._cost_matrix))
+
+        for index in range(len(expected_association_matrix)):
+            self.assertEqual(len(expected_association_matrix[index]), len(pt._association_matrix[index]), msg=index)
+            self.assertEqual(len(expected_cost_matrix[index]), len(pt._cost_matrix[index]), msg=index)
+
+        for frame_index in range(len(expected_association_matrix)):
+            for r in range(len(expected_association_matrix[frame_index])):
+                np.testing.assert_array_equal(pt._association_matrix[frame_index][r], expected_association_matrix[frame_index][r])
+                np.testing.assert_array_equal(pt._cost_matrix[frame_index][r], expected_cost_matrix[frame_index][r])
+
+    def test_calculation_of_first_order_intensity_moments(self):
+        """
+        Verification of the calulation of first order intensity moments
+        """
+
+        frames_example = np.array([
+            [0, 0.1, 0.5],
+            [0, 0.6, 0.2]
+        ], dtype=np.float32)
+
+        times_example = np.array([0, 1, 2, 3, 4])
+
+        positions = [
+            [0,0],
+            [0,0],
+            [0,0],
+            [0,0],
+            [0,0],
+            [0,0]
+        ]
+
+        expected_first_order_intensity_momment = [
+
+        ]
+
+    def test_calculation_of_the_cost_matrix(self):
+        """
+        Test to verify that the calculation of the cost matrix is done correctly.
+        """
         frames_example = np.array([
             [0, 0.1, 0.5],
             [0, 0.6, 0.2],
@@ -418,11 +515,55 @@ class AssociationMatrixTester:
 
         times_example = np.array([0, 1, 2, 3, 4])
 
-        pt = ParticleTracker(time=times_example, frames=frames_example)
-        pt.particle_detection_threshold = 0.3
-        pt.integration_radius_of_intensity_peaks = 1
+        expected_positions = [
+            np.array([2], dtype=np.float32),
+            np.array([1.25], dtype=np.float32),
+            np.array([0], dtype=np.float32),
+            np.array([], dtype=np.float32),
+            np.array([0, 2], dtype=np.float32)
+        ]
+
+        max_frames = 2
+        max_distance = 1
+
+        expected_cost_matrix = [
+            [
+                np.array(
+                    [
+                        [np.inf, 4],
+                    ], dtype=np.float32),
+                np.array(
+                    [
+                        [np.inf, 16, 16]
+                    ], dtype=np.float32),
+                np.array(
+                    [
+                        [np.inf, 36, 36, 36]
+                    ], dtype=np.float32)
+            ],
+            [
+                np.array(
+                    [
+                        [np.inf, 4, 4],
+                        [4, 0, 0]
+                    ], dtype=np.float32),
+                np.array(
+                    [
+                        [np.inf, 16, 16, 16],
+                        [16, 0, 0, 0]
+                    ], dtype=np.float32)
+            ],
+            [
+                np.array(
+                    [
+                        [np.inf, 36, 36, 36],
+                        [16, 0, 0, 0],
+                        [16, 0, 0, 0]
+                    ], dtype=np.float32)
+            ],
+            []
+        ]
 
 
-
-    if __name__ == '__main__':
-        unittest.main()
+if __name__ == '__main__':
+    unittest.main()
