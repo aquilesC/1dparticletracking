@@ -399,8 +399,6 @@ class FindParticlePositionsTester(unittest.TestCase):
         for index, position in enumerate(pt.particle_positions):
             np.testing.assert_array_equal(expected_positions[index], position)
 
-        print(pt._particle_positions)
-
 
 class AssociationAndCostMatrixTester(unittest.TestCase):
 
@@ -479,27 +477,152 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
     def test_calculation_of_first_order_intensity_moments(self):
         """
         Verification of the calulation of first order intensity moments
+        TODO: Rewrite to have more logical frames with particle positions going from left to right.
         """
 
         frames_example = np.array([
-            [0, 0.1, 0.5],
-            [0, 0.6, 0.2]
+            [0.3, 0.1, 0, 0.1, 0.1, 0.5],
+            [0, 0.6, 0.2, 0.3, 0.1, 0],
+            [1, 0.1, 0.1, 0.3, 0.2, 0],
+            [0.1, 0.1, 0.2, 0.2, 0.1, 0.1],
+            [0.1, 0.1, 0.8, 0.2, 0.3, 0],
+            [0.7, 0.2, 0.2, 0.2, 0.6, 0.1],
+            [0.1, 0.8, 0.2, 0.2, 0.9, 0.1]
         ], dtype=np.float32)
 
-        times_example = np.array([0, 1, 2, 3, 4])
+        times_example = np.array([0, 1, 2, 3, 4, 5, 6])
 
-        positions = [
-            [0,0],
-            [0,0],
-            [0,0],
-            [0,0],
-            [0,0],
-            [0,0]
+        particle_positions = np.array([
+            [5, 0],
+            [1.25, 1],
+            [0, 2],
+            [2, 4],
+            [0, 5],
+            [4, 5],
+            [1, 6],
+            [4, 6]
+        ], dtype=np.float32)
+
+        expected_first_order_intensity_moment_integration_radius_zero = [
+            0.5,
+            0.6,
+            1,
+            0.8,
+            0.7,
+            0.6,
+            0.8,
+            0.9
         ]
 
-        expected_first_order_intensity_momment = [
-
+        expected_first_order_intensity_moment_integration_radius_one = [
+            0.7,
+            0.8,
+            1.2,
+            1.1,
+            1.1,
+            0.9,
+            1.1,
+            1.2
         ]
+
+        expected_first_order_intensity_moment_integration_radius_two = [
+            0.9,
+            1.4,
+            1.4,
+            1.5,
+            1.5,
+            1.3,
+            1.5,
+            1.6
+        ]
+
+        expected_first_order_intensity_moment_integration_radius_three = [
+            3.3,
+            3.2
+        ]
+
+        expected_second_order_intensity_moment_integration_radius_zero = [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+        ]
+
+        expected_second_order_intensity_moment_integration_radius_one = [
+            0.2857142857,
+            0.25,
+            0.1666666667,
+            0.2727272727,
+            0.3636363636,
+            0.3333333333,
+            0.2727272727,
+            0.25
+        ]
+
+        expected_second_order_intensity_moment_integration_radius_two = [
+            1.1111111111,
+            1.8571428571,
+            0.7142857143,
+            1.2666666667,
+            1.3333333333,
+            1.4615384615,
+            1.2666666667,
+            1.1875
+        ]
+
+        expected_second_order_intensity_moment_integration_radius_three = [
+            5.48484848485,
+            5.09375
+        ]
+
+        pt = ParticleTracker(frames=frames_example, time=times_example, automatic_update=False)
+        pt.integration_radius_of_intensity_peaks = 0
+
+        for index, position in enumerate(particle_positions):
+            np.testing.assert_almost_equal(pt._calculate_first_order_intensity_moment(position[0], int(round(position[1]))),
+                                           expected_first_order_intensity_moment_integration_radius_zero[index])
+
+        for index, position in enumerate(particle_positions):
+            np.testing.assert_almost_equal(pt._calculate_second_order_intensity_moment(position[0], int(round(position[1]))),
+                                           expected_second_order_intensity_moment_integration_radius_zero[index])
+
+        pt.integration_radius_of_intensity_peaks = 1
+
+        for index, position in enumerate(particle_positions):
+            np.testing.assert_almost_equal(expected_first_order_intensity_moment_integration_radius_one[index],
+                                           pt._calculate_first_order_intensity_moment(position[0], int(round(position[1]))))
+
+        for index, position in enumerate(particle_positions):
+            np.testing.assert_almost_equal(pt._calculate_second_order_intensity_moment(position[0], int(round(position[1]))),
+                                           expected_second_order_intensity_moment_integration_radius_one[index])
+
+        pt.integration_radius_of_intensity_peaks = 2
+
+        for index, position in enumerate(particle_positions):
+            np.testing.assert_almost_equal(pt._calculate_first_order_intensity_moment(position[0], int(round(position[1]))),
+                                           expected_first_order_intensity_moment_integration_radius_two[index], decimal=5)
+
+        for index, position in enumerate(particle_positions):
+            np.testing.assert_almost_equal(pt._calculate_second_order_intensity_moment(position[0], int(round(position[1]))),
+                                           expected_second_order_intensity_moment_integration_radius_two[index])
+
+        pt.integration_radius_of_intensity_peaks = 3
+
+        np.testing.assert_almost_equal(pt._calculate_first_order_intensity_moment(1, 6),
+                                       expected_first_order_intensity_moment_integration_radius_three[0])
+
+        np.testing.assert_almost_equal(pt._calculate_first_order_intensity_moment(4, 6),
+                                       expected_first_order_intensity_moment_integration_radius_three[1])
+
+        np.testing.assert_almost_equal(pt._calculate_second_order_intensity_moment(1, 6),
+                                       expected_second_order_intensity_moment_integration_radius_three[0], decimal=5)
+
+        np.testing.assert_almost_equal(pt._calculate_second_order_intensity_moment(4, 6),
+                                       expected_second_order_intensity_moment_integration_radius_three[1])
 
     def test_calculation_of_the_cost_matrix(self):
         """
@@ -515,7 +638,7 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
 
         times_example = np.array([0, 1, 2, 3, 4])
 
-        expected_positions = [
+        particle_positions = [
             np.array([2], dtype=np.float32),
             np.array([1.25], dtype=np.float32),
             np.array([0], dtype=np.float32),
@@ -530,39 +653,127 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
             [
                 np.array(
                     [
-                        [np.inf, 4],
+                        [-np.inf, 1],
+                        [1, 0.5737755],
                     ], dtype=np.float32),
                 np.array(
                     [
-                        [np.inf, 16, 16]
+                        [-np.inf, 4],
+                        [4, np.inf]
                     ], dtype=np.float32),
                 np.array(
                     [
-                        [np.inf, 36, 36, 36]
+                        [-np.inf],
+                        [9]
                     ], dtype=np.float32)
             ],
             [
                 np.array(
                     [
-                        [np.inf, 4, 4],
-                        [4, 0, 0]
+                        [-np.inf, 1],
+                        [1, np.inf]
                     ], dtype=np.float32),
                 np.array(
                     [
-                        [np.inf, 16, 16, 16],
-                        [16, 0, 0, 0]
+                        [-np.inf],
+                        [4]
+                    ], dtype=np.float32),
+                np.array(
+                    [
+                        [-np.inf, 9, 9],
+                        [9, 1.6654132, 0.6654132]
                     ], dtype=np.float32)
+
             ],
             [
                 np.array(
                     [
-                        [np.inf, 36, 36, 36],
-                        [16, 0, 0, 0],
-                        [16, 0, 0, 0]
+                        [-np.inf],
+                        [1]
+                    ], dtype=np.float32),
+                np.array(
+                    [
+                        [-np.inf, 4, 4],
+                        [4, 0.0487971, np.inf]
+                    ], dtype=np.float32)
+
+            ],
+            [
+                np.array(
+                    [
+                        [-np.inf, 1, 1],
                     ], dtype=np.float32)
             ],
             []
         ]
+
+        pt = ParticleTracker(frames=frames_example, time=times_example, automatic_update=False)
+        pt.integration_radius_of_intensity_peaks = 1
+        pt.maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles = 2
+        pt.maximum_distance_a_particle_can_travel_between_frames = 1
+
+        pt._particle_positions = particle_positions
+
+        pt._initialise_association_and_cost_matrix()
+        pt._calculate_cost_matrix()
+
+        for frame_index, _ in enumerate(pt._cost_matrix):
+            for future_frame_index, _ in enumerate(pt._cost_matrix[frame_index]):
+                np.testing.assert_array_almost_equal(pt._cost_matrix[frame_index][future_frame_index], expected_cost_matrix[frame_index][future_frame_index])
+
+    def test_initial_links_in_association_matrix(self):
+        """
+        Verification of the initial links in the association matrix is set correctly.
+        """
+        frames_example = np.array([
+            [0, 0.1, 0.5],
+            [0, 0.6, 0.2],
+            [1, 0.1, 0.1],
+        ], dtype=np.float32)
+
+        times_example = np.array([0, 1, 2])
+
+        cost_matrix = [
+            [
+                np.array(
+                    [
+                        [-np.inf, 1, 1, 1],
+                        [1, 0.2, 0.5, 0.3],
+                        [1, 0.1, 0.6, 0.3],
+                        [1, 0.2, 0.3, np.inf],
+                        [1, 0.3, 0.1, 0.8]
+                    ], dtype=np.float32)
+            ]
+        ]
+        initial_association_matrix = [
+            [
+                np.zeros((5, 4), dtype=bool)
+            ]
+        ]
+
+        expected_association_matrix = [
+            [
+                np.array(
+                    [
+                        [1, 0, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 0, 0, 1],
+                        [0, 0, 1, 0],
+                        [1, 0, 0, 0]
+                    ], dtype=bool)
+
+            ]
+        ]
+
+        pt = ParticleTracker(frames=frames_example, time=times_example, automatic_update=False)
+
+        pt._cost_matrix = cost_matrix
+        pt._association_matrix = initial_association_matrix
+        pt._create_initial_links_in_association_matrix()
+
+        for frame_index, _ in enumerate(pt._cost_matrix):
+            for future_frame_index, _ in enumerate(pt._cost_matrix[frame_index]):
+                np.testing.assert_array_almost_equal(pt._association_matrix[frame_index][future_frame_index], expected_association_matrix[frame_index][future_frame_index])
 
 
 if __name__ == '__main__':

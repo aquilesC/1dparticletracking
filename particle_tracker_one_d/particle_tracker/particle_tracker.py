@@ -394,32 +394,111 @@ class ParticleTracker:
                    particle_position_1) - self._calculate_second_order_intensity_moment(particle_position_2)) ** 2 / (
                               2 * self._sigma_2))
 
-    def _calculate_second_order_intensity_moment(self, particle_position):
-        if particle_position['integer_position'] == 0:
+    def _calculate_second_order_intensity_moment(self, position, frame_index):
+        position = int(round(position))
+        if self._integration_radius_of_intensity_peaks == 0:
             return 0
-        if particle_position['integer_position'] < self._integration_radius_of_intensity_peaks:
-            w = particle_position['integer_position']
-        elif particle_position['integer_position'] > self._frames.shape[1] - self._integration_radius_of_intensity_peaks:
-            w = self._frames.shape[1] - particle_position['integer_position']
-        else:
-            w = self._integration_radius_of_intensity_peaks
-        return np.sum(
-            np.arange(-w, w) ** 2 * self.frames[particle_position['frame_index'],
-                                    particle_position['integer_position'] - w: particle_position[
-                                                                                   'integer_position'] + w]) / \
-               self._calculate_first_order_intensity_moment(particle_position)
+        elif position == 0:
+            if self._integration_radius_of_intensity_peaks == 1:
+                return 2 * self._averaged_intensity[frame_index, 1] / self._calculate_first_order_intensity_moment(position, frame_index)
+            else:
+                second_order_index_array = np.arange(0, self._integration_radius_of_intensity_peaks + 1) ** 2
+                return (
+                               2 * np.dot(self._averaged_intensity[frame_index, :self.integration_radius_of_intensity_peaks + 1], second_order_index_array)
+                       ) / self._calculate_first_order_intensity_moment(position, frame_index)
+        elif position == self._frames.shape[1] - 1:
+            if self._integration_radius_of_intensity_peaks == 1:
+                return 2 * self._averaged_intensity[frame_index, -2] / self._calculate_first_order_intensity_moment(position, frame_index)
+            else:
+                second_order_index_array = np.arange(-self._integration_radius_of_intensity_peaks, 0) ** 2
+                return 2 * np.dot(self._averaged_intensity[frame_index, -self._integration_radius_of_intensity_peaks - 1:-1],
+                                  second_order_index_array) / self._calculate_first_order_intensity_moment(position, frame_index)
+        elif position < self._integration_radius_of_intensity_peaks:
+            w = self._integration_radius_of_intensity_peaks - position
+            if w == 1:
+                second_order_index_array = np.arange(-position, position + 1) ** 2
+                return (
+                        (
+                                np.dot(self._averaged_intensity[frame_index, :2 * position + 1], second_order_index_array) +
+                                2 * self._integration_radius_of_intensity_peaks ** 2 * self._averaged_intensity[frame_index, position + self._integration_radius_of_intensity_peaks]
+                        ) / self._calculate_first_order_intensity_moment(position, frame_index)
+                )
+            else:
+                second_order_index_array = np.arange(-position, position + 1) ** 2
+                second_order_index_array_big = np.arange(position + 1, position + self._integration_radius_of_intensity_peaks) ** 2
+                return (
+                               np.dot(second_order_index_array, self._averaged_intensity[frame_index, :2 * position + 1]) +
+                               2 * np.dot(second_order_index_array_big,
+                                          self._averaged_intensity[frame_index, 2 * position + 1:2 * position + self._integration_radius_of_intensity_peaks])
+                       ) / self._calculate_first_order_intensity_moment(position, frame_index)
+        elif position > self._frames.shape[1] - 1 - self._integration_radius_of_intensity_peaks:
+            w = self._integration_radius_of_intensity_peaks - (self._frames.shape[1] - position - 1)
+            if w == 1:
+                second_order_index_array = np.arange(-(self._frames.shape[1] - 1 - position), self._frames.shape[1] - position) ** 2
+                return (
+                               np.dot(second_order_index_array, self._averaged_intensity[frame_index, 2 * position - self._frames.shape[1] + 1:])
+                               + 2 * self._integration_radius_of_intensity_peaks ** 2 * self._averaged_intensity[
+                                   frame_index, position - self._integration_radius_of_intensity_peaks]
+                       ) / self._calculate_first_order_intensity_moment(position, frame_index)
+            else:
+                second_order_index_array = np.arange(-(self._frames.shape[1] - 1 - position), self._frames.shape[1] - position) ** 2
+                second_order_index_array_big = np.arange(- self._integration_radius_of_intensity_peaks, -(self._frames.shape[1] - position) + 1) ** 2
+                return (
+                               np.dot(second_order_index_array, self._averaged_intensity[frame_index, -2 * (self._frames.shape[1] - position) + 1:]) +
+                               2 * np.dot(second_order_index_array_big,
+                                          self._averaged_intensity[frame_index, position - self._integration_radius_of_intensity_peaks:-2 * (self._frames.shape[1] - position) + 1])
+                       ) / self._calculate_first_order_intensity_moment(position, frame_index)
 
-    def _calculate_first_order_intensity_moment(self, particle_position):
-        if particle_position['integer_position'] == 0:
-            return self._averaged_intensity[particle_position['frame_index'], particle_position['integer_position']]
-        if particle_position['integer_position'] < self._integration_radius_of_intensity_peaks:
-            w = particle_position['integer_position']
-        elif particle_position['integer_position'] > self._frames.shape[1] - self._integration_radius_of_intensity_peaks:
-            w = self._frames.shape[1] - particle_position['integer_position']
         else:
             w = self._integration_radius_of_intensity_peaks
-        return np.sum(self.frames[particle_position['frame_index'],
-                      particle_position['integer_position'] - w: particle_position['integer_position'] + w])
+            second_order_index_array = np.arange(-w, w + 1) ** 2
+            return np.dot(self._averaged_intensity[frame_index, position - w:position + w + 1], second_order_index_array) / self._calculate_first_order_intensity_moment(position,
+                                                                                                                                                                         frame_index)
+
+    def _calculate_first_order_intensity_moment(self, position, frame_index):
+        position = int(round(position))
+        if self._integration_radius_of_intensity_peaks == 0:
+            return self._averaged_intensity[frame_index, position]
+        elif position == 0:
+            if self._integration_radius_of_intensity_peaks == 1:
+                return self._averaged_intensity[frame_index, position] + 2 * self._averaged_intensity[frame_index, position + 1]
+            else:
+                return (
+                        self._averaged_intensity[frame_index, position] +
+                        2 * np.sum(self._averaged_intensity[frame_index, position + 1:position + 1 + self._integration_radius_of_intensity_peaks])
+                )
+        elif position == self._frames.shape[1] - 1:
+            if self._integration_radius_of_intensity_peaks == 1:
+                return self._averaged_intensity[frame_index, position] + 2 * self._averaged_intensity[frame_index, position - 1]
+            else:
+                return (
+                        self._averaged_intensity[frame_index, position] +
+                        2 * np.sum(self._averaged_intensity[frame_index, position - self._integration_radius_of_intensity_peaks:position])
+                )
+        elif position < self._integration_radius_of_intensity_peaks:
+            w = self._integration_radius_of_intensity_peaks - position
+            if w == 1:
+                return np.sum(self._averaged_intensity[frame_index, :2 * position + 1]) + 2 * self._averaged_intensity[frame_index, position + w + 1]
+            else:
+                return (
+                        np.sum(self._averaged_intensity[frame_index, :2 * position + 1]) +
+                        2 * np.sum(self._averaged_intensity[frame_index, 2 * position + 1:2 * position + w + 1])
+                )
+        elif position > self._frames.shape[1] - 1 - self._integration_radius_of_intensity_peaks:
+            w = self._integration_radius_of_intensity_peaks - (self._frames.shape[1] - position - 1)
+            if w == 1:
+                return (
+                        np.sum(self._averaged_intensity[frame_index, -2 * (self._frames.shape[1] - position) + 1:]) +
+                        2 * self._averaged_intensity[frame_index, -2 * (self._frames.shape[1] - position)]
+                )
+            else:
+                return (
+                        np.sum(self._averaged_intensity[frame_index, -2 * (self._frames.shape[1] - position) + 1:]) +
+                        2 * np.sum(self._averaged_intensity[frame_index, position - self._integration_radius_of_intensity_peaks:position - 1])
+                )
+        else:
+            w = self._integration_radius_of_intensity_peaks
+            return np.sum(self._averaged_intensity[frame_index, position - w:position + w + 1])
 
     def _get_particle_positions_in_frame(self, frame_index):
         return self._particle_positions[np.where(self._particle_positions['frame_index'] == frame_index)]
@@ -461,40 +540,46 @@ class ParticleTracker:
                     )
 
     def _create_initial_links_in_association_matrix(self):
-        for frame_index, frame_key in enumerate(self._association_matrix.keys()):
-            for future_frame_index, future_frame_key in enumerate(self._association_matrix[frame_key].keys()):
-                self._association_matrix[frame_key][future_frame_key] = self._initialise_link_matrix(
-                    self._association_matrix[frame_key][future_frame_key], frame_key,
-                    future_frame_key)
+        for frame_index, _ in enumerate(self._cost_matrix):
+            for future_frame_index, _ in enumerate(self._cost_matrix[frame_index]):
+                used_indexes = []
+                for particle_index, row in enumerate(self._cost_matrix[frame_index][future_frame_index]):
+                    indexes_of_min = np.argsort(row)
+                    for index in indexes_of_min:
+                        if index not in used_indexes:
+                            self._association_matrix[frame_index][future_frame_index][particle_index][index] = True
+                            if index != 0:
+                                used_indexes.append(index)
+                            break
 
     def _calculate_cost_matrix(self):
         for frame_index, _ in enumerate(self._cost_matrix):
             for future_frame_index, _ in enumerate(self._cost_matrix[frame_index]):
                 for particle_index, _ in enumerate(self._cost_matrix[frame_index][future_frame_index]):
                     for future_particle_index, _ in enumerate(self._cost_matrix[frame_index][future_frame_index][particle_index]):
-                        if particle_index == 0 or future_particle_index == 0:
-                            self._cost_matrix[frame_index][future_particle_index][particle_index][future_particle_index] = self._calculate_cost_for_association_with_dummy_particle(future_frame_index + 1)
+                        if particle_index == 0 and future_particle_index == 0:
+                            self._cost_matrix[frame_index][future_frame_index][particle_index][future_particle_index] = -np.inf
+                        elif particle_index == 0 or future_particle_index == 0:
+                            self._cost_matrix[frame_index][future_frame_index][particle_index][future_particle_index] = self._calculate_cost_for_association_with_dummy_particle(
+                                future_frame_index + 1)
                         else:
-                            particle_position_in_current_frame = (frame_index, self._particle_positions[frame_index][particle_index-1])
-                            particle_position_in_future_frame = (frame_index + future_frame_index + 1, self._particle_positions[frame_index+future_frame_index+1][future_frame_index-1])
-                            self._cost_matrix[frame_index][future_particle_index][particle_index][future_particle_index] = self._calculate_linking_cost(particle_position_in_current_frame, particle_position_in_future_frame)
-
-    def _initialise_link_matrix(self, link_matrix, frame_key, future_frame_key):
-        for row_index, costs in enumerate(self._cost_matrix[frame_key][future_frame_key]):
-            if not row_index == 0:
-                col_index = np.where(costs == np.amin(costs))[0][0]
-                if (not (link_matrix[:, col_index] == 1).any()) or col_index == 0:
-                    link_matrix[row_index][col_index] = 1
-        return self._fill_in_empty_rows_and_columns(link_matrix)
+                            particle_position_in_current_frame = (frame_index, self._particle_positions[frame_index][particle_index - 1])
+                            particle_position_in_future_frame = (
+                                frame_index + future_frame_index + 1, self._particle_positions[frame_index + future_frame_index + 1][future_particle_index - 1])
+                            self._cost_matrix[frame_index][future_frame_index][particle_index][future_particle_index] = self._calculate_linking_cost(
+                                particle_position_in_current_frame, particle_position_in_future_frame)
 
     def _calculate_linking_cost(self, position1, position2):
-        return (
+        cost = (
                 (position1[1] - position2[1]) ** 2 +
-                (self._calculate_first_order_intensity_moment(position1) - self._calculate_first_order_intensity_moment(
-                    position2)) ** 2 +
+                (self._calculate_first_order_intensity_moment(position1[1], position1[0]) - self._calculate_first_order_intensity_moment(
+                    position2[1], position2[0])) ** 2 +
                 (self._calculate_second_order_intensity_moment(
-                    position1) - self._calculate_second_order_intensity_moment(position2)) ** 2
+                    position1[1], position1[0]) - self._calculate_second_order_intensity_moment(position2[1], position2[0])) ** 2
         )
+        if cost > self._calculate_cost_for_association_with_dummy_particle(position2[0] - position1[0]):
+            return np.inf
+        return cost
 
     def _calculate_cost_for_association_with_dummy_particle(self, future_frame_index):
         return (self.maximum_distance_a_particle_can_travel_between_frames * future_frame_index) ** 2
