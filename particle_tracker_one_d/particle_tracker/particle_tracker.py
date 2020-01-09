@@ -548,9 +548,14 @@ class ParticleTracker:
                     for index in indexes_of_min:
                         if index not in used_indexes:
                             self._association_matrix[frame_index][future_frame_index][particle_index][index] = True
-                            if index != 0:
-                                used_indexes.append(index)
+                            used_indexes.append(index)
                             break
+                for particle_index, row in enumerate(self._association_matrix[frame_index][future_frame_index]):
+                    if not any(row):
+                        self._association_matrix[frame_index][future_frame_index][particle_index][0] = True
+                for future_particle_index, col in enumerate(self._association_matrix[frame_index][future_frame_index].T):
+                    if not any(col):
+                        self._association_matrix[frame_index][future_frame_index][0][future_particle_index] = True
 
     def _calculate_cost_matrix(self):
         for frame_index, _ in enumerate(self._cost_matrix):
@@ -558,7 +563,7 @@ class ParticleTracker:
                 for particle_index, _ in enumerate(self._cost_matrix[frame_index][future_frame_index]):
                     for future_particle_index, _ in enumerate(self._cost_matrix[frame_index][future_frame_index][particle_index]):
                         if particle_index == 0 and future_particle_index == 0:
-                            self._cost_matrix[frame_index][future_frame_index][particle_index][future_particle_index] = -np.inf
+                            self._cost_matrix[frame_index][future_frame_index][particle_index][future_particle_index] = 0
                         elif particle_index == 0 or future_particle_index == 0:
                             self._cost_matrix[frame_index][future_frame_index][particle_index][future_particle_index] = self._calculate_cost_for_association_with_dummy_particle(
                                 future_frame_index + 1)
@@ -585,69 +590,54 @@ class ParticleTracker:
         return (self.maximum_distance_a_particle_can_travel_between_frames * future_frame_index) ** 2
 
     def _optimise_association_matrix(self):
-        for frame_index, frame_key in enumerate(self._association_matrix.keys()):
-            for future_frame_index, future_frame_key in enumerate(self._association_matrix[frame_key].keys()):
-                link_matrix = self._association_matrix[frame_key][future_frame_key]
-                self._association_matrix[frame_key][future_frame_key] = self._optimise_link_matrix(link_matrix,
-                                                                                                   frame_key,
-                                                                                                   future_frame_key)
-        return
-
-    def _optimise_link_matrix(self, link_matrix, frame_key, future_frame_key):
-        link_matrix_is_optimal = False
-        while not link_matrix_is_optimal:
-            link_matrix_is_optimal = True
-            for row_index, row in enumerate(link_matrix):
-                for col_index, val in enumerate(row):
-                    if val == 0:
-                        if col_index > 0 and row_index > 0:
-                            introduction_cost = self._cost_matrix[frame_key][future_frame_key][row_index][col_index]
-                            row_index_with_link = np.where(link_matrix[:, col_index] == 1)[0][0]
-                            col_index_with_link = np.where(link_matrix[row_index, :] == 1)[0][0]
-                            reduction_cost_row = self._cost_matrix[frame_key][future_frame_key][row_index_with_link][
-                                col_index]
-                            reduction_cost_col = self._cost_matrix[frame_key][future_frame_key][row_index][
-                                col_index_with_link]
-                            introduction_row_col = self._cost_matrix[frame_key][future_frame_key][row_index_with_link][
-                                col_index_with_link]
-                            total_cost = introduction_cost - reduction_cost_row - reduction_cost_col + introduction_row_col
-
-                            if total_cost < 0:
-                                link_matrix[row_index][col_index] = 1
-                                link_matrix[row_index][col_index_with_link] = 0
-                                link_matrix[row_index_with_link][col_index] = 0
-                                link_matrix[row_index_with_link][col_index_with_link] = 1
-                                link_matrix_is_optimal = False
-
-                        elif row_index == 0 and col_index > 0:
-                            introduction_cost = self._cost_matrix[frame_key][future_frame_key][row_index][col_index]
-                            row_index_with_link = np.where(link_matrix[:, col_index] == 1)[0][0]
-                            reduction_cost_row = self._cost_matrix[frame_key][future_frame_key][row_index_with_link][
-                                col_index]
-                            introduction_row = self._cost_matrix[frame_key][future_frame_key][row_index_with_link][0]
-                            total_cost = introduction_cost - reduction_cost_row + introduction_row
-
-                            if total_cost < 0:
-                                link_matrix[row_index][col_index] = 1
-                                link_matrix[row_index_with_link][col_index] = 0
-                                link_matrix[row_index_with_link][0] = 1
-                                link_matrix_is_optimal = False
-
-                        elif row_index > 0 and col_index == 0:
-                            introduction_cost = self._cost_matrix[frame_key][future_frame_key][row_index][col_index]
-                            col_index_with_link = np.where(link_matrix[row_index][:] == 1)[0][0]
-                            reduction_cost_col = self._cost_matrix[frame_key][future_frame_key][row_index][
-                                col_index_with_link]
-                            introduction_col = self._cost_matrix[frame_key][future_frame_key][0][col_index_with_link]
-                            total_cost = introduction_cost - reduction_cost_col + introduction_col
-
-                            if total_cost < 0:
-                                link_matrix[row_index][col_index] = 1
-                                link_matrix[row_index][col_index_with_link] = 0
-                                link_matrix[0][col_index_with_link] = 1
-                                link_matrix_is_optimal = False
-
-        return link_matrix
+        for frame_index, _ in enumerate(self._cost_matrix):
+            for future_frame_index, _ in enumerate(self._cost_matrix[frame_index]):
+                link_matrix_is_optimal = False
+                while not link_matrix_is_optimal:
+                    link_matrix_is_optimal = True
+                    lowest_cost = 0
+                    particle_index_with_lowest_cost = None
+                    future_particle_index_with_lowest_cost = None
+                    for particle_index, _ in enumerate(self._cost_matrix[frame_index][future_frame_index]):
+                        for future_particle_index, _ in enumerate(self._cost_matrix[frame_index][future_frame_index][particle_index]):
+                            if not self._association_matrix[frame_index][future_frame_index][particle_index][future_particle_index] and self._cost_matrix[frame_index][future_frame_index][particle_index][future_particle_index] != np.inf:
+                                introduction_cost = self._cost_matrix[frame_index][future_frame_index][particle_index][future_particle_index]
+                                col_index_with_link = np.argwhere(self._association_matrix[frame_index][future_frame_index][particle_index])[0][0]
+                                row_index_with_link = np.argwhere(self._association_matrix[frame_index][future_frame_index][:, future_particle_index])[0][0]
+                                if particle_index > 0 and future_particle_index > 0:
+                                    reduced_cost_row = self._cost_matrix[frame_index][future_frame_index][row_index_with_link][future_particle_index]
+                                    reduced_cost_col = self._cost_matrix[frame_index][future_frame_index][particle_index][col_index_with_link]
+                                    introduction_col_row = self._cost_matrix[frame_index][future_frame_index][row_index_with_link][col_index_with_link]
+                                    total_cost = introduction_cost + introduction_col_row - reduced_cost_col - reduced_cost_row
+                                elif future_particle_index > 0 and row_index_with_link > 0 and col_index_with_link == 0:
+                                    reduced_cost_row = self._cost_matrix[frame_index][future_frame_index][row_index_with_link][future_particle_index]
+                                    introduction_cost_col_row = self._cost_matrix[frame_index][future_frame_index][row_index_with_link][col_index_with_link]
+                                    total_cost = introduction_cost + introduction_cost_col_row - reduced_cost_row
+                                elif particle_index > 0 and col_index_with_link > 0 and row_index_with_link == 0:
+                                    reduced_cost_col = self._cost_matrix[frame_index][future_frame_index][particle_index][col_index_with_link]
+                                    introduction_cost_col_row = self._cost_matrix[frame_index][future_frame_index][row_index_with_link][col_index_with_link]
+                                    total_cost = introduction_cost + introduction_cost_col_row - reduced_cost_col
+                                if total_cost < lowest_cost:
+                                    lowest_cost = total_cost
+                                    particle_index_with_lowest_cost = particle_index
+                                    future_particle_index_with_lowest_cost = future_particle_index
+                    if lowest_cost < 0:
+                        link_matrix_is_optimal = False
+                        col_index_with_link = np.argwhere(self._association_matrix[frame_index][future_frame_index][particle_index_with_lowest_cost])[0][0]
+                        row_index_with_link = np.argwhere(self._association_matrix[frame_index][future_frame_index][:, future_particle_index_with_lowest_cost])[0][0]
+                        if particle_index_with_lowest_cost > 0 and future_particle_index_with_lowest_cost > 0:
+                            self._association_matrix[frame_index][future_frame_index][particle_index_with_lowest_cost][future_particle_index_with_lowest_cost] = True
+                            self._association_matrix[frame_index][future_frame_index][row_index_with_link][col_index_with_link] = True
+                            self._association_matrix[frame_index][future_frame_index][row_index_with_link][future_particle_index_with_lowest_cost] = False
+                            self._association_matrix[frame_index][future_frame_index][particle_index_with_lowest_cost][col_index_with_link] = False
+                        elif future_particle_index_with_lowest_cost > 0 and row_index_with_link > 0 and col_index_with_link == 0:
+                            self._association_matrix[frame_index][future_frame_index][particle_index_with_lowest_cost][future_particle_index_with_lowest_cost] = True
+                            self._association_matrix[frame_index][future_frame_index][row_index_with_link][col_index_with_link] = True
+                            self._association_matrix[frame_index][future_frame_index][row_index_with_link][future_particle_index_with_lowest_cost] = False
+                        elif particle_index_with_lowest_cost > 0 and col_index_with_link > 0 and row_index_with_link == 0:
+                            self._association_matrix[frame_index][future_frame_index][particle_index_with_lowest_cost][future_particle_index_with_lowest_cost] = True
+                            self._association_matrix[frame_index][future_frame_index][row_index_with_link][col_index_with_link] = True
+                            self._association_matrix[frame_index][future_frame_index][particle_index_with_lowest_cost][col_index_with_link] = False
 
     def _is_particle_position_already_used_in_trajectory(self, particle_position):
         for trajectory in self._trajectories:

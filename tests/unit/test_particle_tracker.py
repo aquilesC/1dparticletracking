@@ -653,34 +653,34 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
             [
                 np.array(
                     [
-                        [-np.inf, 1],
+                        [0, 1],
                         [1, 0.5737755],
                     ], dtype=np.float32),
                 np.array(
                     [
-                        [-np.inf, 4],
+                        [0, 4],
                         [4, np.inf]
                     ], dtype=np.float32),
                 np.array(
                     [
-                        [-np.inf],
+                        [0],
                         [9]
                     ], dtype=np.float32)
             ],
             [
                 np.array(
                     [
-                        [-np.inf, 1],
+                        [0, 1],
                         [1, np.inf]
                     ], dtype=np.float32),
                 np.array(
                     [
-                        [-np.inf],
+                        [0],
                         [4]
                     ], dtype=np.float32),
                 np.array(
                     [
-                        [-np.inf, 9, 9],
+                        [0, 9, 9],
                         [9, 1.6654132, 0.6654132]
                     ], dtype=np.float32)
 
@@ -688,12 +688,12 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
             [
                 np.array(
                     [
-                        [-np.inf],
+                        [0],
                         [1]
                     ], dtype=np.float32),
                 np.array(
                     [
-                        [-np.inf, 4, 4],
+                        [0, 4, 4],
                         [4, 0.0487971, np.inf]
                     ], dtype=np.float32)
 
@@ -701,7 +701,7 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
             [
                 np.array(
                     [
-                        [-np.inf, 1, 1],
+                        [0, 1, 1],
                     ], dtype=np.float32)
             ],
             []
@@ -737,17 +737,25 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
             [
                 np.array(
                     [
-                        [-np.inf, 1, 1, 1],
+                        [0, 1, 1, 1],
                         [1, 0.2, 0.5, 0.3],
                         [1, 0.1, 0.6, 0.3],
                         [1, 0.2, 0.3, np.inf],
                         [1, 0.3, 0.1, 0.8]
+                    ], dtype=np.float32),
+                np.array(
+                    [
+                        [0, 4, 4],
+                        [4, 5, 6],
+                        [4, 7, 8],
+                        [4, 9, 10]
                     ], dtype=np.float32)
             ]
         ]
         initial_association_matrix = [
             [
-                np.zeros((5, 4), dtype=bool)
+                np.zeros((5, 4), dtype=bool),
+                np.zeros((4, 3), dtype=bool)
             ]
         ]
 
@@ -760,6 +768,13 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
                         [0, 0, 0, 1],
                         [0, 0, 1, 0],
                         [1, 0, 0, 0]
+                    ], dtype=bool),
+                np.array(
+                    [
+                        [1, 0, 0],
+                        [0, 1, 0],
+                        [0, 0, 1],
+                        [1, 0, 0]
                     ], dtype=bool)
 
             ]
@@ -773,6 +788,85 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
 
         for frame_index, _ in enumerate(pt._cost_matrix):
             for future_frame_index, _ in enumerate(pt._cost_matrix[frame_index]):
+                np.testing.assert_array_almost_equal(pt._association_matrix[frame_index][future_frame_index], expected_association_matrix[frame_index][future_frame_index])
+
+    def test_optimisation_of_association_matrix(self):
+        """
+        Test that the optimisation of the association matrix minimises the cost.
+        """
+        frames_example = np.array([
+            [0, 0.1, 0.5],
+            [0, 0.6, 0.2],
+            [1, 0.1, 0.1],
+        ], dtype=np.float32)
+
+        times_example = np.array([0, 1, 2])
+
+        cost_matrix = [
+            [
+                np.array(
+                    [
+                        [0, 1, 1],
+                        [1, 0.8, 0.9],
+                        [1, 0.1, 0.9],
+                    ], dtype=np.float32),
+                np.array(
+                    [
+                        [0, 4, 4],
+                        [4, 11, 12],
+                        [4, 14, 13],
+                        [4, 3, 14]
+                    ], dtype=np.float32),
+                np.array(
+                    [
+                        [0, 4, 4, 4],
+                        [4, 13, 14, 3],
+                        [4, 14, 5, 1]
+                    ], dtype=np.float32)
+            ]
+        ]
+
+        initial_association_matrix = [
+            [
+                np.zeros((3, 3), dtype=bool),
+                np.zeros((4, 3), dtype=bool),
+                np.zeros((3, 4), dtype=bool)
+            ]
+        ]
+
+        expected_association_matrix = [
+            [
+                np.array(
+                    [
+                        [1, 0, 0],
+                        [0, 0, 1],
+                        [0, 1, 0],
+                    ], dtype=bool),
+                np.array(
+                    [
+                        [1, 0, 1],
+                        [1, 0, 0],
+                        [1, 0, 0],
+                        [0, 1, 0],
+                    ], dtype=bool),
+                np.array(
+                    [
+                        [1, 1, 0, 0],
+                        [0, 0, 0, 1],
+                        [0, 0, 1, 0]
+                    ], dtype=bool)
+            ]
+        ]
+
+        pt = ParticleTracker(frames=frames_example, time=times_example, automatic_update=False)
+
+        pt._cost_matrix = cost_matrix
+        pt._association_matrix = initial_association_matrix
+        pt._create_initial_links_in_association_matrix()
+        pt._optimise_association_matrix()
+
+        for frame_index, _ in enumerate(pt._association_matrix):
+            for future_frame_index, _ in enumerate(pt._association_matrix[frame_index]):
                 np.testing.assert_array_almost_equal(pt._association_matrix[frame_index][future_frame_index], expected_association_matrix[frame_index][future_frame_index])
 
 
