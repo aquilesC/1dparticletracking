@@ -20,7 +20,7 @@ class Trajectory:
     """
 
     def __init__(self, pixel_width=1):
-        self._particle_positions = np.empty((0,), dtype=[('frame_index', np.int16), ('time', np.float32), ('integer_position', np.int16), ('refined_position', np.float32)])
+        self._particle_positions = np.empty((0,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32)])
         self._velocities = np.empty((0, 0), dtype=np.float32)
         self._time_steps = np.empty((0, 0), dtype=np.int16)
         self._position_steps = np.empty((0, 0), dtype=np.int16)
@@ -85,7 +85,7 @@ class Trajectory:
         """
         if ax is None:
             ax = plt.axes()
-        ax.plot(self._particle_positions['refined_position'], self._particle_positions['frame_index'], np.ones((1,)), **kwargs)
+        ax.plot(self._particle_positions['position'], self._particle_positions['frame_index'], np.ones((1,)), **kwargs)
         return ax
 
     def plot_velocity_auto_correlation(self, ax=None, **kwargs):
@@ -137,7 +137,7 @@ class Trajectory:
         return times[non_zeros_indices], mean_square_displacements['msd'][non_zeros_indices]
 
     def _append_position(self, particle_position):
-        self._particle_positions = np.append(self._particle_positions, particle_position)
+        self._particle_positions = np.append(self._particle_positions, particle_position, axis=0)
 
     def _position_exists_in_trajectory(self, particle_position):
         for p in self._particle_positions:

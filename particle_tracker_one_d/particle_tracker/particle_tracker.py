@@ -45,6 +45,7 @@ class ParticleTracker:
         self._particle_positions = [None] * self.frames.shape[0]
         self._trajectories = []
         self._cost_matrix = []
+        self._cost_matrix_without_distance = []
         self._association_matrix = []
 
     @property
@@ -285,22 +286,33 @@ class ParticleTracker:
 
     def _update_trajectories(self):
         self._trajectories = []
-        count = 0
-        particle_has_been_used = np.zeros((self.particle_positions.shape[0],), dtype=bool)
-        for index, position in enumerate(self._particle_positions):
-            if not particle_has_been_used[index]:
-                self._trajectories.append(Trajectory())
-                self._trajectories[count]._append_position(position)
-                for index_future_points, future_point in enumerate(self._particle_positions[index + 1:]):
-                    if self._points_are_linked(position, future_point):
-                        self._trajectories[count]._append_position(future_point)
-                        position = future_point
-                        particle_has_been_used[index + index_future_points + 1] = True
-                count += 1
+        p = np.empty((1,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32)])
+        particle_has_been_used = [np.zeros(positions.shape,dtype=bool) for positions in self._particle_positions]
+        for frame_index, _ in enumerate(self._association_matrix[:-1]):
+            for particle_index, _ in enumerate(self._association_matrix[frame_index][0][1:]):
+                if not particle_has_been_used[frame_index][particle_index]:
+                    trajectory = Trajectory()
+                    trajectory_indexes = [np.array([frame_index, particle_index], dtype=np.int16)]
+                    trajectory_indexes = self._create_trajectory_from_particle(trajectory_indexes)
+                    for indexes in trajectory_indexes:
+                        particle_has_been_used[indexes[0]][indexes[1]] = True
+                        p['frame_index'] = indexes[0]
+                        p['time'] = self._time[indexes[0]]
+                        p['position'] = self._particle_positions[indexes[0]][indexes[1]]
+                        trajectory._append_position(p)
+                    self._trajectories.append(trajectory)
+
+    def _create_trajectory_from_particle(self, indexes):
+        for future_frame_index, link_matrix in enumerate(self._association_matrix[indexes[-1][0]]):
+            future_particle_index = np.where(link_matrix[indexes[-1][1] + 1])[0][0]
+            if future_particle_index != 0:
+                indexes.append(np.array([future_frame_index + indexes[-1][0] + 1, future_particle_index - 1], dtype=np.int16))
+                return self._create_trajectory_from_particle(indexes)
+        return indexes
 
     def _update_association_matrix(self):
-        self._initialise_association_and_cost_matrix()
-        self._calculate_cost_matrix()
+        self._initialise_association_and_cost_matrices()
+        self._calculate_cost_matrices()
         self._create_initial_links_in_association_matrix()
         self._optimise_association_matrix()
 
@@ -521,12 +533,13 @@ class ParticleTracker:
                 np.abs(position2['integer_position'] - position1[
                     'integer_position']) < self._integration_radius_of_intensity_peaks)
 
-    def _initialise_association_and_cost_matrix(self):
+    def _initialise_association_and_cost_matrices(self):
         r = self.maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles
         number_of_frames = self._frames.shape[0]
 
         self._association_matrix = [[] for _ in range(number_of_frames)]
         self._cost_matrix = [[] for _ in range(number_of_frames)]
+        self._cost_matrix_without_distance = [[] for _ in range(number_of_frames)]
         for frame_index in range(0, number_of_frames):
             for future_frame_index in range(frame_index + 1, frame_index + r + 2):
                 if future_frame_index < number_of_frames:
@@ -535,6 +548,10 @@ class ParticleTracker:
                             (len(self._particle_positions[frame_index]) + 1, len(self._particle_positions[future_frame_index]) + 1), dtype=bool)
                     )
                     self._cost_matrix[frame_index].append(
+                        np.zeros(
+                            (len(self._particle_positions[frame_index]) + 1, len(self._particle_positions[future_frame_index]) + 1), dtype=np.float32)
+                    )
+                    self._cost_matrix_without_distance[frame_index].append(
                         np.zeros(
                             (len(self._particle_positions[frame_index]) + 1, len(self._particle_positions[future_frame_index]) + 1), dtype=np.float32)
                     )
@@ -557,7 +574,7 @@ class ParticleTracker:
                     if not any(col):
                         self._association_matrix[frame_index][future_frame_index][0][future_particle_index] = True
 
-    def _calculate_cost_matrix(self):
+    def _calculate_cost_matrices(self):
         for frame_index, _ in enumerate(self._cost_matrix):
             for future_frame_index, _ in enumerate(self._cost_matrix[frame_index]):
                 for particle_index, _ in enumerate(self._cost_matrix[frame_index][future_frame_index]):
@@ -573,6 +590,17 @@ class ParticleTracker:
                                 frame_index + future_frame_index + 1, self._particle_positions[frame_index + future_frame_index + 1][future_particle_index - 1])
                             self._cost_matrix[frame_index][future_frame_index][particle_index][future_particle_index] = self._calculate_linking_cost(
                                 particle_position_in_current_frame, particle_position_in_future_frame)
+                            self._cost_matrix_without_distance[frame_index][future_frame_index][particle_index][
+                                future_particle_index] = self._calculate_linking_cost_without_distance(
+                                particle_position_in_current_frame, particle_position_in_future_frame)
+
+    def _calculate_linking_cost_without_distance(self, position1, position2):
+        return (
+                (self._calculate_first_order_intensity_moment(position1[1], position1[0]) - self._calculate_first_order_intensity_moment(
+                    position2[1], position2[0])) ** 2 +
+                (self._calculate_second_order_intensity_moment(
+                    position1[1], position1[0]) - self._calculate_second_order_intensity_moment(position2[1], position2[0])) ** 2
+        )
 
     def _calculate_linking_cost(self, position1, position2):
         cost = (
@@ -600,7 +628,8 @@ class ParticleTracker:
                     future_particle_index_with_lowest_cost = None
                     for particle_index, _ in enumerate(self._cost_matrix[frame_index][future_frame_index]):
                         for future_particle_index, _ in enumerate(self._cost_matrix[frame_index][future_frame_index][particle_index]):
-                            if not self._association_matrix[frame_index][future_frame_index][particle_index][future_particle_index] and self._cost_matrix[frame_index][future_frame_index][particle_index][future_particle_index] != np.inf:
+                            if not self._association_matrix[frame_index][future_frame_index][particle_index][future_particle_index] and \
+                                    self._cost_matrix[frame_index][future_frame_index][particle_index][future_particle_index] != np.inf:
                                 introduction_cost = self._cost_matrix[frame_index][future_frame_index][particle_index][future_particle_index]
                                 col_index_with_link = np.argwhere(self._association_matrix[frame_index][future_frame_index][particle_index])[0][0]
                                 row_index_with_link = np.argwhere(self._association_matrix[frame_index][future_frame_index][:, future_particle_index])[0][0]
@@ -639,11 +668,24 @@ class ParticleTracker:
                             self._association_matrix[frame_index][future_frame_index][row_index_with_link][col_index_with_link] = True
                             self._association_matrix[frame_index][future_frame_index][particle_index_with_lowest_cost][col_index_with_link] = False
 
-    def _is_particle_position_already_used_in_trajectory(self, particle_position):
-        for trajectory in self._trajectories:
-            if trajectory._position_exists_in_trajectory(particle_position):
-                return True
-        return False
+    def _reconnect_broken_links(self):
+        print('re')
+        for frame_index, _ in enumerate(self._association_matrix):
+            for future_frame_index, _ in enumerate(self._association_matrix[frame_index]):
+                for particle_index, associations in enumerate(self._association_matrix[frame_index][future_frame_index]):
+                    if particle_index > 0 and associations[0] and associations.shape[0] > 1:
+                        future_particle_indices = np.argsort(self._cost_matrix_without_distance[frame_index][future_frame_index][particle_index][1:])
+                        print('1')
+                        print(future_particle_indices)
+                        for future_particle_index in future_particle_indices:
+                            print(future_particle_index)
+                            if (not associations[future_particle_index + 1]) and (
+                                    self._particle_positions[frame_index][particle_index - 1] - self._particle_positions[future_frame_index + 1][future_particle_index]) ** 2 < (
+                                    (future_frame_index + 1) * self.maximum_distance_a_particle_can_travel_between_frames) ** 2:
+                                # print('2')
+                                self._association_matrix[frame_index][future_frame_index][particle_index][0] = False
+                                self._association_matrix[frame_index][future_frame_index][particle_index][future_particle_index + 1] = True
+                                break
 
     def _points_are_linked(self, point, future_point):
         if point['frame_index'] == future_point['frame_index']:

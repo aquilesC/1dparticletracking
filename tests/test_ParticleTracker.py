@@ -240,7 +240,7 @@ class ParticleTrackerTester(unittest.TestCase):
         np.testing.assert_array_equal(particle_tracker._particle_positions, self.AssociationMatrixExample.particle_positions)
 
         # Test keys in association matrix
-        particle_tracker._initialise_association_and_cost_matrix()
+        particle_tracker._initialise_association_and_cost_matrices()
         actual_empty_association_matrix = particle_tracker._association_matrix
         keys_in_actual_association_matrix = actual_empty_association_matrix.keys()
         keys_in_expected_association_matrix = self.AssociationMatrixExample.empty_association_matrix.keys()

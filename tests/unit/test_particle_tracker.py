@@ -460,7 +460,7 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
         pt.maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles = 2
         pt._particle_positions = particle_positions
 
-        pt._initialise_association_and_cost_matrix()
+        pt._initialise_association_and_cost_matrices()
 
         self.assertEqual(len(expected_association_matrix), len(pt._association_matrix))
         self.assertEqual(len(expected_cost_matrix), len(pt._cost_matrix))
@@ -714,8 +714,8 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
 
         pt._particle_positions = particle_positions
 
-        pt._initialise_association_and_cost_matrix()
-        pt._calculate_cost_matrix()
+        pt._initialise_association_and_cost_matrices()
+        pt._calculate_cost_matrices()
 
         for frame_index, _ in enumerate(pt._cost_matrix):
             for future_frame_index, _ in enumerate(pt._cost_matrix[frame_index]):
@@ -868,6 +868,186 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
         for frame_index, _ in enumerate(pt._association_matrix):
             for future_frame_index, _ in enumerate(pt._association_matrix[frame_index]):
                 np.testing.assert_array_almost_equal(pt._association_matrix[frame_index][future_frame_index], expected_association_matrix[frame_index][future_frame_index])
+
+    def test_reconnect_broken_links(self):
+        """
+        Test that the reconnection of broken links works as it should.
+        """
+
+        frames_example = np.array([
+            [0, 0.1, 0.5],
+            [0, 0.6, 0.2],
+            [1, 0.1, 0.1],
+        ], dtype=np.float32)
+
+        times_example = np.array([0, 1, 2])
+
+        particle_position = [
+            np.array([0, 1, 2]),
+            np.array([0, 1, 2]),
+            np.array([0, 1, 2, 5]),
+        ]
+
+        maximum_distance_a_particle_can_travel_between_frames = 2
+
+        cost_matrix_without_distance = [
+            [
+                np.array(
+                    [
+                        [0, 1, 1],
+                        [1, 0.8, 0.9],
+                        [1, 0.1, 0.9],
+                    ], dtype=np.float32),
+                np.array(
+                    [
+                        [0, 4, 4, 4],
+                        [4, 13, 14, 3],
+                        [4, 14, 5, 1]
+                    ], dtype=np.float32)
+            ]
+        ]
+
+        minimal_cost_association_matrix = [
+            [
+                np.array(
+                    [
+                        [1, 0, 0],
+                        [1, 0, 0],
+                        [0, 1, 0],
+                    ], dtype=bool),
+                np.array(
+                    [
+                        [1, 1, 0, 0],
+                        [1, 0, 0, 1],
+                        [0, 0, 1, 0]
+                    ], dtype=bool)
+            ]
+        ]
+
+        association_matrix_with_reconnected_trajectories = [
+            [
+                np.array(
+                    [
+                        [1, 0, 0],
+                        [0, 1, 0],
+                        [0, 1, 0],
+                    ], dtype=bool),
+                np.array(
+                    [
+                        [1, 1, 0, 0],
+                        [0, 1, 0, 1],
+                        [0, 0, 1, 0]
+                    ], dtype=bool)
+            ]
+        ]
+
+        pt = ParticleTracker(frames=frames_example, time=times_example, automatic_update=False)
+        pt._association_matrix = minimal_cost_association_matrix
+        pt._cost_matrix_without_distance = cost_matrix_without_distance
+        pt._particle_positions = particle_position
+        pt.maximum_distance_a_particle_can_travel_between_frames = maximum_distance_a_particle_can_travel_between_frames
+
+        pt._reconnect_broken_links()
+
+        for frame_index, _ in enumerate(pt._association_matrix):
+            for future_frame_index, _ in enumerate(pt._association_matrix[frame_index]):
+                np.testing.assert_array_almost_equal(pt._association_matrix[frame_index][future_frame_index],
+                                                     association_matrix_with_reconnected_trajectories[frame_index][future_frame_index])
+
+    def test_creating_trajectory(self):
+
+        frames_example = np.array([
+            [0, 0.1, 0.5],
+            [0, 0.6, 0.2],
+            [1, 0.1, 0.1],
+            [1, 0.1, 0.1]
+        ], dtype=np.float32)
+
+        times_example = np.array([1, 2, 3, 4])
+
+        particle_position = [
+            np.array([0, 1]),
+            np.array([0, 1, 2]),
+            np.array([0, 1]),
+            np.array([0, 1, 2]),
+        ]
+
+        association_matrix = [
+            [
+
+                np.array(
+                    [
+                        [1, 0, 0, 1],
+                        [0, 0, 1, 0],
+                        [0, 1, 0, 0],
+                    ],dtype=bool),
+                np.array(
+                    [
+                        [1, 0, 0],
+                        [1, 0, 0],
+                        [0, 0, 1],
+                    ], dtype=bool),
+                np.array(
+                    [
+                        [1, 0, 0, 1],
+                        [0, 1, 0, 0],
+                        [0, 0, 1, 0]
+                    ], dtype=bool)
+            ],
+            [
+                np.array(
+                    [
+                        [1, 1, 1],
+                        [0, 0, 1],
+                        [0, 1, 0],
+                        [1, 0, 0]
+                    ], dtype=bool),
+                np.array(
+                    [
+                        [1, 0, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 0, 1, 0],
+                        [0, 0, 0, 1]
+                    ], dtype=bool)
+            ],
+            [
+                np.array(
+                    [
+                        [1, 0, 0, 1],
+                        [0, 0, 1, 0],
+                        [0, 1, 0, 0]
+                    ], dtype=bool),
+            ],
+            []
+        ]
+
+        trajectories = [
+            np.empty((4,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32)]),
+            np.empty((4,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32)]),
+            np.empty((2,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32)])
+        ]
+
+        trajectories[0]['frame_index'] = np.array([0, 1, 2, 3])
+        trajectories[0]['time'] = np.array([1, 2, 3, 4])
+        trajectories[0]['position'] = np.array([0, 1, 0, 1])
+
+        trajectories[1]['frame_index'] = np.array([0, 1, 2, 3])
+        trajectories[1]['time'] = np.array([1, 2, 3, 4])
+        trajectories[1]['position'] = np.array([1, 0, 1, 0])
+
+        trajectories[2]['frame_index'] = np.array([1, 3])
+        trajectories[2]['time'] = np.array([2, 4])
+        trajectories[2]['position'] = np.array([2, 2])
+
+        pt = ParticleTracker(time=times_example, frames=frames_example, automatic_update=False)
+
+        pt._association_matrix = association_matrix
+        pt._particle_positions = particle_position
+
+        pt._update_trajectories()
+
+        for index, t in enumerate(pt.trajectories):
+            np.testing.assert_array_equal(trajectories[index], t.particle_positions)
 
 
 if __name__ == '__main__':
