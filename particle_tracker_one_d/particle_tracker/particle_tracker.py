@@ -359,20 +359,6 @@ class ParticleTracker:
                 intensity = intensity - np.min(intensity)
                 self._particle_positions[frame_index][index] = position + self._calculate_center_of_mass(intensity) - integration_radius
 
-    def _find_center_of_mass_close_to_position(self, particle_position):
-        if particle_position['integer_position'] == 0:
-            return 0
-        if particle_position['integer_position'] <= self._integration_radius_of_intensity_peaks:
-            width = particle_position['integer_position']
-        elif particle_position['integer_position'] >= self._averaged_intensity.shape[
-            1] - self._integration_radius_of_intensity_peaks:
-            width = self._averaged_intensity.shape[1] - particle_position['integer_position']
-        else:
-            width = self._integration_radius_of_intensity_peaks
-        intensity = self._averaged_intensity[particle_position[0],
-                    particle_position['integer_position'] - width:particle_position['integer_position'] + width]
-        return particle_position['integer_position'] + self._calculate_center_of_mass(intensity - np.min(intensity)) - width
-
     def _perform_particle_discrimination(self):
         self._remove_particles_with_wrong_intensity_moment()
         self._remove_particles_too_closely_together()
@@ -686,28 +672,6 @@ class ParticleTracker:
                                 self._association_matrix[frame_index][future_frame_index][particle_index][0] = False
                                 self._association_matrix[frame_index][future_frame_index][particle_index][future_particle_index + 1] = True
                                 break
-
-    def _points_are_linked(self, point, future_point):
-        if point['frame_index'] == future_point['frame_index']:
-            return False
-        nr_of_frames_between_points = self._calculate_number_of_frames_between_particle_positions(point, future_point)
-        if nr_of_frames_between_points <= self.maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles:
-
-            time_key = str(point['frame_index'])
-            r_key = str(nr_of_frames_between_points)
-
-            link_matrix = self._association_matrix[time_key][r_key]
-
-            points_in_same_frame_as_point = self._get_particle_positions_in_frame(point['frame_index'])
-            points_in_same_frame_as_future_point = self._get_particle_positions_in_frame(future_point['frame_index'])
-
-            index_of_point = \
-                np.where(points_in_same_frame_as_point['integer_position'] == point['integer_position'])[0][0]
-            index_of_future_point = \
-                np.where(points_in_same_frame_as_future_point['integer_position'] == future_point['integer_position'])[0][0]
-            return int(link_matrix[index_of_point + 1][index_of_future_point + 1]) == 1
-        else:
-            return False
 
     @staticmethod
     def _find_local_maximas_larger_than_threshold(y, threshold):
