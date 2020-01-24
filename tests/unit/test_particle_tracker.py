@@ -312,7 +312,7 @@ class FindParticlePositionsTester(unittest.TestCase):
         ]
 
         for index, intensity in enumerate(intensity_examples):
-            np.testing.assert_array_equal(expected_positions[index], ParticleTracker._find_local_maximas_larger_than_threshold(intensity, 0))
+            np.testing.assert_array_equal(expected_positions[index], ParticleTracker._find_local_maximas_larger_than_threshold(intensity, 0.2))
 
     def test_finding_initial_particle_positions_function(self):
         """

@@ -85,6 +85,7 @@ class ParticleTracker:
                 self._update_averaged_intensity()
                 self._find_particle_positions()
                 self._update_association_matrix()
+                self._reconnect_broken_links()
                 self._update_trajectories()
 
     @property
@@ -108,6 +109,7 @@ class ParticleTracker:
             if self._automatic_update:
                 self._find_particle_positions()
                 self._update_association_matrix()
+                self._reconnect_broken_links()
                 self._update_trajectories()
 
     @property
@@ -130,6 +132,7 @@ class ParticleTracker:
             if self._automatic_update:
                 self._find_particle_positions()
                 self._update_association_matrix()
+                self._reconnect_broken_links()
                 self._update_trajectories()
 
     @property
@@ -167,6 +170,7 @@ class ParticleTracker:
             self._maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles = number_of_frames
             if self._automatic_update:
                 self._update_association_matrix()
+                self._reconnect_broken_links()
                 self._update_trajectories()
 
     @property
@@ -187,6 +191,7 @@ class ParticleTracker:
             self._maximum_distance_a_particle_can_travel_between_frames = distance
             if self._automatic_update:
                 self._update_association_matrix()
+                self._reconnect_broken_links()
                 self._update_trajectories()
 
     @property
@@ -287,7 +292,7 @@ class ParticleTracker:
     def _update_trajectories(self):
         self._trajectories = []
         p = np.empty((1,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32)])
-        particle_has_been_used = [np.zeros(positions.shape,dtype=bool) for positions in self._particle_positions]
+        particle_has_been_used = [np.zeros(positions.shape, dtype=bool) for positions in self._particle_positions]
         for frame_index, _ in enumerate(self._association_matrix[:-1]):
             for particle_index, _ in enumerate(self._association_matrix[frame_index][0][1:]):
                 if not particle_has_been_used[frame_index][particle_index]:
@@ -334,7 +339,7 @@ class ParticleTracker:
     def _find_initial_particle_positions(self):
         self._particle_positions = [None] * self.frames.shape[0]
         for index, frame in enumerate(self._averaged_intensity):
-            self._particle_positions[index] = self._find_local_maximas_larger_than_threshold(frame, self.particle_detection_threshold)
+            self._particle_positions[index] = self._find_local_maximas_larger_than_threshold(frame, self._particle_detection_threshold)
 
     def _find_indexes_of_local_maximas_with_intensity_higher_than_threshold(self, array):
         columns_with_local_maximas = np.r_[array[:-1] > array[1:], True] & \
@@ -655,20 +660,16 @@ class ParticleTracker:
                             self._association_matrix[frame_index][future_frame_index][particle_index_with_lowest_cost][col_index_with_link] = False
 
     def _reconnect_broken_links(self):
-        print('re')
         for frame_index, _ in enumerate(self._association_matrix):
             for future_frame_index, _ in enumerate(self._association_matrix[frame_index]):
                 for particle_index, associations in enumerate(self._association_matrix[frame_index][future_frame_index]):
                     if particle_index > 0 and associations[0] and associations.shape[0] > 1:
                         future_particle_indices = np.argsort(self._cost_matrix_without_distance[frame_index][future_frame_index][particle_index][1:])
-                        print('1')
-                        print(future_particle_indices)
                         for future_particle_index in future_particle_indices:
-                            print(future_particle_index)
                             if (not associations[future_particle_index + 1]) and (
-                                    self._particle_positions[frame_index][particle_index - 1] - self._particle_positions[future_frame_index + 1][future_particle_index]) ** 2 < (
-                                    (future_frame_index + 1) * self.maximum_distance_a_particle_can_travel_between_frames) ** 2:
-                                # print('2')
+                                    self._particle_positions[frame_index][particle_index - 1] -
+                                    self._particle_positions[frame_index + future_frame_index + 1][future_particle_index]) ** 2 < \
+                                    ((future_frame_index + 1) * self.maximum_distance_a_particle_can_travel_between_frames) ** 2:
                                 self._association_matrix[frame_index][future_frame_index][particle_index][0] = False
                                 self._association_matrix[frame_index][future_frame_index][particle_index][future_particle_index + 1] = True
                                 break
