@@ -504,7 +504,9 @@ class ParticleTracker:
             return np.sum(self._averaged_intensity[frame_index, position - w:position + w + 1])
 
     def _get_particle_positions_in_frame(self, frame_index):
-        return self._particle_positions[np.where(self._particle_positions['frame_index'] == frame_index)]
+        if self._particle_positions[frame_index] is not None:
+            return self._particle_positions[frame_index]
+        return []
 
     def _remove_particles_too_closely_together(self):
         for index, first_position in enumerate(self._particle_positions[:-1]):
