@@ -65,13 +65,13 @@ class Trajectory:
         """
         np.array:
             Numpy array with all particle positions in the trajectory on the form `np.array((nParticles,), dtype=[('frame_index', np.int16),
-            ('time', np.float32),('integer_position', np.int16), ('refined_position', np.float32)])`
+            ('time', np.float32),('position', np.int16)])`
         """
         return self._particle_positions
 
     def plot_trajectory(self, ax=None, **kwargs):
         """
-        Plots the trajectory using the frame index and the refined particle position in pixels.
+        Plots the trajectory using the frame index and the particle position in pixels.
 
         ax: matplotlib axes instance
             The axes which you want the frames to plotted on. If none is provided a new instance will be created.
@@ -126,7 +126,7 @@ class Trajectory:
         for first_index, first_position in enumerate(self.particle_positions[:-1]):
             for second_index, second_position in enumerate(self.particle_positions[first_index + 1:]):
                 index_difference = second_position['frame_index'] - first_position['frame_index']
-                mean_square_displacements['msd'][index_difference] += ((second_position['refined_position'] - first_position['refined_position']) * self.pixel_width) ** 2
+                mean_square_displacements['msd'][index_difference] += ((second_position['position'] - first_position['position']) * self.pixel_width) ** 2
                 mean_square_displacements['nr_of_values'][index_difference] += 1
 
         for index, msd in enumerate(mean_square_displacements):
@@ -146,7 +146,7 @@ class Trajectory:
 
     def _calculate_particle_velocities(self):
         self._time_steps = np.diff(self._particle_positions['time'])
-        self._position_steps = np.diff(self._particle_positions['refined_position'] * self.pixel_width)
+        self._position_steps = np.diff(self._particle_positions['position'] * self.pixel_width)
         self._velocities = self._position_steps / self._time_steps
 
     @staticmethod
@@ -210,9 +210,9 @@ class Trajectory:
             second_position = self.particle_positions[index + 1]
             third_position = self.particle_positions[index + 2]
             if first_position['frame_index'] - second_position['frame_index'] == -1 and first_position['frame_index'] - third_position['frame_index'] == -2:
-                squared_displacements.append((self.pixel_width * (second_position['refined_position'] - first_position['refined_position'])) ** 2)
-                covariance_term.append((second_position['refined_position'] - first_position['refined_position']) * (
-                        third_position['refined_position'] - second_position['refined_position']) * self.pixel_width ** 2)
+                squared_displacements.append((self.pixel_width * (second_position['position'] - first_position['position'])) ** 2)
+                covariance_term.append((second_position['position'] - first_position['position']) * (
+                        third_position['position'] - second_position['position']) * self.pixel_width ** 2)
 
         time_step = self._calculate_time_step()
         number_of_points_used = len(squared_displacements)
