@@ -27,24 +27,33 @@ class Trajectory:
         self._pixel_width = pixel_width
 
     def __add__(self, other):
+        new_trajectory = Trajectory(pixel_width=self.pixel_width)
         if self.pixel_width != other.pixel_width:
             raise ValueError('Pixel width must be equal when adding trajectories together.')
-        elif (self.particle_positions['frame_index'][0] > other.particle_positions['frame_index'][-1]) or (
-                self.particle_positions['frame_index'][0] > other.particle_positions['frame_index'][-1]):
-            raise ValueError('Particle positions are overlapping')
+        elif self._particle_positions.shape[0] == 0 and other._particle_positions.shape[0] == 0:
+            return new_trajectory
+        elif self._particle_positions.shape == (0,):
+            new_trajectory._particle_positions = other._particle_positions
+        elif other._particle_positions.shape == (0,):
+            new_trajectory._particle_positions = self._particle_positions
+        elif other._particle_positions[0]['frame_index'] == self._particle_positions[0]['frame_index']:
+            raise ValueError('Both trajectories cant start at same frame index.')
+        elif other._particle_positions.shape[0] == 1 and self._particle_positions.shape[0] == 1:
+            if other._particle_positions['frame_index'][0] < self._particle_positions['frame_index'][0]:
+                new_trajectory._particle_positions = np.append(other._particle_positions, self._particle_positions)
+            else:
+                new_trajectory._particle_positions = np.append(self._particle_positions, other._particle_positions)
+        elif other._particle_positions['frame_index'][0] < self._particle_positions['frame_index'][0]:
+            index = np.where(
+                other._particle_positions['frame_index'] < self._particle_positions[0]['frame_index']
+            )
+            new_trajectory._particle_positions = np.append(other._particle_positions[index], self._particle_positions)
+        elif self._particle_positions['frame_index'][0] < other._particle_positions['frame_index'][0]:
+            index = np.where(
+                self._particle_positions['frame_index'] < other._particle_positions[0]['frame_index']
+            )
+            new_trajectory._particle_positions = np.append(self._particle_positions[index], other._particle_positions)
 
-        new_trajectory = Trajectory(pixel_width=self.pixel_width)
-
-        if self.particle_positions['frame_index'][0] < other.particle_positions['frame_index'][0]:
-            for position in self.particle_positions:
-                new_trajectory._append_position(position)
-            for position in other.particle_positions:
-                new_trajectory._append_position(position)
-        else:
-            for position in other.particle_positions:
-                new_trajectory._append_position(position)
-            for position in self.particle_positions:
-                new_trajectory._append_position(position)
         return new_trajectory
 
     @property
