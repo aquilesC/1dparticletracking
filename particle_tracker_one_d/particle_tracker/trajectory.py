@@ -204,6 +204,31 @@ class Trajectory:
         error_estimate = [np.sqrt(covariance_matrix[0, 0]), np.sqrt(covariance_matrix[1, 1])]
         return polynomial_coefficients, error_estimate
 
+    def plot_parts_of_trajectory_used_in_the_covariance_based_estimator_for_diffusion_coefficient(self, ax=None, **kwargs):
+        """
+        Plots the part of the trajectory that is used when calculating the diffusion coefficient with the covariance based estimator.
+
+        ax: matplotlib axes instance
+            The axes which you want the frames to plotted on. If none is provided a new instance will be created.
+        **kwargs:
+            Plot settings, any settings which can be used in matplotlib.pyplot.plot method.
+
+        Returns
+        -------
+            matplotlib axes instance
+                Returns the axes input argument or creates and returns a new instance of a matplotlib axes object.
+        """
+        if ax is None:
+            ax = plt.axes()
+        for index, first_position in enumerate(self.particle_positions[:-2]):
+            second_position = self.particle_positions[index + 1]
+            third_position = self.particle_positions[index + 2]
+            if first_position['frame_index'] - second_position['frame_index'] == -1 and first_position['frame_index'] - third_position['frame_index'] == -2:
+                x = [first_position['position'], second_position['position']]
+                y = [first_position['frame_index'], second_position['frame_index']]
+                ax.plot(x, y, np.ones((1,)), **kwargs)
+        return ax
+
     def calculate_diffusion_coefficient_using_covariance_based_estimator(self, R=None):
         """
         Unbiased estimator of the diffusion coefficient. More info at `https://www.nature.com/articles/nmeth.2904`
