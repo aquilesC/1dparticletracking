@@ -34,7 +34,7 @@ class Hindrance:
 
     def _calculate_equilibrium_partition_coefficient(self):
         if self._channel_x_dimension and self._channel_y_dimension and self._molecule_radius:
-            return (1 - self._molecule_radius / self._channel_x_dimension) * (1 - self._molecule_radius / self._channel_y_dimension)
+            return (1 - self._molecule_radius / np.sqrt(self._channel_x_dimension * self._channel_y_dimension))**2
         else:
             raise ValueError('Channel dimensions or molecule radius has not been set.')
 
