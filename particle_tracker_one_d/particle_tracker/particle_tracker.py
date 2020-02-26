@@ -341,12 +341,6 @@ class ParticleTracker:
         for index, frame in enumerate(self._averaged_intensity):
             self._particle_positions[index] = self._find_local_maximas_larger_than_threshold(frame, self._particle_detection_threshold)
 
-    def _find_indexes_of_local_maximas_with_intensity_higher_than_threshold(self, array):
-        columns_with_local_maximas = np.r_[array[:-1] > array[1:], True] & \
-                                     np.r_[True, array[1:] > array[:-1]] & \
-                                     np.r_[array > self.particle_detection_threshold]
-        return np.argwhere(columns_with_local_maximas).flatten().tolist()
-
     def _refine_particle_positions(self):
         if self._integration_radius_of_intensity_peaks == 0:
             return
