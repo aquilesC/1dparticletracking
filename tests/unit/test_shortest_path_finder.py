@@ -276,3 +276,118 @@ class SetAttributeTester(unittest.TestCase):
             with self.assertRaises(ValueError, msg=end_point):
                 spf.end_point = end_point
 
+
+class FindParticlePositionsTester(unittest.TestCase):
+
+    def test_finding_local_maximas_function(self):
+        """
+        Tests finding particle positions. All local maximas should be found, that is, the value should be higher than both the neighbouring value to left and right.
+        """
+        intensity_examples = [
+            np.array([1, 0, 0], dtype=np.float32),
+            np.array([0, 1, 0], dtype=np.float32),
+            np.array([0, 0, 1], dtype=np.float32),
+            np.array([0, 0, 0], dtype=np.float32),
+            np.array([0, 1, 1], dtype=np.float32),
+            np.array([1, 1, 0], dtype=np.float32),
+            np.array([1, 1, 1], dtype=np.float32),
+            np.array([1, 0, 1], dtype=np.float32),
+            np.array([1, 0, 1, 0], dtype=np.float32),
+            np.array([1, 1, 0, 0], dtype=np.float32),
+            np.array([1, 0, 0, 1], dtype=np.float32),
+            np.array([0, 0, 1, 0], dtype=np.float32),
+            np.array([0, 0, 0.3, 0], dtype=np.float32),
+        ]
+        expected_positions = [
+            np.array([0], dtype=np.int64),
+            np.array([1], dtype=np.int64),
+            np.array([2], dtype=np.int64),
+            np.array([], dtype=np.int64),
+            np.array([], dtype=np.int64),
+            np.array([], dtype=np.int64),
+            np.array([], dtype=np.int64),
+            np.array([0, 2], dtype=np.int64),
+            np.array([0, 2], dtype=np.int64),
+            np.array([], dtype=np.int64),
+            np.array([0, 3], dtype=np.int64),
+            np.array([2], dtype=np.int64),
+            np.array([2], dtype=np.int64)
+        ]
+
+        for index, intensity in enumerate(intensity_examples):
+            np.testing.assert_array_equal(expected_positions[index], ShortestPathFinder._find_local_maximas(intensity))
+
+    def test_finding_initial_particle_positions(self):
+        """
+        Test finding the initial particle positions, that is local maximas between start point and end point
+        """
+
+        frames = np.array([
+            [1, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0],
+            [0, 0, 1, 0, 0],
+            [0, 0, 0, 1, 0],
+            [0, 0, 0, 0, 1],
+            [0, 1, 0, 1, 0],
+            [1, 0, 0, 1, 1],
+        ], dtype=np.float32)
+
+        time = np.arange(frames.shape[0])
+        automatic_update = False
+
+        start_point = (0, 1)
+        end_point = (5, 3)
+
+        expected_positions = [
+            np.array([1], dtype=np.float32),
+            np.array([1], dtype=np.float32),
+            np.array([2], dtype=np.float32),
+            np.array([3], dtype=np.float32),
+            np.array([4], dtype=np.float32),
+            np.array([3], dtype=np.float32),
+        ]
+
+        spf = ShortestPathFinder(frames, time, automatic_update)
+        spf.start_point = start_point
+        spf.end_point = end_point
+
+        spf._find_initial_particle_positions()
+
+        for index, positions in enumerate(spf._particle_positions):
+            np.testing.assert_array_equal(expected_positions[index], positions)
+
+    def test_the_refining_of_particle_positions(self):
+        """
+        Test that the refinement of particle positions work. That is, by finding the center of mass close to the initial particle position.
+        """
+        automatic_update = False
+
+        frames = np.array([
+            [0, 0.1, 0.5],
+            [0, 0.6, 0.2],
+            [1, 0.1, 0.1],
+            [0.1, 0.1, 0.2],
+            [0.7, 0.2, 0.7]
+        ], dtype=np.float32)
+
+        time = np.array([0, 1, 2, 3, 4])
+
+        expected_positions = [
+            np.array([2], dtype=np.float32),
+            np.array([1.25], dtype=np.float32),
+            np.array([0], dtype=np.float32),
+            np.array([2], dtype=np.float32),
+            np.array([2], dtype=np.float32)
+        ]
+
+        spf = ShortestPathFinder(time=time, frames=frames, automatic_update=automatic_update)
+        spf.start_point = (0, 2)
+        spf.end_point = (4, 2)
+        spf.integration_radius_of_intensity_peaks = 1
+        spf._find_initial_particle_positions()
+        spf._refine_particle_positions()
+
+        self.assertEqual(len(spf.particle_positions), len(expected_positions))
+
+        for index, position in enumerate(spf.particle_positions):
+            np.testing.assert_array_equal(expected_positions[index], position)

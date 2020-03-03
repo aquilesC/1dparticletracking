@@ -41,9 +41,8 @@ class ShortestPathFinder:
         self._particle_positions = [None] * self.frames.shape[0]
         self._cost_matrix = []
         self._association_matrix = []
-        self._minimal_shortest_path_finder = None
-        self._start_point = (0,0)
-        self._end_point = (0,0)
+        self._start_point = (0, 0)
+        self._end_point = (0, 0)
         self._shortest_path = None
 
     @property
@@ -155,6 +154,51 @@ class ShortestPathFinder:
                     self._update_shortest_path()
 
     @property
+    def particle_positions(self):
+        """
+        np.array:
+            Numpy array with all particle positions on the form `np.array((nParticles,), dtype=[('frame_index', np.int16),
+            ('time', np.float32),('integer_position', np.int16), ('refined_position', np.float32)])`
+        """
+        return self._particle_positions
+
+    @property
+    def _intensity_of_interest(self):
+        return self._averaged_intensity[self.start_point[0]:self.end_point[0] + 1]
+
+    @property
+    def _time_of_interest(self):
+        return self._time[self.start_point[0]:self.end_point[0] + 1]
+
+    def _find_particle_positions(self):
+        self._find_initial_particle_positions()
+        self._refine_particle_positions()
+
+    def _refine_particle_positions(self):
+        if self._integration_radius_of_intensity_peaks == 0:
+            return
+        for frame_index, positions in enumerate(self._particle_positions):
+            for index, position in enumerate(positions):
+                if position == 0 or position + 1 == self._intensity_of_interest.shape[1]:
+                    continue
+                elif position < self.integration_radius_of_intensity_peaks:
+                    integration_radius = position
+                elif position > self._intensity_of_interest.shape[1] - self._integration_radius_of_intensity_peaks - 1:
+                    integration_radius = self._intensity_of_interest.shape[1] - position
+                else:
+                    integration_radius = self.integration_radius_of_intensity_peaks
+                intensity = self._intensity_of_interest[frame_index][int(position - integration_radius):int(position + integration_radius + 1)]
+                intensity = intensity - np.min(intensity)
+                self._particle_positions[frame_index][index] = position + ParticleTracker._calculate_center_of_mass(intensity) - integration_radius
+
+    def _find_initial_particle_positions(self):
+        self._particle_positions = [None] * (self.end_point[0] - self.start_point[0] + 1)
+        for index, frame in enumerate(self._intensity_of_interest):
+            self._particle_positions[index] = self._find_local_maximas(frame)
+        self._particle_positions[0] = np.array([self.start_point[1]], dtype=np.float32)
+        self._particle_positions[-1] = np.array([self.end_point[1]], dtype=np.float32)
+
+    @property
     def shortest_path(self):
         """
         trajectory:
@@ -173,6 +217,11 @@ class ShortestPathFinder:
             kernel = Box1DKernel(self.boxcar_width)
             for row_index, row_intensity in enumerate(self._frames):
                 self._averaged_intensity[row_index] = convolve(row_intensity, kernel)
+
+    @staticmethod
+    def _find_local_maximas(y):
+        local_maximas = np.where(np.r_[True, y[1:] > y[:-1]] & np.r_[y[:-1] > y[1:], True])
+        return local_maximas[0].astype(np.float32)
 
     @staticmethod
     def _validate_class_arguments(frames, time, automatic_update):
@@ -213,5 +262,3 @@ class ShortestPathFinder:
         if not type(automatic_update) == bool:
             raise ValueError('Class argument automatic_update must be True or False.')
         return True
-
-
