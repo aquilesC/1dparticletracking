@@ -1,7 +1,7 @@
 import numpy as np
 from astropy.convolution import convolve, Box1DKernel
 import matplotlib.pyplot as plt
-from .trajectory import Trajectory
+from particle_tracker_one_d.trajectory.trajectory import Trajectory
 
 
 class ParticleTracker:
