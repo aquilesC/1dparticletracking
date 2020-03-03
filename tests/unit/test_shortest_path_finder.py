@@ -391,3 +391,115 @@ class FindParticlePositionsTester(unittest.TestCase):
 
         for index, position in enumerate(spf.particle_positions):
             np.testing.assert_array_equal(expected_positions[index], position)
+
+
+class AssociationAndCostMatrixTester(unittest.TestCase):
+
+    def test_the_initialisation_of_the_association_and_cost_matrix(self):
+        """
+        Test that the initialised association matrix has the correct shape.
+        """
+        automatic_update = False
+
+        frames = np.array([
+            [0, 0.1, 0.5],
+            [0, 0.6, 0.2],
+            [1, 0.1, 0.1],
+            [0.1, 0.1, 0.2],
+        ], dtype=np.float32)
+
+        times = np.array([0, 1, 2, 3])
+
+        particle_positions = [
+            np.array([0], dtype=np.float32),
+            np.array([1], dtype=np.float32),
+            np.array([0, 2], dtype=np.float32),
+            np.array([0, 2, 3], dtype=np.float32),
+            np.array([4], dtype=np.float32),
+        ]
+
+        expected_association_matrix = [
+            np.zeros((1, 1), dtype=bool),
+            np.zeros((1, 2), dtype=bool),
+            np.zeros((2, 3), dtype=bool),
+            np.zeros((3, 1), dtype=bool)
+        ]
+
+        expected_cost_matrix = [
+            np.zeros((1, 1), dtype=np.float32),
+            np.zeros((1, 2), dtype=np.float32),
+            np.zeros((2, 3), dtype=np.float32),
+            np.zeros((3, 1), dtype=np.float32)
+        ]
+
+        spf = ShortestPathFinder(time=times, frames=frames, automatic_update=automatic_update)
+        spf._particle_positions = particle_positions
+
+        spf._initialise_association_and_cost_matrix()
+
+        self.assertEqual(len(expected_association_matrix), len(spf._association_matrix))
+        self.assertEqual(len(expected_cost_matrix), len(spf._cost_matrix))
+
+        for frame_index in range(len(expected_association_matrix)):
+            np.testing.assert_array_equal(spf._association_matrix[frame_index], expected_association_matrix[frame_index])
+            np.testing.assert_array_equal(spf._cost_matrix[frame_index], expected_cost_matrix[frame_index])
+
+    def test_calculation_of_the_cost_matrix(self):
+        """
+        Test to verify that the calculation of the cost matrix is done correctly.
+        """
+        frames = np.array([
+            [0, 0.3, 0.5],
+            [0, 0.1, 0.5],
+            [0, 0.6, 0.2],
+            [1, 0.1, 0.1],
+            [0.7, 0.2, 0.7],
+            [0.1, 0.1, 0.2],
+            [0.1, 0.1, 0.2]
+        ], dtype=np.float32)
+
+        times = np.array([0, 1, 2, 3, 4, 5, 6])
+
+        particle_positions = [
+            np.array([2], dtype=np.float32),
+            np.array([1.25], dtype=np.float32),
+            np.array([0], dtype=np.float32),
+            np.array([0, 2], dtype=np.float32),
+            np.array([2], dtype=np.float32)
+        ]
+
+        start_point = (1, 2)
+        end_point = (5, 2)
+
+        expected_cost_matrix = [
+            np.array(
+                [
+                    [0.5737755],
+                ], dtype=np.float32),
+            np.array(
+                [
+                    [1.7294444369469528],
+                ], dtype=np.float32),
+            np.array(
+                [
+                    [0.04879706540799486, 4.048797065407995],
+                ], dtype=np.float32),
+            np.array(
+                [
+                    [4.50859502261783],
+                    [0.5085950226178304],
+                ], dtype=np.float32),
+        ]
+
+        spf = ShortestPathFinder(frames=frames, time=times, automatic_update=False)
+        spf.start_point = start_point
+        spf.end_point = end_point
+
+        spf._particle_positions = particle_positions
+
+        spf._initialise_association_and_cost_matrix()
+        spf._calculate_cost_matrix()
+
+        for frame_index, _ in enumerate(spf._cost_matrix):
+            for future_frame_index, _ in enumerate(spf._cost_matrix[frame_index]):
+                np.testing.assert_array_almost_equal(spf._cost_matrix[frame_index][future_frame_index], expected_cost_matrix[frame_index][future_frame_index])
