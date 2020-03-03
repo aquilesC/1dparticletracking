@@ -179,3 +179,100 @@ class SetAttributeTester(unittest.TestCase):
         for width in non_valid_values_of_boxcar_widths:
             with self.assertRaises(ValueError, msg=width):
                 pt.boxcar_width = width
+
+    def test_validation_of_setting_start_point(self):
+        """
+        Tests the setting of the class attribute start_point. Should be a tuple, list or np.array
+        """
+
+        frames = np.array([
+            [0, 0.1, 0.2, 0.1],
+            [0, 0.2, 0.3, 0.4],
+            [0.2, 0.5, 0.6, 1],
+            [0, 0.1, 0.2, 0.1]
+        ], dtype=np.float32)
+        time = np.array([0, 1, 2, 3])
+        automatic_update = False
+
+        valid_start_points = [
+            (0, 0),
+            [0, 1],
+            np.array([1, 1], dtype=np.int16),
+            np.array([1, 3], dtype=np.int32),
+        ]
+        non_valid_type_of_start_points = [
+            1.5,
+            '12',
+            None,
+            (0.3, 2),
+            ['', 4],
+            np.array([0, 2], dtype=np.float32)
+        ]
+        non_valid_values_of_start_points = [
+            (0, -1),
+            (4, 1),
+            (0, 10)
+        ]
+
+        spf = ShortestPathFinder(frames=frames, time=time, automatic_update=automatic_update)
+
+        for start_point in valid_start_points:
+            spf.start_point = start_point
+            self.assertEqual(spf.start_point, (start_point[0], start_point[1]))
+
+        for start_point in non_valid_type_of_start_points:
+            with self.assertRaises(TypeError, msg=start_point):
+                spf.start_point = start_point
+
+        for start_point in non_valid_values_of_start_points:
+            with self.assertRaises(ValueError, msg=start_point):
+                spf.start_point = start_point
+
+    def test_validation_of_setting_end_point(self):
+        """
+        Tests the setting of the class attribute end_point. Should be a tuple, list or np.array
+        """
+
+        frames = np.array([
+            [0, 0.1, 0.2, 0.1],
+            [0, 0.2, 0.3, 0.4],
+            [0.2, 0.5, 0.6, 1],
+            [0, 0.1, 0.2, 0.1]
+        ], dtype=np.float32)
+        time = np.array([0, 1, 2, 3])
+        automatic_update = False
+
+        valid_end_points = [
+            (0, 0),
+            [0, 1],
+            np.array([1, 1], dtype=np.int16),
+            np.array([1, 3], dtype=np.int32),
+        ]
+        non_valid_type_of_end_points = [
+            1.5,
+            '12',
+            None,
+            (0.3, 2),
+            ['', 4],
+            np.array([0, 2], dtype=np.float32)
+        ]
+        non_valid_values_of_end_points = [
+            (0, -1),
+            (4, 1),
+            (0, 10)
+        ]
+
+        spf = ShortestPathFinder(frames=frames, time=time, automatic_update=automatic_update)
+
+        for end_point in valid_end_points:
+            spf.end_point = end_point
+            self.assertEqual(spf.end_point, (end_point[0], end_point[1]))
+
+        for end_point in non_valid_type_of_end_points:
+            with self.assertRaises(TypeError, msg=end_point):
+                spf.end_point = end_point
+
+        for end_point in non_valid_values_of_end_points:
+            with self.assertRaises(ValueError, msg=end_point):
+                spf.end_point = end_point
+

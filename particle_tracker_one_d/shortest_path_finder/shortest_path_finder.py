@@ -42,8 +42,8 @@ class ShortestPathFinder:
         self._cost_matrix = []
         self._association_matrix = []
         self._minimal_shortest_path_finder = None
-        self._start_point = None
-        self._end_point = None
+        self._start_point = (0,0)
+        self._end_point = (0,0)
         self._shortest_path = None
 
     @property
@@ -112,12 +112,17 @@ class ShortestPathFinder:
 
     @start_point.setter
     def start_point(self, start_point):
-        if type(start_point) not in [list, tuple, np.array]:
+        if type(start_point) not in [list, tuple, np.ndarray]:
             raise TypeError('Start point must be list, tuple or np.array with form (frame_index, position_index)')
         else:
             for val in start_point:
                 if type(val) not in [int, np.int16, np.int32]:
                     raise TypeError('Start point values must be integers')
+            if start_point[0] < 0 or start_point[0] > self._time.shape[0] - 1:
+                raise ValueError('First value in start point must be an integer between 0 and self.time.shape[0] - 1')
+            elif start_point[1] < 0 or start_point[1] > self._frames.shape[0] - 1:
+                raise ValueError('Second value in start point must be an integer between 0 and self.frames.shape[0] - 1')
+
             if not (start_point[0] == self._start_point[0] and start_point[1] == self._start_point[1]):
                 self._start_point = (int(start_point[0]), int(start_point[1]))
                 if self._automatic_update:
@@ -133,12 +138,17 @@ class ShortestPathFinder:
 
     @end_point.setter
     def end_point(self, end_point):
-        if type(end_point) not in [list, tuple, np.array]:
+        if type(end_point) not in [list, tuple, np.ndarray]:
             raise TypeError('End point must be list, tuple or np.array with form (frame_index, position_index)')
         else:
             for val in end_point:
                 if type(val) not in [int, np.int16, np.int32]:
                     raise TypeError('End point values must be integers')
+            if end_point[0] < 0 or end_point[0] > self._time.shape[0] - 1:
+                raise ValueError('First value in end point must be an integer between 0 and self.time.shape[0] - 1')
+            elif end_point[1] < 0 or end_point[1] > self._frames.shape[0] - 1:
+                raise ValueError('Second value in end point must be an integer between 0 and self.frames.shape[0] - 1')
+
             if not (end_point[0] == self._end_point[0] and end_point[1] == self._end_point[1]):
                 self._end_point = (int(end_point[0]), int(end_point[1]))
                 if self._automatic_update:
