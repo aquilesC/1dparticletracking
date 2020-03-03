@@ -2,7 +2,8 @@ from ..particle_tracker import ParticleTracker
 import numpy as np
 from astropy.convolution import convolve, Box1DKernel
 import matplotlib.pyplot as plt
-from .trajectory import Trajectory
+from ..trajectory import Trajectory
+
 
 class ShortestPathFinder:
     """
@@ -162,4 +163,45 @@ class ShortestPathFinder:
             kernel = Box1DKernel(self.boxcar_width)
             for row_index, row_intensity in enumerate(self._frames):
                 self._averaged_intensity[row_index] = convolve(row_intensity, kernel)
+
+    @staticmethod
+    def _validate_class_arguments(frames, time, automatic_update):
+        ParticleTracker._test_if_frames_have_correct_format(frames)
+        ParticleTracker._test_if_time_has_correct_format(time)
+        ParticleTracker._test_if_time_and_frames_has_same_length(time, frames)
+        ParticleTracker._test_if_automatic_update_has_correct_format(automatic_update)
+
+    @staticmethod
+    def _test_if_frames_have_correct_format(frames):
+        if type(frames) is not np.ndarray:
+            raise TypeError('Class argument frames not of type np.ndarray')
+        if not (len(frames.shape) == 2 and frames.shape[0] > 1 and frames.shape[1] > 2):
+            raise ValueError('Class argument frames need to be of shape (nFrames,nPixels) with nFrames > 1 and nPixels >2')
+        if not (np.max(frames.flatten()) == 1 and np.min(frames.flatten()) == 0):
+            raise ValueError('Class argument frames not normalised. Max value of frames should be 1 and min value should be 0.')
+
+        return True
+
+    @staticmethod
+    def _test_if_time_has_correct_format(time):
+        if type(time) is not np.ndarray:
+            raise TypeError('Class argument frames not of type np.ndarray')
+        if not (len(time.shape) == 1 and time.shape[0] > 1):
+            raise ValueError('Class argument time need to be of shape (nFrames,) with nFrames > 1.')
+        if not all(np.diff(time) > 0):
+            raise ValueError('Class argument time not increasing monotonically.')
+        return True
+
+    @staticmethod
+    def _test_if_time_and_frames_has_same_length(time, frames):
+        if not time.shape[0] == frames.shape[0]:
+            raise ValueError('Class arguments time and frames does not of equal length.')
+        return True
+
+    @staticmethod
+    def _test_if_automatic_update_has_correct_format(automatic_update):
+        if not type(automatic_update) == bool:
+            raise ValueError('Class argument automatic_update must be True or False.')
+        return True
+
 
