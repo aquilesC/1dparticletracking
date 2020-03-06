@@ -209,8 +209,8 @@ class ShortestPathFinder:
     def _initialise_association_and_cost_matrix(self):
         number_of_frames = len(self._particle_positions) - 1
 
-        self._association_matrix = [[] for _ in range(number_of_frames)]
-        self._cost_matrix = [[] for _ in range(number_of_frames)]
+        association_matrix = [[] for _ in range(number_of_frames)]
+        cost_matrix = [[] for _ in range(number_of_frames)]
 
         for frame_index in range(0, number_of_frames):
             self._association_matrix[frame_index] = np.zeros(
@@ -221,6 +221,7 @@ class ShortestPathFinder:
                 (len(self._particle_positions[frame_index]), len(self._particle_positions[frame_index + 1])),
                 dtype=np.float32
             )
+        return
 
     def _calculate_cost_matrix(self):
         for frame_index, _ in enumerate(self._cost_matrix):
@@ -242,7 +243,21 @@ class ShortestPathFinder:
         )
 
     def _update_shortest_path(self):
+        self._create_initial_links_in_association_matrix()
         return
+
+    def _find_shortest_path(self):
+        current_path = []
+        seen_paths = []
+        test_path = []
+
+        while len(current_path) < len(self._cost_matrix):
+            for frame_index, _ in enumerate(self._cost_matrix):
+                for particle_index, _ in enumerate(self._cost_matrix[frame_index]):
+                    for future_particle_index, cost in enumerate(self._cost_matrix[frame_index][particle_index]):
+                        seen_paths.append((frame_index, particle_index, future_particle_index))
+
+
 
     def _update_averaged_intensity(self):
         if self.boxcar_width == 0:

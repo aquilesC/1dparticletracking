@@ -503,3 +503,49 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
         for frame_index, _ in enumerate(spf._cost_matrix):
             for future_frame_index, _ in enumerate(spf._cost_matrix[frame_index]):
                 np.testing.assert_array_almost_equal(spf._cost_matrix[frame_index][future_frame_index], expected_cost_matrix[frame_index][future_frame_index])
+
+    def test_initial_links_in_association_matrix(self):
+        """
+        Test creating the initial links in the association matrix.
+        """
+        automatic_update = False
+
+        frames = np.array([
+            [0, 0.1, 0.5],
+            [0, 0.6, 0.2],
+            [1, 0.1, 0.1],
+            [0.1, 0.1, 0.2],
+        ], dtype=np.float32)
+
+        times = np.array([0, 1, 2, 3])
+
+        empty_association_matrix = [
+            np.array(
+                [
+                    [0, 0]
+                ], dtype=bool),
+            np.array(
+                [
+                    [0]
+                    [0]
+                ], dtype=bool)
+        ]
+
+        cost_matrix = [
+            np.array(
+                [
+                    [1, 0]
+                ], dtype=np.float32),
+            np.array(
+                [
+                    [2]
+                    [0]
+                ], dtype=np.float32)
+        ]
+
+        spf = ShortestPathFinder(frames=frames, time=times, automatic_update=False)
+
+        spf._association_matrix = empty_association_matrix
+        spf._cost_matrix = cost_matrix
+
+        spf._find_shortest_path()
