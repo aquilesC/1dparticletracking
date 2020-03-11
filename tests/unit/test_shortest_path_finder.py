@@ -435,8 +435,9 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
 
         spf = ShortestPathFinder(time=times, frames=frames, automatic_update=automatic_update)
         spf._particle_positions = particle_positions
+        spf._initialise_association_and_cost_matrix()
 
-        association_matrix, cost_matrix = spf._initialise_association_and_cost_matrix()
+        association_matrix, cost_matrix = spf._association_matrix, spf._cost_matrix
 
         self.assertEqual(len(expected_association_matrix), len(association_matrix))
         self.assertEqual(len(expected_cost_matrix), len(cost_matrix))
@@ -532,7 +533,7 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
                 ], dtype=bool),
             np.array(
                 [
-                    [0]
+                    [0],
                     [0]
                 ], dtype=bool)
         ]
@@ -557,7 +558,7 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
                     ], dtype=bool),
                 np.array(
                     [
-                        [0]
+                        [0],
                         [0]
                     ], dtype=bool)
             ],
@@ -568,7 +569,7 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
                     ], dtype=bool),
                 np.array(
                     [
-                        [0]
+                        [0],
                         [0]
                     ], dtype=bool)
             ]
@@ -579,12 +580,11 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
         spf._particle_positions = particle_positions
         spf._association_matrix = empty_association_matrix
         spf._cost_matrix = cost_matrix
-        initial_paths = spf._find_shortest_path()
-        # initial_paths = spf._find_initial_paths()
+        initial_paths = spf._find_initial_paths()
 
-        # for index, association_matrix in enumerate(initial_paths):
-        #    for link_index, link_matrix in enumerate(association_matrix):
-        #        np.testing.assert_array_equal(link_matrix, expected_initial_paths[index][link_index])
+        for index, association_matrix in enumerate(initial_paths):
+            for link_index, link_matrix in enumerate(association_matrix):
+                np.testing.assert_array_equal(link_matrix, expected_initial_paths[index][link_index])
 
     def test_find_shortest_path(self):
         """
@@ -690,11 +690,12 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
             )
         ]
 
-
         spf = ShortestPathFinder(frames=frames, time=times, automatic_update=automatic_update)
         spf._particle_positions = particle_positions
         spf._association_matrix = empty_association_matrix
         spf._cost_matrix = cost_matrix
 
-        print('print')
-        print(spf._find_shortest_path())
+        shortest_path = spf._find_shortest_path()['path']
+
+        for frame_index, link_matrix in enumerate(shortest_path):
+            np.testing.assert_array_equal(link_matrix, expected_shortest_path[frame_index])

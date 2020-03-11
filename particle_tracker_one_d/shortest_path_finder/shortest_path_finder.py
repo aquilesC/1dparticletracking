@@ -73,8 +73,6 @@ class ShortestPathFinder:
             if self._automatic_update:
                 self._update_averaged_intensity()
                 self._find_particle_positions()
-                self._update_association_matrix()
-                self._reconnect_broken_links()
                 self._update_trajectories()
 
     @property
@@ -97,8 +95,6 @@ class ShortestPathFinder:
             self._integration_radius_of_intensity_peaks = radius
             if self._automatic_update:
                 self._find_particle_positions()
-                self._update_association_matrix()
-                self._reconnect_broken_links()
                 self._update_trajectories()
 
     @property
@@ -209,19 +205,18 @@ class ShortestPathFinder:
     def _initialise_association_and_cost_matrix(self):
         number_of_frames = len(self._particle_positions) - 1
 
-        association_matrix = [[] for _ in range(number_of_frames)]
-        cost_matrix = [[] for _ in range(number_of_frames)]
+        self._association_matrix = [[] for _ in range(number_of_frames)]
+        self._cost_matrix = [[] for _ in range(number_of_frames)]
 
         for frame_index in range(0, number_of_frames):
-            association_matrix[frame_index] = np.zeros(
+            self._association_matrix[frame_index] = np.zeros(
                 (len(self._particle_positions[frame_index]), len(self._particle_positions[frame_index + 1])),
                 dtype=bool
             )
-            cost_matrix[frame_index] = np.zeros(
+            self._cost_matrix[frame_index] = np.zeros(
                 (len(self._particle_positions[frame_index]), len(self._particle_positions[frame_index + 1])),
                 dtype=np.float32
             )
-        return association_matrix, cost_matrix
 
     def _calculate_cost_matrix(self):
         for frame_index, _ in enumerate(self._cost_matrix):
@@ -243,20 +238,21 @@ class ShortestPathFinder:
         )
 
     def _update_shortest_path(self):
-        self._create_initial_links_in_association_matrix()
+        if self.start_point and self.end_point:
+            self._initialise_association_and_cost_matrix()
+            self._find_shortest_path()
+            self._create_trajectory_from_shortest_path()
+
+    def _create_trajectory_from_shortest_path(self):
         return
 
     def _find_initial_paths(self):
         initial_paths = []
         for n, _ in enumerate(self._particle_positions[1]):
-            association_matrix, _ = self._initialise_association_and_cost_matrix()
+            association_matrix = self._create_copy_of_path(self._association_matrix)
             association_matrix[0][0][n] = True
             initial_paths.append(association_matrix)
         return initial_paths
-
-    def _find_shortest_unseen_paths(self, seen_paths):
-
-        return seen_paths, shortest_path
 
     def _calculate_cost_of_path(self, path):
         cost = 0
@@ -267,10 +263,12 @@ class ShortestPathFinder:
                         cost += self._cost_matrix[frame_index][particle_index][next_frame_particle_index]
         return cost
 
-    def _sort_on_lowest_cost(self, paths):
+    @staticmethod
+    def _sort_on_lowest_cost(paths):
         return sorted(paths, key=lambda k: k['cost'])
 
-    def _create_copy_of_path(self, path):
+    @staticmethod
+    def _create_copy_of_path(path):
         return [link_matrix.copy() for link_matrix in path]
 
     def _add_step_to_path_shortest_path(self, seen_paths):
@@ -281,7 +279,7 @@ class ShortestPathFinder:
                 row_index, col_index = np.where(link_matrix)
             else:
                 for index, link in enumerate(shortest_path[frame_index][col_index[0]]):
-                    new_path = self._create_copy_of_path(shortest_path)
+                    new_path = ShortestPathFinder._create_copy_of_path(shortest_path)
                     new_path[frame_index][col_index[0]][index] = True
                     seen_paths.append(
                         {
