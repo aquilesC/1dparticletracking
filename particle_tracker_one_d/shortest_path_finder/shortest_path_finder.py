@@ -161,10 +161,18 @@ class ShortestPathFinder:
     @property
     def shortest_path(self):
         """
-        trajectory:
-            The shortest path between the start and end point, defined by the cost function.
+        dict:
+            The shortest path between the start and end point, defined by the cost function. Cost, length and association matrix.
         """
         return self._shortest_path
+
+    @property
+    def trajectory(self):
+        """
+        trajectory:
+            The shortest path between the start and end point represented as a trajectory.
+        """
+        return self._trajectory
 
     @property
     def _intensity_of_interest(self):
@@ -244,7 +252,21 @@ class ShortestPathFinder:
             self._create_trajectory_from_shortest_path()
 
     def _create_trajectory_from_shortest_path(self):
-        return
+        self._trajectory = Trajectory()
+        association_matrix = self._shortest_path['path']
+        particle_position = np.empty((1,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32)])
+        for frame_index, link_matrix in enumerate(association_matrix):
+            for particle_index, links in enumerate(link_matrix):
+                if np.any(links):
+                    particle_position['frame_index'] = frame_index
+                    particle_position['time'] = self._time[frame_index]
+                    particle_position['position'] = self._particle_positions[frame_index][particle_index]
+                    self._trajectory._append_position(particle_position)
+
+        particle_position['frame_index'] = frame_index + 1
+        particle_position['time'] = self._time[frame_index + 1]
+        particle_position['position'] = self._particle_positions[frame_index + 1][0]
+        self._trajectory._append_position(particle_position)
 
     def _find_initial_paths(self):
         initial_paths = []
@@ -308,7 +330,7 @@ class ShortestPathFinder:
         while seen_paths[0]['length'] < len(self._particle_positions) - 1:
             seen_paths = self._add_step_to_path_shortest_path(seen_paths)
             seen_paths = self._sort_on_lowest_cost(seen_paths)
-        return seen_paths[0]
+        self._shortest_path = seen_paths[0]
 
     def _update_averaged_intensity(self):
         if self.boxcar_width == 0:
