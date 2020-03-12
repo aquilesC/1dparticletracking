@@ -25,6 +25,7 @@ __ https://www.sciencedirect.com/science/article/pii/S1047847705001267
    usage/Quickstart
    usage/HowDoesItWork
    usage/ParticleTracker
+   usage/ShortestPathFinder
    usage/Trajectory
 
 
