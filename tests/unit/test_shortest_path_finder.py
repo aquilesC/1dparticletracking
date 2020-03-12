@@ -1,6 +1,7 @@
 import unittest
 import numpy as np
 from particle_tracker_one_d import ShortestPathFinder
+import pprint
 
 
 class SetAttributeTester(unittest.TestCase):
@@ -506,269 +507,31 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
             for future_frame_index, _ in enumerate(spf._cost_matrix[frame_index]):
                 np.testing.assert_array_almost_equal(spf._cost_matrix[frame_index][future_frame_index], expected_cost_matrix[frame_index][future_frame_index])
 
-    def test_create_initial_paths(self):
+    def test_find_shortest_path_by_dijkstra(self):
         """
-        Test creating the initial paths.
-        """
-        automatic_update = False
+         Test automatic finding
+         """
+
+        automatic_update = True
 
         frames = np.array([
-            [0, 0.1, 0.5],
-            [0, 0.6, 0.2],
-            [1, 0.1, 0.1],
-        ], dtype=np.float32)
-
-        times = np.array([0, 1, 2])
-
-        particle_positions = [
-            np.array([2], dtype=np.float32),
-            np.array([0, 2], dtype=np.float32),
-            np.array([0], dtype=np.float32),
-        ]
-
-        empty_association_matrix = [
-            np.array(
-                [
-                    [0, 0]
-                ], dtype=bool),
-            np.array(
-                [
-                    [0],
-                    [0]
-                ], dtype=bool)
-        ]
-
-        cost_matrix = [
-            np.array(
-                [
-                    [1, 0]
-                ], dtype=np.float32),
-            np.array(
-                [
-                    [2],
-                    [0]
-                ], dtype=np.float32)
-        ]
-
-        expected_initial_paths = [
-            [
-                np.array(
-                    [
-                        [1, 0]
-                    ], dtype=bool),
-                np.array(
-                    [
-                        [0],
-                        [0]
-                    ], dtype=bool)
-            ],
-            [
-                np.array(
-                    [
-                        [0, 1]
-                    ], dtype=bool),
-                np.array(
-                    [
-                        [0],
-                        [0]
-                    ], dtype=bool)
-            ]
-        ]
-
-        spf = ShortestPathFinder(frames=frames, time=times, automatic_update=automatic_update)
-
-        spf._particle_positions = particle_positions
-        spf._association_matrix = empty_association_matrix
-        spf._cost_matrix = cost_matrix
-        initial_paths = spf._find_initial_paths()
-
-        for index, association_matrix in enumerate(initial_paths):
-            for link_index, link_matrix in enumerate(association_matrix):
-                np.testing.assert_array_equal(link_matrix, expected_initial_paths[index][link_index])
-
-    def test_find_shortest_path(self):
-        """
-        Test finding the shortest path.
-        """
-        automatic_update = False
-
-        frames = np.array([
-            [0, 0.1, 0.5],
-            [0, 0.6, 0.2],
-            [1, 0.1, 0.1],
-            [1, 0.1, 0.1],
-            [1, 0.1, 0.1],
+            [0, 1, 0, 0, 1, 0],
+            [0, 0, 1, 0, 1, 0],
+            [0, 1, 0, 1, 0, 0],
+            [0, 0, 1, 0, 1, 0],
+            [0, 0, 0, 0, 1, 0]
         ], dtype=np.float32)
 
         times = np.array([0, 1, 2, 3, 4])
 
-        particle_positions = [
-            np.array([2], dtype=np.float32),
-            np.array([0, 2, 3], dtype=np.float32),
-            np.array([0, 1, 3], dtype=np.float32),
-            np.array([0, 1], dtype=np.float32),
-            np.array([1], dtype=np.float32),
-        ]
-
-        empty_association_matrix = [
-            np.array(
-                [
-                    [0, 0, 0]
-                ], dtype=bool
-            ),
-            np.array(
-                [
-                    [0, 0, 0],
-                    [0, 0, 0],
-                    [0, 0, 0],
-                ], dtype=bool
-            ),
-            np.array(
-                [
-                    [0, 0],
-                    [0, 0],
-                    [0, 0]
-                ], dtype=bool
-            ),
-            np.array(
-                [
-                    [0],
-                    [0]
-                ], dtype=bool
-            )
-        ]
-
-        cost_matrix = [
-            np.array(
-                [
-                    [0, 1, 2]
-                ], dtype=np.float32),
-            np.array(
-                [
-                    [0, 1, 2],
-                    [0, 1, 2],
-                    [0, 1, 2],
-                ], dtype=np.float32),
-            np.array(
-                [
-                    [0, 1],
-                    [0, 1],
-                    [0, 1]
-                ], dtype=np.float32),
-            np.array(
-                [
-                    [0],
-                    [0]
-                ], dtype=np.float32)
-        ]
-
-        expected_shortest_path = [
-            np.array(
-                [
-                    [1, 0, 0]
-                ], dtype=bool
-            ),
-            np.array(
-                [
-                    [1, 0, 0],
-                    [0, 0, 0],
-                    [0, 0, 0],
-                ], dtype=bool
-            ),
-            np.array(
-                [
-                    [1, 0],
-                    [0, 0],
-                    [0, 0]
-                ], dtype=bool
-            ),
-            np.array(
-                [
-                    [1],
-                    [0]
-                ], dtype=bool
-            )
-        ]
+        start_point = (0, 1)
+        end_point = (4, 4)
 
         spf = ShortestPathFinder(frames=frames, time=times, automatic_update=automatic_update)
-        spf._particle_positions = particle_positions
-        spf._association_matrix = empty_association_matrix
-        spf._cost_matrix = cost_matrix
+        spf.boxcar_width = 0
+        spf.start_point = start_point
+        spf.end_point = end_point
 
-        spf._find_shortest_path()
-        shortest_path = spf._shortest_path['path']
-
-        for frame_index, link_matrix in enumerate(shortest_path):
-            np.testing.assert_array_equal(link_matrix, expected_shortest_path[frame_index])
-
-    def test_creating_trajectory(self):
-        """
-        Test creating a trajetory from the shortest path.
-        """
-        automatic_update = False
-
-        frames = np.array([
-            [0, 0.1, 0.5],
-            [0, 0.6, 0.2],
-            [1, 0.1, 0.1],
-            [1, 0.1, 0.1],
-            [1, 0.1, 0.1],
-        ], dtype=np.float32)
-
-        times = np.array([0, 1, 2, 3, 4])
-
-        particle_positions = [
-            np.array([2], dtype=np.float32),
-            np.array([0, 2, 3], dtype=np.float32),
-            np.array([0, 1, 3], dtype=np.float32),
-            np.array([0, 1], dtype=np.float32),
-            np.array([1], dtype=np.float32),
-        ]
-
-        shortest_path = [
-            np.array(
-                [
-                    [1, 0, 0]
-                ], dtype=bool
-            ),
-            np.array(
-                [
-                    [1, 0, 0],
-                    [0, 0, 0],
-                    [0, 0, 0],
-                ], dtype=bool
-            ),
-            np.array(
-                [
-                    [1, 0],
-                    [0, 0],
-                    [0, 0]
-                ], dtype=bool
-            ),
-            np.array(
-                [
-                    [1],
-                    [0]
-                ], dtype=bool
-            )
-        ]
-
-        trajectory_positions = np.empty((5,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32)])
-
-        trajectory_positions['frame_index'] = np.array([0, 1, 2, 3, 4])
-        trajectory_positions['time'] = np.array([0, 1, 2, 3, 4])
-        trajectory_positions['position'] = np.array([2, 0, 0, 0, 1])
-
-        spf = ShortestPathFinder(frames=frames, time=times, automatic_update=automatic_update)
-        spf._particle_positions = particle_positions
-        spf._shortest_path = {
-            'path': shortest_path,
-            'cost': 0,
-            'length': 4
-        }
-
-        spf._create_trajectory_from_shortest_path()
-
-        trajectory = spf.trajectory
-
-        np.testing.assert_array_equal(trajectory.particle_positions,trajectory_positions)
+        #print('1.')
+        pprint.pprint(spf._create_trajectory_from_cost_matrix())
+        #print('2.')

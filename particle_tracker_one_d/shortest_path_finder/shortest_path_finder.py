@@ -115,7 +115,7 @@ class ShortestPathFinder:
                     raise TypeError('Start point values must be integers')
             if start_point[0] < 0 or start_point[0] > self._time.shape[0] - 1:
                 raise ValueError('First value in start point must be an integer between 0 and self.time.shape[0] - 1')
-            elif start_point[1] < 0 or start_point[1] > self._frames.shape[0] - 1:
+            elif start_point[1] < 0 or start_point[1] > self._frames.shape[1] - 1:
                 raise ValueError('Second value in start point must be an integer between 0 and self.frames.shape[0] - 1')
 
             if not (start_point[0] == self._start_point[0] and start_point[1] == self._start_point[1]):
@@ -142,7 +142,7 @@ class ShortestPathFinder:
                     raise TypeError('End point values must be integers')
             if end_point[0] < 0 or end_point[0] > self._time.shape[0] - 1:
                 raise ValueError('First value in end point must be an integer between 0 and self.time.shape[0] - 1')
-            elif end_point[1] < 0 or end_point[1] > self._frames.shape[0] - 1:
+            elif end_point[1] < 0 or end_point[1] > self._frames.shape[1] - 1:
                 raise ValueError('Second value in end point must be an integer between 0 and self.frames.shape[0] - 1')
 
             if not (end_point[0] == self._end_point[0] and end_point[1] == self._end_point[1]):
@@ -235,13 +235,18 @@ class ShortestPathFinder:
                 for future_particle_index, _ in enumerate(self._cost_matrix[frame_index][particle_index]):
                     particle_position_in_current_frame = (frame_index + self.start_point[0], self._particle_positions[frame_index][particle_index])
                     particle_position_in_future_frame = (frame_index + self.start_point[0] + 1, self._particle_positions[frame_index + 1][future_particle_index])
-
-                    self._cost_matrix[frame_index][particle_index][future_particle_index] = self._calculate_linking_cost(
-                        particle_position_in_current_frame, particle_position_in_future_frame)
+                    if frame_index == 0:
+                        self._cost_matrix[frame_index][particle_index][future_particle_index] = self._calculate_linking_cost(
+                            particle_position_in_current_frame, particle_position_in_future_frame)
+                    else:
+                        self._cost_matrix[frame_index][particle_index][future_particle_index] = (
+                                self._calculate_linking_cost(particle_position_in_current_frame, particle_position_in_future_frame) +
+                                np.amin(self._cost_matrix[frame_index - 1].T[particle_index])
+                        )
 
     def _calculate_linking_cost(self, position1, position2):
         return (
-                (position1[1] - position2[1]) ** 2 +
+                0.1*np.abs((position1[1] - position2[1])) ** 1 +
                 #(self._calculate_first_order_intensity_moment(position1[1], position1[0]) - self._calculate_first_order_intensity_moment(
                 #    position2[1], position2[0])) ** 2 +
                 #(self._calculate_second_order_intensity_moment(
@@ -250,106 +255,37 @@ class ShortestPathFinder:
                     position2[1], position2[0])) ** 2
                 #(self._calculate_second_order_intensity_moment(
                 #    self.start_point[1], self.start_point[0]) - self._calculate_second_order_intensity_moment(position2[1], position2[0])) ** 2
-
         )
 
     def _update_shortest_path(self):
         if self.start_point and self.end_point and self.start_point[0] < self.end_point[0]:
             self._initialise_association_and_cost_matrix()
             self._calculate_cost_matrix()
-            self._find_shortest_path()
-            self._create_trajectory_from_shortest_path()
+            self._create_trajectory_from_cost_matrix()
 
-    def _create_trajectory_from_shortest_path(self):
-        self._trajectory = Trajectory()
-        association_matrix = self._shortest_path['path']
-        particle_position = np.empty((1,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32)])
-        for frame_index, link_matrix in enumerate(association_matrix):
-            for particle_index, links in enumerate(link_matrix):
-                if np.any(links):
-                    particle_position['frame_index'] = frame_index + self.start_point[0]
-                    particle_position['time'] = self._time[frame_index + self.start_point[0]]
-                    particle_position['position'] = self._particle_positions[frame_index][particle_index]
-                    self._trajectory._append_position(particle_position)
+    def _previous_position(self,cost_matrix):
+        if len(cost_matrix) == 0:
+            return
 
-        particle_position['frame_index'] = frame_index + 1 + self.start_point[0]
-        particle_position['time'] = self._time[frame_index + 1 + self.start_point[0]]
-        particle_position['position'] = self._particle_positions[frame_index + 1][0]
-        self._trajectory._append_position(particle_position)
-
-    def _find_initial_paths(self):
-        initial_paths = []
-        for n, _ in enumerate(self._particle_positions[1]):
-            association_matrix = self._create_copy_of_path(self._association_matrix)
-            association_matrix[0][0][n] = True
-            initial_paths.append(association_matrix)
-        return initial_paths
-
-    def _calculate_cost_of_path(self, path):
-        cost = 0
-        for frame_index, link_matrix in enumerate(path):
-            for particle_index, links in enumerate(link_matrix):
-                for next_frame_particle_index, link in enumerate(links):
-                    if link:
-                        cost += self._cost_matrix[frame_index][particle_index][next_frame_particle_index]
-        return cost
-
-    @staticmethod
-    def _sort_on_lowest_cost(paths):
-        return sorted(paths, key=lambda k: k['cost'])
-
-    @staticmethod
-    def _create_copy_of_path(path):
-        return [link_matrix.copy() for link_matrix in path]
-
-    @staticmethod
-    def _get_path_with_lowest_cost(seen_paths):
-        cost = seen_paths[0]['cost']
-        index_of_lowest_cost = 0
-        for index, path in enumerate(seen_paths[1:]):
-            if path['cost'] < cost:
-                cost = path['cost']
-                index_of_lowest_cost = index + 1
-        return seen_paths[index_of_lowest_cost]
-
-    def _add_step_to_path_shortest_path(self, seen_paths):
-        shortest_path = self._get_path_with_lowest_cost(seen_paths)
-
-        for frame_index, link_matrix in enumerate(shortest_path['path']):
-            if np.any(link_matrix):
-                row_index, col_index = np.where(link_matrix)
-            else:
-                for index, link in enumerate(shortest_path['path'][frame_index][col_index[0]]):
-                    new_path = ShortestPathFinder._create_copy_of_path(shortest_path['path'])
-                    new_path[frame_index][col_index[0]][index] = True
-                    seen_paths.append(
-                        {
-                            'path': new_path,
-                            'cost': shortest_path['cost'] + self._cost_matrix[frame_index][col_index[0]][index],
-                            'length': shortest_path['length'] + 1
-                        }
-                    )
-                break
-        return seen_paths[1:]
-
-    def _find_shortest_path(self):
-        initial_paths = self._find_initial_paths()
-        seen_paths = []
-        for path in initial_paths:
-            seen_paths.append(
-                {
-                    'path': path,
-                    'cost': self._calculate_cost_of_path(path),
-                    'length': 1
-                }
+    def _create_trajectory_from_cost_matrix(self):
+        particle_indices = []
+        prev_lowest_cost_index = 0
+        for frame_index in range(len(self._cost_matrix)):
+            lowest_cost_index = np.where(
+                self._cost_matrix[-frame_index - 1].T[prev_lowest_cost_index] == np.amin(self._cost_matrix[-frame_index - 1].T[prev_lowest_cost_index])
+            )[0][0]
+            particle_indices.append(
+                lowest_cost_index
             )
+            prev_lowest_cost_index = lowest_cost_index
 
-        shortest_path = self._get_path_with_lowest_cost(seen_paths)
-
-        while shortest_path['length'] < len(self._particle_positions) - 1:
-            seen_paths = self._add_step_to_path_shortest_path(seen_paths)
-            shortest_path = self._get_path_with_lowest_cost(seen_paths)
-        self._shortest_path = shortest_path
+        p = np.empty((1,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32)])
+        self._trajectory = Trajectory()
+        for frame_index, particle_index in enumerate(particle_indices[::-1]):
+            p['frame_index'] = frame_index + self.start_point[0]
+            p['time'] = self._time[frame_index + self.start_point[0]]
+            p['position'] = self._particle_positions[frame_index][particle_index]
+            self._trajectory._append_position(p)
 
     def _update_averaged_intensity(self):
         if self.boxcar_width == 0:
