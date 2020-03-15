@@ -246,11 +246,8 @@ class ShortestPathFinder:
                         )
 
     def _calculate_linking_cost(self, position1, position2):
-        if np.abs((position1[1] - position2[1])) > 30:
-            return np.inf
-
         return (
-                0.1*np.abs((position1[1] - position2[1])) ** 1 +
+                0.1*np.abs((position1[1] - position2[1])) ** 2 +
                 #(self._calculate_first_order_intensity_moment(position1[1], position1[0]) - self._calculate_first_order_intensity_moment(
                 #    position2[1], position2[0])) ** 2 +
                 #(self._calculate_second_order_intensity_moment(
