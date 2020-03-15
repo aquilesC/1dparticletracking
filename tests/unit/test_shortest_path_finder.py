@@ -248,6 +248,7 @@ class SetAttributeTester(unittest.TestCase):
             [0, 1],
             np.array([1, 1], dtype=np.int16),
             np.array([1, 3], dtype=np.int32),
+            np.array([3, 3], dtype=np.int32)
         ]
         non_valid_type_of_end_points = [
             1.5,

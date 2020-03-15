@@ -44,6 +44,7 @@ class ShortestPathFinder:
         self._start_point = (0, 0)
         self._end_point = (0, 0)
         self._shortest_path = None
+        self._trajectory = None
 
     @property
     def frames(self):
@@ -116,7 +117,7 @@ class ShortestPathFinder:
             if start_point[0] < 0 or start_point[0] > self._time.shape[0] - 1:
                 raise ValueError('First value in start point must be an integer between 0 and self.time.shape[0] - 1')
             elif start_point[1] < 0 or start_point[1] > self._frames.shape[1] - 1:
-                raise ValueError('Second value in start point must be an integer between 0 and self.frames.shape[0] - 1')
+                raise ValueError('Second value in start point must be an integer between 0 and self.frames.shape[1] - 1')
 
             if not (start_point[0] == self._start_point[0] and start_point[1] == self._start_point[1]):
                 self._start_point = (int(start_point[0]), int(start_point[1]))
@@ -143,7 +144,7 @@ class ShortestPathFinder:
             if end_point[0] < 0 or end_point[0] > self._time.shape[0] - 1:
                 raise ValueError('First value in end point must be an integer between 0 and self.time.shape[0] - 1')
             elif end_point[1] < 0 or end_point[1] > self._frames.shape[1] - 1:
-                raise ValueError('Second value in end point must be an integer between 0 and self.frames.shape[0] - 1')
+                raise ValueError('Second value in end point must be an integer between 0 and self.frames.shape[1] - 1')
 
             if not (end_point[0] == self._end_point[0] and end_point[1] == self._end_point[1]):
                 self._end_point = (int(end_point[0]), int(end_point[1]))
@@ -245,6 +246,9 @@ class ShortestPathFinder:
                         )
 
     def _calculate_linking_cost(self, position1, position2):
+        if np.abs((position1[1] - position2[1])) > 30:
+            return np.inf
+
         return (
                 0.1*np.abs((position1[1] - position2[1])) ** 1 +
                 #(self._calculate_first_order_intensity_moment(position1[1], position1[0]) - self._calculate_first_order_intensity_moment(
