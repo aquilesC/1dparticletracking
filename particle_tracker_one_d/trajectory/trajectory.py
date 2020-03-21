@@ -166,15 +166,6 @@ class Trajectory:
     def _sort_values_low_to_high(array):
         return np.sort(array)
 
-    def calculate_diffusion_coefficient_from_velocity(self):
-        """
-        TODO: remove
-        """
-        diffusion_coefficient_velocity = 0
-        for index, velocity in enumerate(self._velocities):
-            diffusion_coefficient_velocity += velocity ** 2 * self._time_steps[index] / 4
-        return diffusion_coefficient_velocity / len(self._velocities)
-
     def calculate_diffusion_coefficient_from_mean_square_displacement_function(self, fit_range=None):
         """
         Fits a straight line to the mean square displacement function and calculates the diffusion coefficient from the
