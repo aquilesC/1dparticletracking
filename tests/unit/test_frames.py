@@ -43,3 +43,38 @@ class ValidationOfArgumentsTester(unittest.TestCase):
         for frames in non_valid_type_of_frames:
             with self.assertRaises(TypeError):
                 Frames._test_if_frames_have_correct_format(frames)
+
+    def test_validation_time_argument(self):
+        """
+        Test that the validation of the class argument works. The time should be a numpy.ndarray with monotonically increasing values.
+        """
+        valid_times = [
+            np.array([0, 1, 2, 4, 6], dtype=np.float32),
+            np.array([0, 1000], dtype=np.int16),
+            np.array([0.1, 0.2, 0.4], dtype=np.float32),
+            np.array([1], dtype=np.float32)
+        ]
+
+        non_valid_shape_or_values_times = [
+            np.array([0, 0], dtype=np.float32),
+            np.array([0, -1], dtype=np.float32),
+            np.array([[0, 2], [3, 5]], dtype=np.float32)
+        ]
+
+        non_valid_types_of_times = [
+            '1,2,3,4',
+            [1, 2, 3, 4],
+            1,
+            {'1': 1, '2': 2}
+        ]
+
+        for times in valid_times:
+            self.assertTrue(Frames._test_if_time_has_correct_format(times), msg='Valid times not accepted, times: ' + np.array_str(times))
+
+        for times in non_valid_shape_or_values_times:
+            with self.assertRaises(ValueError):
+                Frames._test_if_time_has_correct_format(times)
+
+        for times in non_valid_types_of_times:
+            with self.assertRaises(TypeError):
+                Frames._test_if_time_has_correct_format(times)

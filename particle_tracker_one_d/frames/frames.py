@@ -46,9 +46,10 @@ class Frames:
     def _test_if_time_has_correct_format(time):
         if type(time) is not np.ndarray:
             raise TypeError('Class argument frames not of type np.ndarray')
-        if not (len(time.shape) == 1 and time.shape[0] > 1):
-            raise ValueError('Class argument time need to be of shape (nFrames,) with nFrames > 1.')
-        if not all(np.diff(time) > 0):
+        if not (len(time.shape) == 1 and time.shape[0] >= 1):
+            raise ValueError('Class argument time need to be of shape (nFrames,) with nFrames >= 1.')
+        if not all(np.diff(time) > 0) and not time.shape[0] == 1:
+            print(time)
             raise ValueError('Class argument time not increasing monotonically.')
         return True
 
