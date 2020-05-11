@@ -478,20 +478,20 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
         expected_cost_matrix = [
             np.array(
                 [
-                    [0.5737755],
+                    [0.06625],
                 ], dtype=np.float32),
             np.array(
                 [
-                    [1.7294444369469528],
+                    [0.4725],
                 ], dtype=np.float32),
             np.array(
                 [
-                    [0.04879706540799486, 4.048797065407995],
+                    [0.6325, 1.0325],
                 ], dtype=np.float32),
             np.array(
                 [
-                    [4.50859502261783],
-                    [0.5085950226178304],
+                    [1.1225],
+                    [1.1225001],
                 ], dtype=np.float32),
         ]
 
