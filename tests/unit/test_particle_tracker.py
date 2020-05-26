@@ -296,23 +296,37 @@ class FindParticlePositionsTester(unittest.TestCase):
             np.array([0, 0, 0.3, 0], dtype=np.float32),
         ]
         expected_positions = [
-            np.array([0], dtype=np.int64),
+            np.array([], dtype=np.int64),
             np.array([1], dtype=np.int64),
+            np.array([], dtype=np.int64),
+            np.array([], dtype=np.int64),
+            np.array([], dtype=np.int64),
+            np.array([], dtype=np.int64),
+            np.array([], dtype=np.int64),
+            np.array([], dtype=np.int64),
             np.array([2], dtype=np.int64),
             np.array([], dtype=np.int64),
             np.array([], dtype=np.int64),
-            np.array([], dtype=np.int64),
-            np.array([], dtype=np.int64),
-            np.array([0, 2], dtype=np.int64),
-            np.array([0, 2], dtype=np.int64),
-            np.array([], dtype=np.int64),
-            np.array([0, 3], dtype=np.int64),
             np.array([2], dtype=np.int64),
             np.array([2], dtype=np.int64)
         ]
 
+        frames_examples = np.array([
+            [0, 0.1, 0.5],
+            [0, 0.6, 0.2],
+            [1, 0.1, 0.1],
+            [0.1, 0.1, 0.2],
+            [0.7, 0.2, 0.7]
+        ], dtype=np.float32)
+
+        times_examples = np.array([0, 1, 2, 3, 4])
+
+        pt = ParticleTracker(frames=frames_examples, time=times_examples, automatic_update=False)
+        pt._Frames._averaged_intensity = intensity_examples
+        pt.particle_detection_threshold = 0.1
+
         for index, intensity in enumerate(intensity_examples):
-            np.testing.assert_array_equal(expected_positions[index], ParticleTracker._find_local_maximas_larger_than_threshold(intensity, 0.2))
+            np.testing.assert_array_equal(expected_positions[index], pt._find_local_maximas_larger_than_threshold(intensity))
 
     def test_finding_initial_particle_positions_function(self):
         """
@@ -329,11 +343,11 @@ class FindParticlePositionsTester(unittest.TestCase):
         times_examples = np.array([0, 1, 2, 3, 4])
 
         expected_positions = [
-            np.array([2], dtype=np.float32),
-            np.array([1], dtype=np.float32),
-            np.array([0], dtype=np.float32),
             np.array([], dtype=np.float32),
-            np.array([0, 2], dtype=np.float32)
+            np.array([1], dtype=np.float32),
+            np.array([], dtype=np.float32),
+            np.array([], dtype=np.float32),
+            np.array([], dtype=np.float32)
         ]
 
         automatic_update = False
@@ -371,21 +385,21 @@ class FindParticlePositionsTester(unittest.TestCase):
         automatic_update = False
 
         frames_example = np.array([
-            [0, 0.1, 0.5],
-            [0, 0.6, 0.2],
-            [1, 0.1, 0.1],
-            [0.1, 0.1, 0.2],
-            [0.7, 0.2, 0.7]
+            [0, 0.1, 0.5, 0],
+            [0, 0.6, 0.2, 0],
+            [1, 0.1, 0.1, 0],
+            [0.1, 0.1, 0.2, 0],
+            [0, 0.7, 0.2, 0.7]
         ], dtype=np.float32)
 
         times_example = np.array([0, 1, 2, 3, 4])
 
         expected_positions = [
-            np.array([2], dtype=np.float32),
+            np.array([1.8333333], dtype=np.float32),
             np.array([1.25], dtype=np.float32),
-            np.array([0], dtype=np.float32),
             np.array([], dtype=np.float32),
-            np.array([0, 2], dtype=np.float32)
+            np.array([], dtype=np.float32),
+            np.array([1.2222222], dtype=np.float32)
         ]
 
         pt = ParticleTracker(time=times_example, frames=frames_example, automatic_update=automatic_update)
@@ -980,7 +994,7 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
                         [1, 0, 0, 1],
                         [0, 0, 1, 0],
                         [0, 1, 0, 0],
-                    ],dtype=bool),
+                    ], dtype=bool),
                 np.array(
                     [
                         [1, 0, 0],

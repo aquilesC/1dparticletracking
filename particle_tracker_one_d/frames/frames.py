@@ -28,7 +28,7 @@ class Frames:
         self._automatic_update = automatic_update
         self._frames = frames
         self._averaged_intensity = frames
-        self._time = time
+        self.time = time
         self._boxcar_width = 0
 
     @property

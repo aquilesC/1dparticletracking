@@ -78,3 +78,55 @@ class ValidationOfArgumentsTester(unittest.TestCase):
         for times in non_valid_types_of_times:
             with self.assertRaises(TypeError):
                 Frames._test_if_time_has_correct_format(times)
+
+
+class ImageRestorationTester(unittest.TestCase):
+
+    def test_boxcar_averaging(self):
+        """
+        Test that the boxcar average works as it should.
+        """
+
+        frames = np.array([
+            [1, 1, 1, 1, 1, 1],
+            [0, 1, 0, 1, 0, 1],
+            [0, 0, 1, 0, 0, 1],
+            [0, 1, 2, 3, 4, 5]
+        ], dtype=np.float32)
+
+        time = np.array([0, 1, 2, 3], dtype=np.float32)
+
+        boxcar_widths = [0, 1, 2, 3]
+
+        expected_averaged_frames = [
+            np.array([
+                [1, 1, 1, 1, 1, 1],
+                [0, 1, 0, 1, 0, 1],
+                [0, 0, 1, 0, 0, 1],
+                [0, 1, 2, 3, 4, 5]
+            ], dtype=np.float32),
+            np.array([
+                [1, 1, 1, 1, 1, 1],
+                [0, 1, 0, 1, 0, 1],
+                [0, 0, 1, 0, 0, 1],
+                [0, 1, 2, 3, 4, 5]
+            ], dtype=np.float32),
+            np.array([
+                [1, 1, 1, 1, 1],
+                [0.5, 0.5, 0.5, 0.5, 0.5],
+                [0, 0.5, 0.5, 0, 0.5],
+                [0.5, 1.5, 2.5, 3.5, 4.5]
+            ], dtype=np.float32),
+            np.array([
+                [1, 1, 1, 1],
+                [0.33333333, 0.666666667, 0.33333333, 0.66666667],
+                [0.33333333, 0.33333333, 0.33333333, 0.33333333],
+                [1, 2, 3, 4]
+            ], dtype=np.float32)
+        ]
+
+        frames = Frames(frames=frames, time=time, automatic_update=True)
+
+        for index, boxcar_width in enumerate(boxcar_widths):
+            frames.boxcar_width = boxcar_width
+            np.testing.assert_array_equal(frames.frames, expected_averaged_frames[index])
