@@ -2,6 +2,8 @@ import numpy as np
 from astropy.convolution import convolve, Box1DKernel
 import matplotlib.pyplot as plt
 from particle_tracker_one_d.trajectory.trajectory import Trajectory
+from ..frames.frames import Frames
+from scipy.signal import find_peaks
 
 
 class ParticleTracker:
@@ -32,11 +34,9 @@ class ParticleTracker:
 
     def __init__(self, frames, time, automatic_update=True):
         ParticleTracker._validate_class_arguments(frames, time, automatic_update)
+        self._Frames = Frames(frames=frames, time=time, automatic_update=automatic_update)
         self._automatic_update = automatic_update
-        self._frames = frames
-        self._time = time
         self._integration_radius_of_intensity_peaks = 1
-        self._boxcar_width = 0
         self._particle_detection_threshold = 1
         self._particle_discrimination_threshold = 0
         self._maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles = 1
@@ -70,19 +70,13 @@ class ParticleTracker:
         int:
             Number of values used in the boxcar averaging of the frames.
         """
-        return self._boxcar_width
+        return self._Frames.boxcar_width
 
     @boxcar_width.setter
     def boxcar_width(self, width):
-        if type(width) is not int:
-            raise TypeError('Attribute boxcar_width should be of type int')
-        if not -1 < width <= self.frames.shape[1]:
-            raise ValueError('Attribute boxcar_width should be a positive integer less or equal the number of pixels in each frame.')
-
-        if not width == self._boxcar_width:
-            self._boxcar_width = width
+        if not width == self._Frames.boxcar_width:
+            self._Frames.boxcar_width = width
             if self._automatic_update:
-                self._update_averaged_intensity()
                 self._find_particle_positions()
                 self._update_association_matrix()
                 self._reconnect_broken_links()
@@ -217,7 +211,7 @@ class ParticleTracker:
         np.array:
             The time for each frame.
         """
-        return self._time
+        return self.Frames.time
 
     def get_frame_at_time(self, time):
         """
@@ -302,7 +296,7 @@ class ParticleTracker:
                     for indexes in trajectory_indexes:
                         particle_has_been_used[indexes[0]][indexes[1]] = True
                         p['frame_index'] = indexes[0]
-                        p['time'] = self._time[indexes[0]]
+                        p['time'] = self._Frames.time[indexes[0]]
                         p['position'] = self._particle_positions[indexes[0]][indexes[1]]
                         trajectory._append_position(p)
                     self._trajectories.append(trajectory)
@@ -321,15 +315,6 @@ class ParticleTracker:
         self._create_initial_links_in_association_matrix()
         self._optimise_association_matrix()
 
-    def _update_averaged_intensity(self):
-        if self.boxcar_width == 0:
-            self._averaged_intensity = self._frames
-        else:
-            self._averaged_intensity = np.empty(self._frames.shape)
-            kernel = Box1DKernel(self.boxcar_width)
-            for row_index, row_intensity in enumerate(self._frames):
-                self._averaged_intensity[row_index] = convolve(row_intensity, kernel)
-
     def _find_particle_positions(self):
         self._find_initial_particle_positions()
         self._refine_particle_positions()
@@ -339,19 +324,19 @@ class ParticleTracker:
     def _find_initial_particle_positions(self):
         self._particle_positions = [None] * self.frames.shape[0]
         for index, frame in enumerate(self._averaged_intensity):
-            self._particle_positions[index] = self._find_local_maximas_larger_than_threshold(frame, self._particle_detection_threshold)
+            self._particle_positions[index] = self._find_local_maximas_larger_than_threshold(frame)
 
     def _refine_particle_positions(self):
         if self._integration_radius_of_intensity_peaks == 0:
             return
         for frame_index, positions in enumerate(self._particle_positions):
             for index, position in enumerate(positions):
-                if position == 0 or position + 1 == self._frames.shape[1]:
+                if position == 0 or position + 1 == self._Frames.frames.shape[1]:
                     continue
                 elif position < self.integration_radius_of_intensity_peaks:
                     integration_radius = position
-                elif position > self._frames.shape[1] - self._integration_radius_of_intensity_peaks - 1:
-                    integration_radius = self._frames.shape[1] - position
+                elif position > self._Frames.frames.shape[1] - self._integration_radius_of_intensity_peaks - 1:
+                    integration_radius = self._Frames.frames.shape[1] - position
                 else:
                     integration_radius = self.integration_radius_of_intensity_peaks
                 intensity = self._averaged_intensity[frame_index][int(position - integration_radius):int(position + integration_radius + 1)]
@@ -403,7 +388,7 @@ class ParticleTracker:
                 return (
                                2 * np.dot(self._averaged_intensity[frame_index, :self.integration_radius_of_intensity_peaks + 1], second_order_index_array)
                        ) / self._calculate_first_order_intensity_moment(position, frame_index)
-        elif position == self._frames.shape[1] - 1:
+        elif position == self._Frames.frames.shape[1] - 1:
             if self._integration_radius_of_intensity_peaks == 1:
                 return 2 * self._averaged_intensity[frame_index, -2] / self._calculate_first_order_intensity_moment(position, frame_index)
             else:
@@ -428,22 +413,23 @@ class ParticleTracker:
                                2 * np.dot(second_order_index_array_big,
                                           self._averaged_intensity[frame_index, 2 * position + 1:2 * position + self._integration_radius_of_intensity_peaks])
                        ) / self._calculate_first_order_intensity_moment(position, frame_index)
-        elif position > self._frames.shape[1] - 1 - self._integration_radius_of_intensity_peaks:
-            w = self._integration_radius_of_intensity_peaks - (self._frames.shape[1] - position - 1)
+        elif position > self._Frames.frames.shape[1] - 1 - self._integration_radius_of_intensity_peaks:
+            w = self._integration_radius_of_intensity_peaks - (self._Frames.frames.shape[1] - position - 1)
             if w == 1:
-                second_order_index_array = np.arange(-(self._frames.shape[1] - 1 - position), self._frames.shape[1] - position) ** 2
+                second_order_index_array = np.arange(-(self._Frames.frames.shape[1] - 1 - position), self._Frames.frames.shape[1] - position) ** 2
                 return (
-                               np.dot(second_order_index_array, self._averaged_intensity[frame_index, 2 * position - self._frames.shape[1] + 1:])
+                               np.dot(second_order_index_array, self._averaged_intensity[frame_index, 2 * position - self._Frames.frames.shape[1] + 1:])
                                + 2 * self._integration_radius_of_intensity_peaks ** 2 * self._averaged_intensity[
                                    frame_index, position - self._integration_radius_of_intensity_peaks]
                        ) / self._calculate_first_order_intensity_moment(position, frame_index)
             else:
-                second_order_index_array = np.arange(-(self._frames.shape[1] - 1 - position), self._frames.shape[1] - position) ** 2
-                second_order_index_array_big = np.arange(- self._integration_radius_of_intensity_peaks, -(self._frames.shape[1] - position) + 1) ** 2
+                second_order_index_array = np.arange(-(self._Frames.frames.shape[1] - 1 - position), self._Frames.frames.shape[1] - position) ** 2
+                second_order_index_array_big = np.arange(- self._integration_radius_of_intensity_peaks, -(self._Frames.frames.shape[1] - position) + 1) ** 2
                 return (
-                               np.dot(second_order_index_array, self._averaged_intensity[frame_index, -2 * (self._frames.shape[1] - position) + 1:]) +
+                               np.dot(second_order_index_array, self._averaged_intensity[frame_index, -2 * (self._Frames.frames.shape[1] - position) + 1:]) +
                                2 * np.dot(second_order_index_array_big,
-                                          self._averaged_intensity[frame_index, position - self._integration_radius_of_intensity_peaks:-2 * (self._frames.shape[1] - position) + 1])
+                                          self._averaged_intensity[frame_index,
+                                          position - self._integration_radius_of_intensity_peaks:-2 * (self._Frames.frames.shape[1] - position) + 1])
                        ) / self._calculate_first_order_intensity_moment(position, frame_index)
 
         else:
@@ -464,7 +450,7 @@ class ParticleTracker:
                         self._averaged_intensity[frame_index, position] +
                         2 * np.sum(self._averaged_intensity[frame_index, position + 1:position + 1 + self._integration_radius_of_intensity_peaks])
                 )
-        elif position == self._frames.shape[1] - 1:
+        elif position == self._Frames.frames.shape[1] - 1:
             if self._integration_radius_of_intensity_peaks == 1:
                 return self._averaged_intensity[frame_index, position] + 2 * self._averaged_intensity[frame_index, position - 1]
             else:
@@ -481,16 +467,16 @@ class ParticleTracker:
                         np.sum(self._averaged_intensity[frame_index, :2 * position + 1]) +
                         2 * np.sum(self._averaged_intensity[frame_index, 2 * position + 1:2 * position + w + 1])
                 )
-        elif position > self._frames.shape[1] - 1 - self._integration_radius_of_intensity_peaks:
-            w = self._integration_radius_of_intensity_peaks - (self._frames.shape[1] - position - 1)
+        elif position > self._Frames.frames.shape[1] - 1 - self._integration_radius_of_intensity_peaks:
+            w = self._integration_radius_of_intensity_peaks - (self._Frames.frames.shape[1] - position - 1)
             if w == 1:
                 return (
-                        np.sum(self._averaged_intensity[frame_index, -2 * (self._frames.shape[1] - position) + 1:]) +
-                        2 * self._averaged_intensity[frame_index, -2 * (self._frames.shape[1] - position)]
+                        np.sum(self._averaged_intensity[frame_index, -2 * (self._Frames.frames.shape[1] - position) + 1:]) +
+                        2 * self._averaged_intensity[frame_index, -2 * (self._Frames.frames.shape[1] - position)]
                 )
             else:
                 return (
-                        np.sum(self._averaged_intensity[frame_index, -2 * (self._frames.shape[1] - position) + 1:]) +
+                        np.sum(self._averaged_intensity[frame_index, -2 * (self._Frames.frames.shape[1] - position) + 1:]) +
                         2 * np.sum(self._averaged_intensity[frame_index, position - self._integration_radius_of_intensity_peaks:position - 1])
                 )
         else:
@@ -522,7 +508,7 @@ class ParticleTracker:
 
     def _initialise_association_and_cost_matrices(self):
         r = self.maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles
-        number_of_frames = self._frames.shape[0]
+        number_of_frames = self._Frames.frames.shape[0]
 
         self._association_matrix = [[] for _ in range(number_of_frames)]
         self._cost_matrix = [[] for _ in range(number_of_frames)]
@@ -670,14 +656,9 @@ class ParticleTracker:
                                 self._association_matrix[frame_index][future_frame_index][particle_index][future_particle_index + 1] = True
                                 break
 
-    @staticmethod
-    def _find_local_maximas_larger_than_threshold(y, threshold):
-        local_maximas = np.where(
-            np.r_[True, y[1:] > y[:-1]] &
-            np.r_[y[:-1] > y[1:], True] &
-            np.r_[y > threshold]
-        )
-        return local_maximas[0].astype(np.float32)
+    def _find_local_maximas_larger_than_threshold(self, y):
+        local_maximas, _ = find_peaks(y, height=self.particle_detection_threshold, distance=2 * self.integration_radius_of_intensity_peaks)
+        return local_maximas.astype(np.float32)
 
     @staticmethod
     def _calculate_center_of_mass(y):
