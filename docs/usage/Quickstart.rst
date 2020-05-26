@@ -10,11 +10,11 @@ Quick start
     from particle_tracker_one_d import ParticleTracker
 
     # Import the frames and the time data
-    kymograph_frames = np.load('frames.npy')
-    time = np.load('time.npy')
+    frames = np.load('examples/frames.npy')
+    time = np.load('examples/time.npy')
 
     # Normalise the intensity
-    frames_normalised = PartParticleTracker.normalise_intensity(kymograph_frames)
+    frames_normalised = ParticleTracker.normalise_intensity(frames)
 
     # Create a particle tracker instance
     pt = ParticleTracker(frames=frames_normalised, time=time)
@@ -22,9 +22,10 @@ Quick start
     # Set the properies of the particle tracker
     pt.boxcar_width = 10
     pt.integration_radius_of_intensity_peaks = 25
-    pt.feature_point_threshold = 0.7
+    pt.particle_detection_threshold = 0.7
     pt.maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles = 5
-    pt.maximum_distance_a_particle_can_travel_between_frames = 20
+    pt.maximum_distance_a_particle_can_travel_between_frames = 50
+
 
     # Create a figure
     plt.figure(figsize=(10,10))
