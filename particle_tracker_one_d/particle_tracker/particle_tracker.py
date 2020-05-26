@@ -53,7 +53,7 @@ class ParticleTracker:
         np.array:
             The frames which the particle tracker tries to find trajectories in. If the property boxcar_width!=0 it will return the smoothed frames.
         """
-        return self.Frames.frames
+        return self._Frames.frames
 
     @property
     def _sigma_0(self):
@@ -210,7 +210,7 @@ class ParticleTracker:
         np.array:
             The time for each frame.
         """
-        return self.Frames.time
+        return self._Frames.time
 
     def get_frame_at_time(self, time):
         """
