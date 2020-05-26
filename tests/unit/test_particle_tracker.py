@@ -322,7 +322,6 @@ class FindParticlePositionsTester(unittest.TestCase):
         times_examples = np.array([0, 1, 2, 3, 4])
 
         pt = ParticleTracker(frames=frames_examples, time=times_examples, automatic_update=False)
-        pt._Frames._averaged_intensity = intensity_examples
         pt.particle_detection_threshold = 0.1
 
         for index, intensity in enumerate(intensity_examples):

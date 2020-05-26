@@ -1,5 +1,4 @@
 import numpy as np
-from astropy.convolution import convolve, Box1DKernel
 import matplotlib.pyplot as plt
 from particle_tracker_one_d.trajectory.trajectory import Trajectory
 from ..frames.frames import Frames
@@ -25,8 +24,7 @@ class ParticleTracker:
     time
     boxcar_width
     integration_radius_of_intensity_peaks
-    feature_point_threshold
-    particle_discrimination_threshold
+    particle_detection_threshold
     maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles
     maximum_distance_a_particle_can_travel_between_frames
     particle_positions
@@ -38,7 +36,6 @@ class ParticleTracker:
         self._automatic_update = automatic_update
         self._integration_radius_of_intensity_peaks = 1
         self._particle_detection_threshold = 1
-        self._particle_discrimination_threshold = 0
         self._maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles = 1
         self._maximum_distance_a_particle_can_travel_between_frames = 1
         self._particle_positions = [None] * self.frames.shape[0]
@@ -54,14 +51,6 @@ class ParticleTracker:
             The frames which the particle tracker tries to find trajectories in. If the property boxcar_width!=0 it will return the smoothed frames.
         """
         return self._Frames.frames
-
-    @property
-    def _sigma_0(self):
-        return 0.1 * np.pi * self._integration_radius_of_intensity_peaks ** 2
-
-    @property
-    def _sigma_2(self):
-        return 0.1 * np.pi * self._integration_radius_of_intensity_peaks ** 2
 
     @property
     def boxcar_width(self):
@@ -127,21 +116,6 @@ class ParticleTracker:
                 self._update_association_matrix()
                 self._reconnect_broken_links()
                 self._update_trajectories()
-
-    @property
-    def particle_discrimination_threshold(self):
-        """
-        float:
-            TODO
-        """
-        return self._particle_discrimination_threshold
-
-    @particle_discrimination_threshold.setter
-    def particle_discrimination_threshold(self, threshold):
-        if not threshold == self._particle_discrimination_threshold:
-            self._particle_discrimination_threshold = threshold
-            if self._automatic_update:
-                self._find_particle_positions()
 
     @property
     def maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles(self):
@@ -317,8 +291,6 @@ class ParticleTracker:
     def _find_particle_positions(self):
         self._find_initial_particle_positions()
         self._refine_particle_positions()
-        # TODO
-        # self._perform_particle_discrimination()
 
     def _find_initial_particle_positions(self):
         self._particle_positions = [None] * self.frames.shape[0]
@@ -341,39 +313,6 @@ class ParticleTracker:
                 intensity = self.frames[frame_index][int(position - integration_radius):int(position + integration_radius + 1)]
                 intensity = intensity - np.min(intensity)
                 self._particle_positions[frame_index][index] = position + self._calculate_center_of_mass(intensity) - integration_radius
-
-    def _perform_particle_discrimination(self):
-        self._remove_particles_with_wrong_intensity_moment()
-        self._remove_particles_too_closely_together()
-
-    def _remove_particles_with_wrong_intensity_moment(self):
-        if self.particle_discrimination_threshold != 0:
-            index_of_particles_to_be_kept = []
-            for row_index, position in enumerate(self._particle_positions):
-                if self._calculate_discrimination_score_for_particle(
-                        position) >= self.particle_discrimination_threshold:
-                    index_of_particles_to_be_kept.append(row_index)
-            self._particle_positions = self._particle_positions[index_of_particles_to_be_kept]
-
-    def _calculate_discrimination_score_for_particle(self, particle_position):
-        score = 0
-        particle_positions_of_particles_in_same_frame = self._get_particle_positions_in_frame(
-            frame_index=particle_position['frame_index'])
-        particle_positions_of_particles_in_same_frame = particle_positions_of_particles_in_same_frame[
-            np.where(particle_positions_of_particles_in_same_frame['integer_position'] != particle_position[
-                'integer_position'])]
-        for index, position in enumerate(particle_positions_of_particles_in_same_frame):
-            score += self._calculate_gaussian_moment(particle_position, position)
-        return score
-
-    def _calculate_gaussian_moment(self, particle_position_1, particle_position_2):
-        return 1 / (2 * np.pi * self._sigma_0 * self._sigma_2 * self._particle_positions.shape[0]) * \
-               np.exp(-(self._calculate_first_order_intensity_moment(
-                   particle_position_1) - self._calculate_first_order_intensity_moment(particle_position_2)) ** 2 / (
-                              2 * self._sigma_0)
-                      - (self._calculate_second_order_intensity_moment(
-                   particle_position_1) - self._calculate_second_order_intensity_moment(particle_position_2)) ** 2 / (
-                              2 * self._sigma_2))
 
     def _calculate_second_order_intensity_moment(self, position, frame_index):
         position = int(round(position))

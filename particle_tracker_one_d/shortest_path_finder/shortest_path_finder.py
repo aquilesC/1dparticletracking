@@ -1,8 +1,8 @@
 from ..particle_tracker import ParticleTracker
 import numpy as np
-from astropy.convolution import convolve, Box1DKernel
-import matplotlib.pyplot as plt
 from ..trajectory import Trajectory
+from ..frames.frames import Frames
+from scipy.signal import find_peaks
 
 
 class ShortestPathFinder:
@@ -32,11 +32,10 @@ class ShortestPathFinder:
 
     def __init__(self, frames, time, automatic_update=True):
         ParticleTracker._validate_class_arguments(frames, time, automatic_update)
+        self._Frames = Frames(frames=frames, time=time, automatic_update=automatic_update)
         self._automatic_update = automatic_update
-        self._frames = frames
-        self._time = time
         self._integration_radius_of_intensity_peaks = 1
-        self._boxcar_width = 0
+        self._particle_detection_threshold = 0
         self._averaged_intensity = frames
         self._particle_positions = [None] * self.frames.shape[0]
         self._cost_matrix = []
@@ -52,7 +51,7 @@ class ShortestPathFinder:
         np.array:
             The frames which the particle tracker tries to find trajectories in. If the property boxcar_width!=0 it will return the smoothed frames.
         """
-        return self._averaged_intensity
+        return self._Frames.frames
 
     @property
     def boxcar_width(self):
@@ -60,19 +59,13 @@ class ShortestPathFinder:
         int:
             Number of values used in the boxcar averaging of the frames.
         """
-        return self._boxcar_width
+        return self._Frames.boxcar_width
 
     @boxcar_width.setter
     def boxcar_width(self, width):
-        if type(width) is not int:
-            raise TypeError('Attribute boxcar_width should be of type int')
-        if not -1 < width <= self.frames.shape[1]:
-            raise ValueError('Attribute boxcar_width should be a positive integer less or equal the number of pixels in each frame.')
-
-        if not width == self._boxcar_width:
-            self._boxcar_width = width
+        if not width == self._Frames.boxcar_width:
+            self._Frames.boxcar_width = width
             if self._automatic_update:
-                self._update_averaged_intensity()
                 self._find_particle_positions()
                 self._update_shortest_path()
 
@@ -99,6 +92,27 @@ class ShortestPathFinder:
                 self._update_shortest_path()
 
     @property
+    def particle_detection_threshold(self):
+        """
+        float:
+            Defines the threshold value for finding intensity peaks. Local maximas below this threshold will not be
+            considered as particles. Should be a value between 0 and 1.
+        """
+        return self._particle_detection_threshold
+
+    @particle_detection_threshold.setter
+    def particle_detection_threshold(self, threshold):
+        if not (type(threshold) == int or type(threshold) == float):
+            raise TypeError('Attribute particle_detection_threshold should be a numerical value between 0 and 1.')
+        if not 0 <= threshold <= 1:
+            raise ValueError('Attribute particle_detection_threshold should be a value between 0 and 1.')
+        if not threshold == self._particle_detection_threshold:
+            self._particle_detection_threshold = threshold
+            if self._automatic_update:
+                self._find_particle_positions()
+                self._update_shortest_path()
+
+    @property
     def start_point(self):
         """
         tuple:
@@ -114,9 +128,9 @@ class ShortestPathFinder:
             for val in start_point:
                 if type(val) not in [int, np.int16, np.int32]:
                     raise TypeError('Start point values must be integers')
-            if start_point[0] < 0 or start_point[0] > self._time.shape[0] - 1:
+            if start_point[0] < 0 or start_point[0] > self._Frames.time.shape[0] - 1:
                 raise ValueError('First value in start point must be an integer between 0 and self.time.shape[0] - 1')
-            elif start_point[1] < 0 or start_point[1] > self._frames.shape[1] - 1:
+            elif start_point[1] < 0 or start_point[1] > self.frames.shape[1] - 1:
                 raise ValueError('Second value in start point must be an integer between 0 and self.frames.shape[1] - 1')
 
             if not (start_point[0] == self._start_point[0] and start_point[1] == self._start_point[1]):
@@ -141,9 +155,9 @@ class ShortestPathFinder:
             for val in end_point:
                 if type(val) not in [int, np.int16, np.int32]:
                     raise TypeError('End point values must be integers')
-            if end_point[0] < 0 or end_point[0] > self._time.shape[0] - 1:
+            if end_point[0] < 0 or end_point[0] > self._Frames.time.shape[0] - 1:
                 raise ValueError('First value in end point must be an integer between 0 and self.time.shape[0] - 1')
-            elif end_point[1] < 0 or end_point[1] > self._frames.shape[1] - 1:
+            elif end_point[1] < 0 or end_point[1] > self.frames.shape[1] - 1:
                 raise ValueError('Second value in end point must be an integer between 0 and self.frames.shape[1] - 1')
 
             if not (end_point[0] == self._end_point[0] and end_point[1] == self._end_point[1]):
@@ -179,11 +193,11 @@ class ShortestPathFinder:
 
     @property
     def _intensity_of_interest(self):
-        return self._averaged_intensity[self.start_point[0]:self.end_point[0] + 1]
+        return self.frames[self.start_point[0]:self.end_point[0] + 1]
 
     @property
     def _time_of_interest(self):
-        return self._time[self.start_point[0]:self.end_point[0] + 1]
+        return self._Frames.time[self.start_point[0]:self.end_point[0] + 1]
 
     def _find_particle_positions(self):
         if self.start_point and self.end_point and self.start_point[0] < self.end_point[0]:
@@ -210,7 +224,7 @@ class ShortestPathFinder:
     def _find_initial_particle_positions(self):
         self._particle_positions = [None] * (self.end_point[0] - self.start_point[0] + 1)
         for index, frame in enumerate(self._intensity_of_interest):
-            self._particle_positions[index] = self._find_local_maximas(frame)
+            self._particle_positions[index] = self._find_local_maximas_larger_than_threshold(frame)
         self._particle_positions[0] = np.array([self.start_point[1]], dtype=np.float32)
         self._particle_positions[-1] = np.array([self.end_point[1]], dtype=np.float32)
 
@@ -247,15 +261,9 @@ class ShortestPathFinder:
 
     def _calculate_linking_cost(self, position1, position2):
         return (
-                0.1*np.abs((position1[1] - position2[1])) ** 2 +
-                #(self._calculate_first_order_intensity_moment(position1[1], position1[0]) - self._calculate_first_order_intensity_moment(
-                #    position2[1], position2[0])) ** 2 +
-                #(self._calculate_second_order_intensity_moment(
-                #    position1[1], position1[0]) - self._calculate_second_order_intensity_moment(position2[1], position2[0])) ** 2 +
+                0.1*(position1[1] - position2[1]) ** 2 +
                 (self._calculate_first_order_intensity_moment(self.start_point[1], self.start_point[0]) - self._calculate_first_order_intensity_moment(
                     position2[1], position2[0])) ** 2
-                #(self._calculate_second_order_intensity_moment(
-                #    self.start_point[1], self.start_point[0]) - self._calculate_second_order_intensity_moment(position2[1], position2[0])) ** 2
         )
 
     def _update_shortest_path(self):
@@ -284,18 +292,9 @@ class ShortestPathFinder:
         self._trajectory = Trajectory()
         for frame_index, particle_index in enumerate(particle_indices[::-1]):
             p['frame_index'] = frame_index + self.start_point[0]
-            p['time'] = self._time[frame_index + self.start_point[0]]
+            p['time'] = self._Frames.time[frame_index + self.start_point[0]]
             p['position'] = self._particle_positions[frame_index][particle_index]
             self._trajectory._append_position(p)
-
-    def _update_averaged_intensity(self):
-        if self.boxcar_width == 0:
-            self._averaged_intensity = self._frames
-        else:
-            self._averaged_intensity = np.empty(self._frames.shape)
-            kernel = Box1DKernel(self.boxcar_width)
-            for row_index, row_intensity in enumerate(self._frames):
-                self._averaged_intensity[row_index] = convolve(row_intensity, kernel)
 
     def _calculate_second_order_intensity_moment(self, position, frame_index):
         position = int(round(position))
@@ -303,18 +302,18 @@ class ShortestPathFinder:
             return 0
         elif position == 0:
             if self._integration_radius_of_intensity_peaks == 1:
-                return 2 * self._averaged_intensity[frame_index, 1] / self._calculate_first_order_intensity_moment(position, frame_index)
+                return 2 * self.frames[frame_index, 1] / self._calculate_first_order_intensity_moment(position, frame_index)
             else:
                 second_order_index_array = np.arange(0, self._integration_radius_of_intensity_peaks + 1) ** 2
                 return (
-                               2 * np.dot(self._averaged_intensity[frame_index, :self.integration_radius_of_intensity_peaks + 1], second_order_index_array)
+                               2 * np.dot(self.frames[frame_index, :self.integration_radius_of_intensity_peaks + 1], second_order_index_array)
                        ) / self._calculate_first_order_intensity_moment(position, frame_index)
-        elif position == self._frames.shape[1] - 1:
+        elif position == self.frames.shape[1] - 1:
             if self._integration_radius_of_intensity_peaks == 1:
-                return 2 * self._averaged_intensity[frame_index, -2] / self._calculate_first_order_intensity_moment(position, frame_index)
+                return 2 * self.frames[frame_index, -2] / self._calculate_first_order_intensity_moment(position, frame_index)
             else:
                 second_order_index_array = np.arange(-self._integration_radius_of_intensity_peaks, 0) ** 2
-                return 2 * np.dot(self._averaged_intensity[frame_index, -self._integration_radius_of_intensity_peaks - 1:-1],
+                return 2 * np.dot(self.frames[frame_index, -self._integration_radius_of_intensity_peaks - 1:-1],
                                   second_order_index_array) / self._calculate_first_order_intensity_moment(position, frame_index)
         elif position < self._integration_radius_of_intensity_peaks:
             w = self._integration_radius_of_intensity_peaks - position
@@ -322,91 +321,90 @@ class ShortestPathFinder:
                 second_order_index_array = np.arange(-position, position + 1) ** 2
                 return (
                         (
-                                np.dot(self._averaged_intensity[frame_index, :2 * position + 1], second_order_index_array) +
-                                2 * self._integration_radius_of_intensity_peaks ** 2 * self._averaged_intensity[frame_index, position + self._integration_radius_of_intensity_peaks]
+                                np.dot(self.frames[frame_index, :2 * position + 1], second_order_index_array) +
+                                2 * self._integration_radius_of_intensity_peaks ** 2 * self.frames[frame_index, position + self._integration_radius_of_intensity_peaks]
                         ) / self._calculate_first_order_intensity_moment(position, frame_index)
                 )
             else:
                 second_order_index_array = np.arange(-position, position + 1) ** 2
                 second_order_index_array_big = np.arange(position + 1, position + self._integration_radius_of_intensity_peaks) ** 2
                 return (
-                               np.dot(second_order_index_array, self._averaged_intensity[frame_index, :2 * position + 1]) +
+                               np.dot(second_order_index_array, self.frames[frame_index, :2 * position + 1]) +
                                2 * np.dot(second_order_index_array_big,
-                                          self._averaged_intensity[frame_index, 2 * position + 1:2 * position + self._integration_radius_of_intensity_peaks])
+                                          self.frames[frame_index, 2 * position + 1:2 * position + self._integration_radius_of_intensity_peaks])
                        ) / self._calculate_first_order_intensity_moment(position, frame_index)
-        elif position > self._frames.shape[1] - 1 - self._integration_radius_of_intensity_peaks:
-            w = self._integration_radius_of_intensity_peaks - (self._frames.shape[1] - position - 1)
+        elif position > self.frames.shape[1] - 1 - self._integration_radius_of_intensity_peaks:
+            w = self._integration_radius_of_intensity_peaks - (self.frames.shape[1] - position - 1)
             if w == 1:
-                second_order_index_array = np.arange(-(self._frames.shape[1] - 1 - position), self._frames.shape[1] - position) ** 2
+                second_order_index_array = np.arange(-(self.frames.shape[1] - 1 - position), self.frames.shape[1] - position) ** 2
                 return (
-                               np.dot(second_order_index_array, self._averaged_intensity[frame_index, 2 * position - self._frames.shape[1] + 1:])
-                               + 2 * self._integration_radius_of_intensity_peaks ** 2 * self._averaged_intensity[
+                               np.dot(second_order_index_array, self.frames[frame_index, 2 * position - self.frames.shape[1] + 1:])
+                               + 2 * self._integration_radius_of_intensity_peaks ** 2 * self.frames[
                                    frame_index, position - self._integration_radius_of_intensity_peaks]
                        ) / self._calculate_first_order_intensity_moment(position, frame_index)
             else:
-                second_order_index_array = np.arange(-(self._frames.shape[1] - 1 - position), self._frames.shape[1] - position) ** 2
-                second_order_index_array_big = np.arange(- self._integration_radius_of_intensity_peaks, -(self._frames.shape[1] - position) + 1) ** 2
+                second_order_index_array = np.arange(-(self.frames.shape[1] - 1 - position), self.frames.shape[1] - position) ** 2
+                second_order_index_array_big = np.arange(- self._integration_radius_of_intensity_peaks, -(self.frames.shape[1] - position) + 1) ** 2
                 return (
-                               np.dot(second_order_index_array, self._averaged_intensity[frame_index, -2 * (self._frames.shape[1] - position) + 1:]) +
+                               np.dot(second_order_index_array, self.frames[frame_index, -2 * (self.frames.shape[1] - position) + 1:]) +
                                2 * np.dot(second_order_index_array_big,
-                                          self._averaged_intensity[frame_index, position - self._integration_radius_of_intensity_peaks:-2 * (self._frames.shape[1] - position) + 1])
+                                          self.frames[frame_index, position - self._integration_radius_of_intensity_peaks:-2 * (self.frames.shape[1] - position) + 1])
                        ) / self._calculate_first_order_intensity_moment(position, frame_index)
 
         else:
             w = self._integration_radius_of_intensity_peaks
             second_order_index_array = np.arange(-w, w + 1) ** 2
-            return np.dot(self._averaged_intensity[frame_index, position - w:position + w + 1], second_order_index_array) / self._calculate_first_order_intensity_moment(position,
+            return np.dot(self.frames[frame_index, position - w:position + w + 1], second_order_index_array) / self._calculate_first_order_intensity_moment(position,
                                                                                                                                                                          frame_index)
 
     def _calculate_first_order_intensity_moment(self, position, frame_index):
         position = int(round(position))
         if self._integration_radius_of_intensity_peaks == 0:
-            return self._averaged_intensity[frame_index, position]
+            return self.frames[frame_index, position]
         elif position == 0:
             if self._integration_radius_of_intensity_peaks == 1:
-                return self._averaged_intensity[frame_index, position] + 2 * self._averaged_intensity[frame_index, position + 1]
+                return self.frames[frame_index, position] + 2 * self.frames[frame_index, position + 1]
             else:
                 return (
-                        self._averaged_intensity[frame_index, position] +
-                        2 * np.sum(self._averaged_intensity[frame_index, position + 1:position + 1 + self._integration_radius_of_intensity_peaks])
+                        self.frames[frame_index, position] +
+                        2 * np.sum(self.frames[frame_index, position + 1:position + 1 + self._integration_radius_of_intensity_peaks])
                 )
-        elif position == self._frames.shape[1] - 1:
+        elif position == self.frames.shape[1] - 1:
             if self._integration_radius_of_intensity_peaks == 1:
-                return self._averaged_intensity[frame_index, position] + 2 * self._averaged_intensity[frame_index, position - 1]
+                return self.frames[frame_index, position] + 2 * self.frames[frame_index, position - 1]
             else:
                 return (
-                        self._averaged_intensity[frame_index, position] +
-                        2 * np.sum(self._averaged_intensity[frame_index, position - self._integration_radius_of_intensity_peaks:position])
+                        self.frames[frame_index, position] +
+                        2 * np.sum(self.frames[frame_index, position - self._integration_radius_of_intensity_peaks:position])
                 )
         elif position < self._integration_radius_of_intensity_peaks:
             w = self._integration_radius_of_intensity_peaks - position
             if w == 1:
-                return np.sum(self._averaged_intensity[frame_index, :2 * position + 1]) + 2 * self._averaged_intensity[frame_index, position + w + 1]
+                return np.sum(self.frames[frame_index, :2 * position + 1]) + 2 * self.frames[frame_index, position + w + 1]
             else:
                 return (
-                        np.sum(self._averaged_intensity[frame_index, :2 * position + 1]) +
-                        2 * np.sum(self._averaged_intensity[frame_index, 2 * position + 1:2 * position + w + 1])
+                        np.sum(self.frames[frame_index, :2 * position + 1]) +
+                        2 * np.sum(self.frames[frame_index, 2 * position + 1:2 * position + w + 1])
                 )
-        elif position > self._frames.shape[1] - 1 - self._integration_radius_of_intensity_peaks:
-            w = self._integration_radius_of_intensity_peaks - (self._frames.shape[1] - position - 1)
+        elif position > self.frames.shape[1] - 1 - self._integration_radius_of_intensity_peaks:
+            w = self._integration_radius_of_intensity_peaks - (self.frames.shape[1] - position - 1)
             if w == 1:
                 return (
-                        np.sum(self._averaged_intensity[frame_index, -2 * (self._frames.shape[1] - position) + 1:]) +
-                        2 * self._averaged_intensity[frame_index, -2 * (self._frames.shape[1] - position)]
+                        np.sum(self.frames[frame_index, -2 * (self.frames.shape[1] - position) + 1:]) +
+                        2 * self.frames[frame_index, -2 * (self.frames.shape[1] - position)]
                 )
             else:
                 return (
-                        np.sum(self._averaged_intensity[frame_index, -2 * (self._frames.shape[1] - position) + 1:]) +
-                        2 * np.sum(self._averaged_intensity[frame_index, position - self._integration_radius_of_intensity_peaks:position - 1])
+                        np.sum(self.frames[frame_index, -2 * (self.frames.shape[1] - position) + 1:]) +
+                        2 * np.sum(self.frames[frame_index, position - self._integration_radius_of_intensity_peaks:position - 1])
                 )
         else:
             w = self._integration_radius_of_intensity_peaks
-            return np.sum(self._averaged_intensity[frame_index, position - w:position + w + 1])
+            return np.sum(self.frames[frame_index, position - w:position + w + 1])
 
-    @staticmethod
-    def _find_local_maximas(y):
-        local_maximas = np.where(np.r_[True, y[1:] > y[:-1]] & np.r_[y[:-1] > y[1:], True])
-        return local_maximas[0].astype(np.float32)
+    def _find_local_maximas_larger_than_threshold(self, y):
+        local_maximas, _ = find_peaks(y, height=self.particle_detection_threshold, distance=2 * self.integration_radius_of_intensity_peaks)
+        return local_maximas.astype(np.float32)
 
     @staticmethod
     def _validate_class_arguments(frames, time, automatic_update):

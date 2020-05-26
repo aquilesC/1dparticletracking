@@ -301,23 +301,36 @@ class FindParticlePositionsTester(unittest.TestCase):
             np.array([0, 0, 0.3, 0], dtype=np.float32),
         ]
         expected_positions = [
-            np.array([0], dtype=np.int64),
+            np.array([], dtype=np.int64),
             np.array([1], dtype=np.int64),
+            np.array([], dtype=np.int64),
+            np.array([], dtype=np.int64),
+            np.array([], dtype=np.int64),
+            np.array([], dtype=np.int64),
+            np.array([], dtype=np.int64),
+            np.array([], dtype=np.int64),
             np.array([2], dtype=np.int64),
             np.array([], dtype=np.int64),
             np.array([], dtype=np.int64),
-            np.array([], dtype=np.int64),
-            np.array([], dtype=np.int64),
-            np.array([0, 2], dtype=np.int64),
-            np.array([0, 2], dtype=np.int64),
-            np.array([], dtype=np.int64),
-            np.array([0, 3], dtype=np.int64),
             np.array([2], dtype=np.int64),
             np.array([2], dtype=np.int64)
         ]
 
+        frames_examples = np.array([
+            [0, 0.1, 0.5],
+            [0, 0.6, 0.2],
+            [1, 0.1, 0.1],
+            [0.1, 0.1, 0.2],
+            [0.7, 0.2, 0.7]
+        ], dtype=np.float32)
+
+        times_examples = np.array([0, 1, 2, 3, 4])
+
+        spf = ShortestPathFinder(frames=frames_examples, time=times_examples, automatic_update=False)
+        spf.particle_detection_threshold = 0.1
+
         for index, intensity in enumerate(intensity_examples):
-            np.testing.assert_array_equal(expected_positions[index], ShortestPathFinder._find_local_maximas(intensity))
+            np.testing.assert_array_equal(expected_positions[index], spf._find_local_maximas_larger_than_threshold(intensity))
 
     def test_finding_initial_particle_positions(self):
         """
@@ -345,7 +358,7 @@ class FindParticlePositionsTester(unittest.TestCase):
             np.array([1], dtype=np.float32),
             np.array([2], dtype=np.float32),
             np.array([3], dtype=np.float32),
-            np.array([4], dtype=np.float32),
+            np.array([], dtype=np.float32),
             np.array([3], dtype=np.float32),
         ]
 
@@ -365,20 +378,20 @@ class FindParticlePositionsTester(unittest.TestCase):
         automatic_update = False
 
         frames = np.array([
-            [0, 0.1, 0.5],
-            [0, 0.6, 0.2],
-            [1, 0.1, 0.1],
-            [0.1, 0.1, 0.2],
-            [0.7, 0.2, 0.7]
+            [0, 0.1, 0.5, 0],
+            [0, 0.6, 0.2, 0],
+            [1, 0.1, 0.1, 0],
+            [0.1, 0.1, 0.2, 0],
+            [0, 0.7, 0.2, 0.7]
         ], dtype=np.float32)
 
         time = np.array([0, 1, 2, 3, 4])
 
         expected_positions = [
-            np.array([2], dtype=np.float32),
+            np.array([1.8333333], dtype=np.float32),
             np.array([1.25], dtype=np.float32),
-            np.array([0], dtype=np.float32),
-            np.array([2], dtype=np.float32),
+            np.array([], dtype=np.float32),
+            np.array([1.6666666], dtype=np.float32),
             np.array([2], dtype=np.float32)
         ]
 
