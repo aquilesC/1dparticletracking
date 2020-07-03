@@ -650,9 +650,6 @@ class ParticleTracker:
             raise TypeError('Class argument frames not of type np.ndarray')
         if not (len(frames.shape) == 2 and frames.shape[0] > 1 and frames.shape[1] > 2):
             raise ValueError('Class argument frames need to be of shape (nFrames,nPixels) with nFrames > 1 and nPixels >2')
-        if not (np.max(frames.flatten()) == 1 and np.min(frames.flatten()) == 0):
-            raise ValueError('Class argument frames not normalised. Max value of frames should be 1 and min value should be 0.')
-
         return True
 
     @staticmethod

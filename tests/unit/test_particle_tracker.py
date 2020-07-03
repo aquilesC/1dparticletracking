@@ -10,7 +10,6 @@ class SetAttributeTester(unittest.TestCase):
         """
         Test that the frames are a numpy array with shape (nFrames,nPixels) with float values between 0 and 1.0.
         The number of frames nFrames should be larger than one and the nPixels should be larger than 2.
-        The frames should contain at least one value equal to 1 and one value equal to 0.
         """
         valid_frames = [
             np.array([[0, 1, 0], [0, 0, 0]], dtype=np.float32),
@@ -18,10 +17,8 @@ class SetAttributeTester(unittest.TestCase):
         ]
         non_valid_shape_or_value_frames = [
             np.array([[0, 1, 0]], dtype=np.float32),
-            np.array([[0, 1], [0, 0.1]], dtype=np.float32),
-            np.array([[0, 2, 0], [0, 0, 0]], dtype=np.float32),
-            np.array([[0.2, 1, 0.3], [0.4, 0.5, 0.6]], dtype=np.float32),
-            np.array([[[0.1, 2, 3], [0.1, 0.3, 1]]], dtype=np.float32),
+            np.array([0, 1, 0, 0.1], dtype=np.float32),
+            np.array([[0.2], [0.4]], dtype=np.float32),
         ]
         non_valid_type_of_frames = [
             2,

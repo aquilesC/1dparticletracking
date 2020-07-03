@@ -19,10 +19,8 @@ class SetAttributeTester(unittest.TestCase):
         ]
         non_valid_shape_or_value_frames = [
             np.array([[0, 1, 0]], dtype=np.float32),
-            np.array([[0, 1], [0, 0.1]], dtype=np.float32),
-            np.array([[0, 2, 0], [0, 0, 0]], dtype=np.float32),
-            np.array([[0.2, 1, 0.3], [0.4, 0.5, 0.6]], dtype=np.float32),
-            np.array([[[0.1, 2, 3], [0.1, 0.3, 1]]], dtype=np.float32),
+            np.array([0, 1, 0, 0.1], dtype=np.float32),
+            np.array([[0.2], [0.4]], dtype=np.float32),
         ]
         non_valid_type_of_frames = [
             2,
