@@ -258,7 +258,8 @@ class ParticleTracker:
 
     def _update_trajectories(self):
         self._trajectories = []
-        p = np.empty((1,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32)])
+        p = np.empty((1,),
+                     dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('first_order_moment', np.float32), ('second_order_moment', np.float32)])
         particle_has_been_used = [np.zeros(positions.shape, dtype=bool) for positions in self._particle_positions]
         for frame_index, _ in enumerate(self._association_matrix[:-1]):
             for particle_index, _ in enumerate(self._association_matrix[frame_index][0][1:]):
@@ -266,12 +267,16 @@ class ParticleTracker:
                     trajectory = Trajectory()
                     trajectory_indexes = [np.array([frame_index, particle_index], dtype=np.int16)]
                     trajectory_indexes = self._create_trajectory_from_particle(trajectory_indexes)
-                    for indexes in trajectory_indexes:
-                        particle_has_been_used[indexes[0]][indexes[1]] = True
-                        p['frame_index'] = indexes[0]
-                        p['time'] = self._Frames.time[indexes[0]]
-                        p['position'] = self._particle_positions[indexes[0]][indexes[1]]
-                        trajectory._append_position(p)
+                    trajectory._particle_positions = np.empty((len(trajectory_indexes),),
+                                                              dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('first_order_moment', np.float32),
+                                                                     ('second_order_moment', np.float32)])
+                    for index, indices in enumerate(trajectory_indexes):
+                        particle_has_been_used[indices[0]][indices[1]] = True
+                        trajectory._particle_positions[index]['frame_index'] = indices[0]
+                        trajectory._particle_positions[index]['time'] = self._Frames.time[indices[0]]
+                        trajectory._particle_positions[index]['position'] = self._particle_positions[indices[0]][indices[1]]
+                        trajectory._particle_positions[index]['first_order_moment'] = self._first_order_moments[indices[0]][indices[1]]
+                        trajectory._particle_positions[index]['second_order_moment'] = self._second_order_moments[indices[0]][indices[1]]
                     self._trajectories.append(trajectory)
 
     def _create_trajectory_from_particle(self, indexes):

@@ -983,6 +983,20 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
             np.array([0, 1, 2]),
         ]
 
+        first_order_moments = [
+            np.array([1, 2]),
+            np.array([1, 2, 3]),
+            np.array([1, 2]),
+            np.array([1, 2, 3]),
+        ]
+
+        second_order_moments = [
+            np.array([2, 3]),
+            np.array([2, 3, 4]),
+            np.array([2, 3]),
+            np.array([2, 3, 4]),
+        ]
+
         association_matrix = [
             [
 
@@ -1033,27 +1047,35 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
         ]
 
         trajectories = [
-            np.empty((4,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32)]),
-            np.empty((4,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32)]),
-            np.empty((2,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32)])
+            np.zeros((4,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('first_order_moment', np.float32), ('second_order_moment', np.float32)]),
+            np.zeros((4,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('first_order_moment', np.float32), ('second_order_moment', np.float32)]),
+            np.zeros((2,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('first_order_moment', np.float32), ('second_order_moment', np.float32)])
         ]
 
         trajectories[0]['frame_index'] = np.array([0, 1, 2, 3])
         trajectories[0]['time'] = np.array([1, 2, 3, 4])
         trajectories[0]['position'] = np.array([0, 1, 0, 1])
+        trajectories[0]['first_order_moment'] = np.array([1, 2, 1, 2])
+        trajectories[0]['second_order_moment'] = np.array([2, 3, 2, 3])
 
         trajectories[1]['frame_index'] = np.array([0, 1, 2, 3])
         trajectories[1]['time'] = np.array([1, 2, 3, 4])
         trajectories[1]['position'] = np.array([1, 0, 1, 0])
+        trajectories[1]['first_order_moment'] = np.array([2, 1, 2, 1])
+        trajectories[1]['second_order_moment'] = np.array([3, 2, 3, 2])
 
         trajectories[2]['frame_index'] = np.array([1, 3])
         trajectories[2]['time'] = np.array([2, 4])
         trajectories[2]['position'] = np.array([2, 2])
+        trajectories[2]['first_order_moment'] = np.array([3, 3])
+        trajectories[2]['second_order_moment'] = np.array([4, 4])
 
         pt = ParticleTracker(time=times_example, frames=frames_example, automatic_update=False)
 
         pt._association_matrix = association_matrix
         pt._particle_positions = particle_position
+        pt._first_order_moments = first_order_moments
+        pt._second_order_moments = second_order_moments
 
         pt._update_trajectories()
 

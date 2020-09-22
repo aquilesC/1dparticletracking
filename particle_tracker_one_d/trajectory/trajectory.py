@@ -20,7 +20,7 @@ class Trajectory:
     """
 
     def __init__(self, pixel_width=1):
-        self._particle_positions = np.empty((0,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32)])
+        self._particle_positions = np.empty((0,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('first_order_moment', np.float32), ('second_order_moment', np.float32)])
         self._velocities = np.empty((0, 0), dtype=np.float32)
         self._time_steps = np.empty((0, 0), dtype=np.int16)
         self._position_steps = np.empty((0, 0), dtype=np.int16)
