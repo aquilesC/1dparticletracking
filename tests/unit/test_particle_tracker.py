@@ -723,6 +723,7 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
         pt.maximum_distance_a_particle_can_travel_between_frames = 1
 
         pt._particle_positions = particle_positions
+        pt._calculate_particle_moments()
 
         pt._initialise_association_and_cost_matrices()
         pt._calculate_cost_matrices()
