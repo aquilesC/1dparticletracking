@@ -513,7 +513,11 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
         spf._particle_positions = particle_positions
 
         spf._initialise_association_and_cost_matrix()
+        spf._calculate_particle_moments()
         spf._calculate_cost_matrix()
+
+        print(expected_cost_matrix)
+        print(spf._cost_matrix)
 
         for frame_index, _ in enumerate(spf._cost_matrix):
             for future_frame_index, _ in enumerate(spf._cost_matrix[frame_index]):
