@@ -258,7 +258,8 @@ class ParticleTracker:
 
     def _update_trajectories(self):
         self._trajectories = []
-        p = np.empty((1,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32)])
+        p = np.empty((1,),
+                     dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('first_order_moment', np.float32), ('second_order_moment', np.float32)])
         particle_has_been_used = [np.zeros(positions.shape, dtype=bool) for positions in self._particle_positions]
         for frame_index, _ in enumerate(self._association_matrix[:-1]):
             for particle_index, _ in enumerate(self._association_matrix[frame_index][0][1:]):
@@ -266,12 +267,16 @@ class ParticleTracker:
                     trajectory = Trajectory()
                     trajectory_indexes = [np.array([frame_index, particle_index], dtype=np.int16)]
                     trajectory_indexes = self._create_trajectory_from_particle(trajectory_indexes)
-                    for indexes in trajectory_indexes:
-                        particle_has_been_used[indexes[0]][indexes[1]] = True
-                        p['frame_index'] = indexes[0]
-                        p['time'] = self._Frames.time[indexes[0]]
-                        p['position'] = self._particle_positions[indexes[0]][indexes[1]]
-                        trajectory._append_position(p)
+                    trajectory._particle_positions = np.empty((len(trajectory_indexes),),
+                                                              dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('first_order_moment', np.float32),
+                                                                     ('second_order_moment', np.float32)])
+                    for index, indices in enumerate(trajectory_indexes):
+                        particle_has_been_used[indices[0]][indices[1]] = True
+                        trajectory._particle_positions[index]['frame_index'] = indices[0]
+                        trajectory._particle_positions[index]['time'] = self._Frames.time[indices[0]]
+                        trajectory._particle_positions[index]['position'] = self._particle_positions[indices[0]][indices[1]]
+                        trajectory._particle_positions[index]['first_order_moment'] = self._first_order_moments[indices[0]][indices[1]]
+                        trajectory._particle_positions[index]['second_order_moment'] = self._second_order_moments[indices[0]][indices[1]]
                     self._trajectories.append(trajectory)
 
     def _create_trajectory_from_particle(self, indexes):
@@ -283,10 +288,18 @@ class ParticleTracker:
         return indexes
 
     def _update_association_matrix(self):
+        self._calculate_particle_moments()
         self._initialise_association_and_cost_matrices()
         self._calculate_cost_matrices()
         self._create_initial_links_in_association_matrix()
         self._optimise_association_matrix()
+
+    def _calculate_particle_moments(self):
+        self._first_order_moments = [None] * self.frames.shape[0]
+        self._second_order_moments = [None] * self.frames.shape[0]
+        for frame_index, positions in enumerate(self._particle_positions):
+            self._first_order_moments[frame_index] = np.array([self._calculate_first_order_intensity_moment(position, frame_index) for position in positions], dtype=np.float64)
+            self._second_order_moments[frame_index] = np.array([self._calculate_second_order_intensity_moment(position, frame_index) for position in positions], dtype=np.float64)
 
     def _find_particle_positions(self):
         self._find_initial_particle_positions()
@@ -374,7 +387,7 @@ class ParticleTracker:
             w = self._integration_radius_of_intensity_peaks
             second_order_index_array = np.arange(-w, w + 1) ** 2
             return np.dot(self.frames[frame_index, position - w:position + w + 1], second_order_index_array) / self._calculate_first_order_intensity_moment(position,
-                                                                                                                                                                         frame_index)
+                                                                                                                                                            frame_index)
 
     def _calculate_first_order_intensity_moment(self, position, frame_index):
         position = int(round(position))
@@ -494,39 +507,40 @@ class ParticleTracker:
                             self._cost_matrix[frame_index][future_frame_index][particle_index][future_particle_index] = 0
                         elif particle_index == 0 or future_particle_index == 0:
                             self._cost_matrix[frame_index][future_frame_index][particle_index][future_particle_index] = self._calculate_cost_for_association_with_dummy_particle(
-                                future_frame_index + 1)
+                                frame_index, frame_index + future_frame_index + 1)
                         else:
-                            particle_position_in_current_frame = (frame_index, self._particle_positions[frame_index][particle_index - 1])
-                            particle_position_in_future_frame = (
-                                frame_index + future_frame_index + 1, self._particle_positions[frame_index + future_frame_index + 1][future_particle_index - 1])
                             self._cost_matrix[frame_index][future_frame_index][particle_index][future_particle_index] = self._calculate_linking_cost(
-                                particle_position_in_current_frame, particle_position_in_future_frame)
+                                frame_index,
+                                particle_index - 1,
+                                frame_index + future_frame_index + 1,
+                                future_particle_index - 1
+                            )
                             self._cost_matrix_without_distance[frame_index][future_frame_index][particle_index][
                                 future_particle_index] = self._calculate_linking_cost_without_distance(
-                                particle_position_in_current_frame, particle_position_in_future_frame)
+                                frame_index,
+                                particle_index - 1,
+                                frame_index + future_frame_index + 1,
+                                future_particle_index - 1
+                            )
 
-    def _calculate_linking_cost_without_distance(self, position1, position2):
+    def _calculate_linking_cost_without_distance(self, frame_index, particle_index, future_frame_index, future_particle_index):
         return (
-                (self._calculate_first_order_intensity_moment(position1[1], position1[0]) - self._calculate_first_order_intensity_moment(
-                    position2[1], position2[0])) ** 2 +
-                (self._calculate_second_order_intensity_moment(
-                    position1[1], position1[0]) - self._calculate_second_order_intensity_moment(position2[1], position2[0])) ** 2
+                (self._first_order_moments[frame_index][particle_index] - self._first_order_moments[future_frame_index][future_particle_index]) ** 2 +
+                (self._second_order_moments[frame_index][particle_index] - self._second_order_moments[future_frame_index][future_particle_index]) ** 2
         )
 
-    def _calculate_linking_cost(self, position1, position2):
+    def _calculate_linking_cost(self, frame_index, particle_index, future_frame_index, future_particle_index):
         cost = (
-                (position1[1] - position2[1]) ** 2 +
-                (self._calculate_first_order_intensity_moment(position1[1], position1[0]) - self._calculate_first_order_intensity_moment(
-                    position2[1], position2[0])) ** 2 +
-                (self._calculate_second_order_intensity_moment(
-                    position1[1], position1[0]) - self._calculate_second_order_intensity_moment(position2[1], position2[0])) ** 2
+                (self.particle_positions[frame_index][particle_index] - self.particle_positions[future_frame_index][future_particle_index]) ** 2 +
+                (self._first_order_moments[frame_index][particle_index] - self._first_order_moments[future_frame_index][future_particle_index]) ** 2 +
+                (self._second_order_moments[frame_index][particle_index] - self._second_order_moments[future_frame_index][future_particle_index]) ** 2
         )
-        if cost > self._calculate_cost_for_association_with_dummy_particle(position2[0] - position1[0]):
+        if cost > self._calculate_cost_for_association_with_dummy_particle(frame_index, future_frame_index):
             return np.inf
         return cost
 
-    def _calculate_cost_for_association_with_dummy_particle(self, future_frame_index):
-        return (self.maximum_distance_a_particle_can_travel_between_frames * future_frame_index) ** 2
+    def _calculate_cost_for_association_with_dummy_particle(self, frame_index, future_frame_index):
+        return (self.maximum_distance_a_particle_can_travel_between_frames * (future_frame_index - frame_index)) ** 2
 
     def _optimise_association_matrix(self):
         for frame_index, _ in enumerate(self._cost_matrix):
