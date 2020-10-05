@@ -26,6 +26,7 @@ class Trajectory:
         self._position_steps = np.empty((0, 0), dtype=np.int16)
         self._pixel_width = pixel_width
         self._length = 0
+        self._density = 0
 
     def __add__(self, other):
         new_trajectory = Trajectory(pixel_width=self.pixel_width)
@@ -56,6 +57,16 @@ class Trajectory:
             new_trajectory._particle_positions = np.append(self._particle_positions[index], other._particle_positions)
 
         return new_trajectory
+
+    @property
+    def density(self):
+        """
+        float:
+            How dense the trajectory is in time. Returns self.length/(self.particle_positions['frame_index'][-1]-self.particle_positions['frame_index'][0]).
+        """
+        if self.length == 0 or self.length == 1:
+            return 1
+        return self.length/(1 + self.particle_positions['frame_index'][-1]-self.particle_positions['frame_index'][0])
 
     @property
     def length(self):
