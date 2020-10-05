@@ -20,11 +20,14 @@ class Trajectory:
     """
 
     def __init__(self, pixel_width=1):
-        self._particle_positions = np.empty((0,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('first_order_moment', np.float32), ('second_order_moment', np.float32)])
+        self._particle_positions = np.empty((0,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('first_order_moment', np.float32),
+                                                         ('second_order_moment', np.float32)])
         self._velocities = np.empty((0, 0), dtype=np.float32)
         self._time_steps = np.empty((0, 0), dtype=np.int16)
         self._position_steps = np.empty((0, 0), dtype=np.int16)
         self._pixel_width = pixel_width
+        self._length = 0
+        self._density = 0
 
     def __add__(self, other):
         new_trajectory = Trajectory(pixel_width=self.pixel_width)
@@ -57,6 +60,24 @@ class Trajectory:
         return new_trajectory
 
     @property
+    def density(self):
+        """
+        float:
+            How dense the trajectory is in time. Returns self.length/(self.particle_positions['frame_index'][-1]-self.particle_positions['frame_index'][0]).
+        """
+        if self.length == 0 or self.length == 1:
+            return 1
+        return self.length / (1 + self.particle_positions['frame_index'][-1] - self.particle_positions['frame_index'][0])
+
+    @property
+    def length(self):
+        """
+        int:
+            The length of the trajectory. Returns self.particle_postions.shape[0]
+        """
+        return self.particle_positions.shape[0]
+
+    @property
     def pixel_width(self):
         """
         float:
@@ -77,6 +98,24 @@ class Trajectory:
             ('time', np.float32),('position', np.int16)])`
         """
         return self._particle_positions
+
+    def overlaps_with(self, trajectory):
+        """
+        Check if the trajectories overlaps
+
+        trajectory: Trajectory to compare with. If both trajectories has any identical elements will return true otherwise false.
+
+        Returns
+        -------
+            bool
+        """
+        if self.length == 0 or trajectory.length == 0:
+            return False
+        for p in trajectory.particle_positions:
+            for p2 in self.particle_positions:
+                if (p['frame_index'] == p2['frame_index']) and (p['position'] == p2['position']):
+                    return True
+        return False
 
     def plot_trajectory(self, ax=None, **kwargs):
         """
