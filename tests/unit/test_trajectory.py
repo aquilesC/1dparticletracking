@@ -19,7 +19,7 @@ class CalculateDiffusionCoefficientTester(unittest.TestCase):
         particle_positions['time'] = [0, 1, 2]
         particle_positions['position'] = [0, 0, 0]
 
-        R = 1/4 # Representing exposure time equal to acquisition time
+        R = 1 / 4  # Representing exposure time equal to acquisition time
 
         pixel_width = 1
 
@@ -38,7 +38,8 @@ class PropertyTester(unittest.TestCase):
         Test that the class property returns the length of the trajectory
         """
 
-        particle_positions = np.empty((3,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('first_order_moment', np.float32), ('second_order_moment', np.float32)])
+        particle_positions = np.empty((3,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('first_order_moment', np.float32),
+                                                   ('second_order_moment', np.float32)])
 
         particle_positions['frame_index'] = [0, 1, 2]
         particle_positions['time'] = [0, 1, 2]
@@ -94,6 +95,7 @@ class PropertyTester(unittest.TestCase):
         t._particle_positions = particle_positions
         expected_density = 0.7142857142857143
         self.assertEqual(expected_density, t.density)
+
 
 class FunctionsTester(unittest.TestCase):
 
