@@ -30,6 +30,7 @@ class CalculateDiffusionCoefficientTester(unittest.TestCase):
 
         self.assertEqual(expected_diffusion_coefficient, calculated_diffusion_coefficient)
 
+
 class PropertyTester(unittest.TestCase):
 
     def test_length_of_trajectory(self):
@@ -94,5 +95,53 @@ class PropertyTester(unittest.TestCase):
         expected_density = 0.7142857142857143
         self.assertEqual(expected_density, t.density)
 
+class FunctionsTester(unittest.TestCase):
 
+    def test_overlaps_function(self):
+        t_1 = Trajectory()
+        t_2 = Trajectory()
 
+        self.assertTrue(not t_1.overlaps_with(t_2))
+        self.assertTrue(not t_2.overlaps_with(t_1))
+
+        particle_positions = np.empty((3,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('first_order_moment', np.float32),
+                                                   ('second_order_moment', np.float32)])
+
+        particle_positions['frame_index'] = [0, 1, 3]
+        particle_positions['time'] = [0, 1, 3]
+        particle_positions['position'] = [0, 0, 0]
+        particle_positions['first_order_moment'] = [0, 0, 0]
+        particle_positions['second_order_moment'] = [0, 0, 0]
+
+        t_1._particle_positions = particle_positions
+
+        self.assertTrue(not t_1.overlaps_with(t_2))
+        self.assertTrue(not t_2.overlaps_with(t_1))
+
+        particle_positions = np.empty((3,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('first_order_moment', np.float32),
+                                                   ('second_order_moment', np.float32)])
+
+        particle_positions['frame_index'] = [0, 2, 3]
+        particle_positions['time'] = [0, 1, 3]
+        particle_positions['position'] = [0, 0, 0]
+        particle_positions['first_order_moment'] = [0, 0, 0]
+        particle_positions['second_order_moment'] = [0, 0, 0]
+
+        t_2._particle_positions = particle_positions
+
+        self.assertTrue(t_1.overlaps_with(t_2))
+        self.assertTrue(t_2.overlaps_with(t_1))
+
+        particle_positions = np.empty((3,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('first_order_moment', np.float32),
+                                                   ('second_order_moment', np.float32)])
+
+        particle_positions['frame_index'] = [10, 11, 33]
+        particle_positions['time'] = [0, 1, 3]
+        particle_positions['position'] = [0, 0, 0]
+        particle_positions['first_order_moment'] = [0, 0, 0]
+        particle_positions['second_order_moment'] = [0, 0, 0]
+
+        t_2._particle_positions = particle_positions
+
+        self.assertTrue(not t_1.overlaps_with(t_2))
+        self.assertTrue(not t_2.overlaps_with(t_1))

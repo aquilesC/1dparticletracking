@@ -98,6 +98,24 @@ class Trajectory:
         """
         return self._particle_positions
 
+    def overlaps_with(self, trajectory):
+        """
+        Check if the trajectories overlaps
+
+        trajectory: Trajectory to compare with. If both trajectories has any identical elements will return true otherwise false.
+
+        Returns
+        -------
+            bool
+        """
+        if self.length == 0 or trajectory.length == 0:
+            return False
+        for p in trajectory.particle_positions:
+            for p2 in self.particle_positions:
+                if (p['frame_index'] == p2['frame_index']) and (p['position'] == p2['position']):
+                    return True
+        return False
+
     def plot_trajectory(self, ax=None, **kwargs):
         """
         Plots the trajectory using the frame index and the particle position in pixels.
