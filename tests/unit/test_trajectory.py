@@ -30,3 +30,31 @@ class CalculateDiffusionCoefficientTester(unittest.TestCase):
 
         self.assertEqual(expected_diffusion_coefficient, calculated_diffusion_coefficient)
 
+class PropertyTester(unittest.TestCase):
+
+    def test_length_of_trajectory(self):
+        """
+        Test that the class property returns the length of the trajectory
+        """
+
+        particle_positions = np.empty((3,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('first_order_moment', np.float32), ('second_order_moment', np.float32)])
+
+        particle_positions['frame_index'] = [0, 1, 2]
+        particle_positions['time'] = [0, 1, 2]
+        particle_positions['position'] = [0, 0, 0]
+        particle_positions['first_order_moment'] = [0, 0, 0]
+        particle_positions['second_order_moment'] = [0, 0, 0]
+
+        t = Trajectory()
+
+        expected_length_empty_trajectory = 0
+        self.assertEqual(expected_length_empty_trajectory, t.length)
+
+        t._particle_positions = particle_positions
+        expected_length = 3
+        self.assertEqual(expected_length, t.length)
+
+
+
+
+

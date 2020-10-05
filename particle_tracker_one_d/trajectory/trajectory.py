@@ -25,6 +25,7 @@ class Trajectory:
         self._time_steps = np.empty((0, 0), dtype=np.int16)
         self._position_steps = np.empty((0, 0), dtype=np.int16)
         self._pixel_width = pixel_width
+        self._length = 0
 
     def __add__(self, other):
         new_trajectory = Trajectory(pixel_width=self.pixel_width)
@@ -55,6 +56,14 @@ class Trajectory:
             new_trajectory._particle_positions = np.append(self._particle_positions[index], other._particle_positions)
 
         return new_trajectory
+
+    @property
+    def length(self):
+        """
+        int:
+            The length of the trajectory. Returns self.particle_postions.shape[0]
+        """
+        return self.particle_positions.shape[0]
 
     @property
     def pixel_width(self):
