@@ -270,6 +270,39 @@ class SetAttributeTester(unittest.TestCase):
             with self.assertRaises(ValueError, msg=distance):
                 pt.maximum_distance_a_particle_can_travel_between_frames = distance
 
+    def test_changing_the_cost_coefficients(self):
+        """
+        Test that it is possible to change cost coefficients
+        """
+        frames = np.array([
+            [0, 0.1, 0.2, 0.1],
+            [0, 0.2, 0.3, 0.4],
+            [0.2, 0.5, 0.6, 1],
+            [0, 0.1, 0.2, 0.1]
+        ], dtype=np.float32)
+        time = np.array([0, 1, 2, 3])
+        automatic_update = False
+
+        correct_cost_coefficients = np.array([
+            [1, 2, 3],
+            [0, 0.2, 0.1],
+            [10, 10.2, -1]
+        ])
+
+        incorrect_cost_coefficients = np.array([
+            [0, 0, 0]
+        ])
+
+        pt = ParticleTracker(frames=frames, time=time, automatic_update=automatic_update)
+
+        for cost_coefficients in correct_cost_coefficients:
+            pt.change_cost_coefficients(cost_coefficients[0], cost_coefficients[1], cost_coefficients[2])
+            np.testing.assert_array_almost_equal(cost_coefficients, pt._cost_coefficients)
+
+        for cost_coefficients in incorrect_cost_coefficients:
+            with self.assertRaises(ValueError):
+                pt.change_cost_coefficients(cost_coefficients[0], cost_coefficients[1], cost_coefficients[2])
+
 
 class FindParticlePositionsTester(unittest.TestCase):
 
@@ -962,9 +995,12 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
         ]
 
         trajectories = [
-            np.zeros((4,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('zeroth_order_moment', np.float32), ('second_order_moment', np.float32)]),
-            np.zeros((4,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('zeroth_order_moment', np.float32), ('second_order_moment', np.float32)]),
-            np.zeros((2,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('zeroth_order_moment', np.float32), ('second_order_moment', np.float32)])
+            np.zeros((4,),
+                     dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('zeroth_order_moment', np.float32), ('second_order_moment', np.float32)]),
+            np.zeros((4,),
+                     dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('zeroth_order_moment', np.float32), ('second_order_moment', np.float32)]),
+            np.zeros((2,),
+                     dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('zeroth_order_moment', np.float32), ('second_order_moment', np.float32)])
         ]
 
         trajectories[0]['frame_index'] = np.array([0, 1, 2, 3])
