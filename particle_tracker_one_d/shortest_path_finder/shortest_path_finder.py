@@ -283,7 +283,7 @@ class ShortestPathFinder:
         self._zeroth_order_moments = [None] * (self.end_point[0] - self.start_point[0] + 1)
         self._second_order_moments = [None] * (self.end_point[0] - self.start_point[0] + 1)
         for frame_index, positions in enumerate(self._particle_positions):
-            self._zeroth_order_moments[frame_index] = np.array([self._calculate_first_order_intensity_moment(position, frame_index + self.start_point[0]) for position in positions], dtype=np.float64)
+            self._zeroth_order_moments[frame_index] = np.array([self._calculate_zeroth_order_intensity_moment(position, frame_index + self.start_point[0]) for position in positions], dtype=np.float64)
             self._second_order_moments[frame_index] = np.array([self._calculate_second_order_intensity_moment(position, frame_index + self.start_point[0]) for position in positions], dtype=np.float64)
 
     def _create_trajectory_from_cost_matrix(self):
@@ -315,19 +315,19 @@ class ShortestPathFinder:
             return 0
         elif position == 0:
             if self._integration_radius_of_intensity_peaks == 1:
-                return 2 * self.frames[frame_index, 1] / self._calculate_first_order_intensity_moment(position, frame_index)
+                return 2 * self.frames[frame_index, 1] / self._calculate_zeroth_order_intensity_moment(position, frame_index)
             else:
                 second_order_index_array = np.arange(0, self._integration_radius_of_intensity_peaks + 1) ** 2
                 return (
                                2 * np.dot(self.frames[frame_index, :self.integration_radius_of_intensity_peaks + 1], second_order_index_array)
-                       ) / self._calculate_first_order_intensity_moment(position, frame_index)
+                       ) / self._calculate_zeroth_order_intensity_moment(position, frame_index)
         elif position == self.frames.shape[1] - 1:
             if self._integration_radius_of_intensity_peaks == 1:
-                return 2 * self.frames[frame_index, -2] / self._calculate_first_order_intensity_moment(position, frame_index)
+                return 2 * self.frames[frame_index, -2] / self._calculate_zeroth_order_intensity_moment(position, frame_index)
             else:
                 second_order_index_array = np.arange(-self._integration_radius_of_intensity_peaks, 0) ** 2
                 return 2 * np.dot(self.frames[frame_index, -self._integration_radius_of_intensity_peaks - 1:-1],
-                                  second_order_index_array) / self._calculate_first_order_intensity_moment(position, frame_index)
+                                  second_order_index_array) / self._calculate_zeroth_order_intensity_moment(position, frame_index)
         elif position < self._integration_radius_of_intensity_peaks:
             w = self._integration_radius_of_intensity_peaks - position
             if w == 1:
@@ -336,7 +336,7 @@ class ShortestPathFinder:
                         (
                                 np.dot(self.frames[frame_index, :2 * position + 1], second_order_index_array) +
                                 2 * self._integration_radius_of_intensity_peaks ** 2 * self.frames[frame_index, position + self._integration_radius_of_intensity_peaks]
-                        ) / self._calculate_first_order_intensity_moment(position, frame_index)
+                        ) / self._calculate_zeroth_order_intensity_moment(position, frame_index)
                 )
             else:
                 second_order_index_array = np.arange(-position, position + 1) ** 2
@@ -345,7 +345,7 @@ class ShortestPathFinder:
                                np.dot(second_order_index_array, self.frames[frame_index, :2 * position + 1]) +
                                2 * np.dot(second_order_index_array_big,
                                           self.frames[frame_index, 2 * position + 1:2 * position + self._integration_radius_of_intensity_peaks])
-                       ) / self._calculate_first_order_intensity_moment(position, frame_index)
+                       ) / self._calculate_zeroth_order_intensity_moment(position, frame_index)
         elif position > self.frames.shape[1] - 1 - self._integration_radius_of_intensity_peaks:
             w = self._integration_radius_of_intensity_peaks - (self.frames.shape[1] - position - 1)
             if w == 1:
@@ -354,7 +354,7 @@ class ShortestPathFinder:
                                np.dot(second_order_index_array, self.frames[frame_index, 2 * position - self.frames.shape[1] + 1:])
                                + 2 * self._integration_radius_of_intensity_peaks ** 2 * self.frames[
                                    frame_index, position - self._integration_radius_of_intensity_peaks]
-                       ) / self._calculate_first_order_intensity_moment(position, frame_index)
+                       ) / self._calculate_zeroth_order_intensity_moment(position, frame_index)
             else:
                 second_order_index_array = np.arange(-(self.frames.shape[1] - 1 - position), self.frames.shape[1] - position) ** 2
                 second_order_index_array_big = np.arange(- self._integration_radius_of_intensity_peaks, -(self.frames.shape[1] - position) + 1) ** 2
@@ -362,15 +362,15 @@ class ShortestPathFinder:
                                np.dot(second_order_index_array, self.frames[frame_index, -2 * (self.frames.shape[1] - position) + 1:]) +
                                2 * np.dot(second_order_index_array_big,
                                           self.frames[frame_index, position - self._integration_radius_of_intensity_peaks:-2 * (self.frames.shape[1] - position) + 1])
-                       ) / self._calculate_first_order_intensity_moment(position, frame_index)
+                       ) / self._calculate_zeroth_order_intensity_moment(position, frame_index)
 
         else:
             w = self._integration_radius_of_intensity_peaks
             second_order_index_array = np.arange(-w, w + 1) ** 2
-            return np.dot(self.frames[frame_index, position - w:position + w + 1], second_order_index_array) / self._calculate_first_order_intensity_moment(position,
+            return np.dot(self.frames[frame_index, position - w:position + w + 1], second_order_index_array) / self._calculate_zeroth_order_intensity_moment(position,
                                                                                                                                                                          frame_index)
 
-    def _calculate_first_order_intensity_moment(self, position, frame_index):
+    def _calculate_zeroth_order_intensity_moment(self, position, frame_index):
         position = int(round(position))
         if self._integration_radius_of_intensity_peaks == 0:
             return self.frames[frame_index, position]
