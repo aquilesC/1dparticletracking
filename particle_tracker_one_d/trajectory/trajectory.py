@@ -147,6 +147,8 @@ class Trajectory:
 
     def calculate_mean_square_displacement_function(self):
         """
+        Calculate the average squared displacements for different time steps.
+        
         Returns
         -------
             time: np.array

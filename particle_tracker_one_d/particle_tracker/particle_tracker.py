@@ -254,8 +254,11 @@ class ParticleTracker:
     def change_cost_coefficients(self, a=1, b=1, c=1):
         """
         Change the coefficients of the cost function :math:`c(p_1,p_2) = a\\cdot (x_{p_1} - x_{p_1})^2 + b \\cdot (m_0(p_1)-m_0(p_2))^2 + b \\cdot (m_2(p_1)-m_2(p_2))^2)`
+
         a: float
+
         b: float
+
         c: float
         """
         new_cost_coefficients = np.array([a, b, c], dtype=np.float32)
