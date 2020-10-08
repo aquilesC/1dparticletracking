@@ -517,7 +517,7 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
                 np.testing.assert_array_equal(pt._association_matrix[frame_index][r], expected_association_matrix[frame_index][r])
                 np.testing.assert_array_equal(pt._cost_matrix[frame_index][r], expected_cost_matrix[frame_index][r])
 
-    def test_calculation_of_first_order_intensity_moments(self):
+    def test_calculation_of_zeroth_order_intensity_moments(self):
         """
         Verification of the calulation of first order intensity moments
         TODO: Rewrite to have more logical frames with particle positions going from left to right.
@@ -546,7 +546,7 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
             [4, 6]
         ], dtype=np.float32)
 
-        expected_first_order_intensity_moment_integration_radius_zero = [
+        expected_zeroth_order_intensity_moment_integration_radius_zero = [
             0.5,
             0.6,
             1,
@@ -557,7 +557,7 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
             0.9
         ]
 
-        expected_first_order_intensity_moment_integration_radius_one = [
+        expected_zeroth_order_intensity_moment_integration_radius_one = [
             0.7,
             0.8,
             1.2,
@@ -568,7 +568,7 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
             1.2
         ]
 
-        expected_first_order_intensity_moment_integration_radius_two = [
+        expected_zeroth_order_intensity_moment_integration_radius_two = [
             0.9,
             1.4,
             1.4,
@@ -579,7 +579,7 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
             1.6
         ]
 
-        expected_first_order_intensity_moment_integration_radius_three = [
+        expected_zeroth_order_intensity_moment_integration_radius_three = [
             3.3,
             3.2
         ]
@@ -626,8 +626,8 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
         pt.integration_radius_of_intensity_peaks = 0
 
         for index, position in enumerate(particle_positions):
-            np.testing.assert_almost_equal(pt._calculate_first_order_intensity_moment(position[0], int(round(position[1]))),
-                                           expected_first_order_intensity_moment_integration_radius_zero[index])
+            np.testing.assert_almost_equal(pt._calculate_zeroth_order_intensity_moment(position[0], int(round(position[1]))),
+                                           expected_zeroth_order_intensity_moment_integration_radius_zero[index])
 
         for index, position in enumerate(particle_positions):
             np.testing.assert_almost_equal(pt._calculate_second_order_intensity_moment(position[0], int(round(position[1]))),
@@ -636,8 +636,8 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
         pt.integration_radius_of_intensity_peaks = 1
 
         for index, position in enumerate(particle_positions):
-            np.testing.assert_almost_equal(expected_first_order_intensity_moment_integration_radius_one[index],
-                                           pt._calculate_first_order_intensity_moment(position[0], int(round(position[1]))))
+            np.testing.assert_almost_equal(expected_zeroth_order_intensity_moment_integration_radius_one[index],
+                                           pt._calculate_zeroth_order_intensity_moment(position[0], int(round(position[1]))))
 
         for index, position in enumerate(particle_positions):
             np.testing.assert_almost_equal(pt._calculate_second_order_intensity_moment(position[0], int(round(position[1]))),
@@ -646,8 +646,8 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
         pt.integration_radius_of_intensity_peaks = 2
 
         for index, position in enumerate(particle_positions):
-            np.testing.assert_almost_equal(pt._calculate_first_order_intensity_moment(position[0], int(round(position[1]))),
-                                           expected_first_order_intensity_moment_integration_radius_two[index], decimal=5)
+            np.testing.assert_almost_equal(pt._calculate_zeroth_order_intensity_moment(position[0], int(round(position[1]))),
+                                           expected_zeroth_order_intensity_moment_integration_radius_two[index], decimal=5)
 
         for index, position in enumerate(particle_positions):
             np.testing.assert_almost_equal(pt._calculate_second_order_intensity_moment(position[0], int(round(position[1]))),
@@ -655,11 +655,11 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
 
         pt.integration_radius_of_intensity_peaks = 3
 
-        np.testing.assert_almost_equal(pt._calculate_first_order_intensity_moment(1, 6),
-                                       expected_first_order_intensity_moment_integration_radius_three[0])
+        np.testing.assert_almost_equal(pt._calculate_zeroth_order_intensity_moment(1, 6),
+                                       expected_zeroth_order_intensity_moment_integration_radius_three[0])
 
-        np.testing.assert_almost_equal(pt._calculate_first_order_intensity_moment(4, 6),
-                                       expected_first_order_intensity_moment_integration_radius_three[1])
+        np.testing.assert_almost_equal(pt._calculate_zeroth_order_intensity_moment(4, 6),
+                                       expected_zeroth_order_intensity_moment_integration_radius_three[1])
 
         np.testing.assert_almost_equal(pt._calculate_second_order_intensity_moment(1, 6),
                                        expected_second_order_intensity_moment_integration_radius_three[0], decimal=5)
