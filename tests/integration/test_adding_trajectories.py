@@ -18,13 +18,13 @@ class AddTrajectoriesTester(unittest.TestCase):
 
         empty_trajectory = Trajectory(pixel_width=2)
         non_empty_trajectory = Trajectory(pixel_width=2)
-        non_empty_trajectory._particle_positions = particle_positions
+        non_empty_trajectory.particle_positions = particle_positions
 
         final_trajectory = empty_trajectory + non_empty_trajectory
 
-        np.testing.assert_array_equal(non_empty_trajectory._particle_positions, (non_empty_trajectory + empty_trajectory)._particle_positions)
-        np.testing.assert_array_equal(non_empty_trajectory._particle_positions, (empty_trajectory + non_empty_trajectory)._particle_positions)
-        np.testing.assert_array_equal(empty_trajectory._particle_positions, (empty_trajectory + empty_trajectory)._particle_positions)
+        np.testing.assert_array_equal(non_empty_trajectory.particle_positions, (non_empty_trajectory + empty_trajectory)._particle_positions)
+        np.testing.assert_array_equal(non_empty_trajectory.particle_positions, (empty_trajectory + non_empty_trajectory)._particle_positions)
+        np.testing.assert_array_equal(empty_trajectory.particle_positions, (empty_trajectory + empty_trajectory)._particle_positions)
 
     def test_addition_with_non_empty_trajectories(self):
         """
@@ -50,9 +50,9 @@ class AddTrajectoriesTester(unittest.TestCase):
         final_positions['position'] = np.array([0, 1])
 
         t_1 = Trajectory()
-        t_1._particle_positions = particle_positions_1
+        t_1.particle_positions = particle_positions_1
         t_2 = Trajectory()
-        t_2._particle_positions = particle_positions_2
+        t_2.particle_positions = particle_positions_2
 
         np.testing.assert_array_equal(final_positions, (t_1 + t_2)._particle_positions)
         np.testing.assert_array_equal(final_positions, (t_2 + t_1)._particle_positions)
@@ -69,7 +69,7 @@ class AddTrajectoriesTester(unittest.TestCase):
         particle_positions_1['position'] = np.array([0, 3, 1])
 
         t_1 = Trajectory()
-        t_1._particle_positions = particle_positions_1
+        t_1.particle_positions = particle_positions_1
 
         particle_positions_2 = np.empty((3,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32)])
 
@@ -78,7 +78,7 @@ class AddTrajectoriesTester(unittest.TestCase):
         particle_positions_2['position'] = np.array([5, 2, 0])
 
         t_2 = Trajectory()
-        t_2._particle_positions = particle_positions_2
+        t_2.particle_positions = particle_positions_2
 
         final_positions = np.empty((4,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32)])
 

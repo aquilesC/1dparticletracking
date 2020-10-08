@@ -269,7 +269,7 @@ class ShortestPathFinder:
     def _calculate_linking_cost(self, frame_index, particle_index, future_frame_index, future_particle_index):
         return (
                 0.1*(self.particle_positions[frame_index][particle_index] - self.particle_positions[future_frame_index][future_particle_index]) ** 2 +
-                (self._first_order_moments[future_frame_index][future_particle_index] - self._first_order_moments[0][0]) ** 2
+                (self._zeroth_order_moments[future_frame_index][future_particle_index] - self._zeroth_order_moments[0][0]) ** 2
         )
 
     def _update_shortest_path(self):
@@ -280,10 +280,10 @@ class ShortestPathFinder:
             self._create_trajectory_from_cost_matrix()
 
     def _calculate_particle_moments(self):
-        self._first_order_moments = [None] * (self.end_point[0] - self.start_point[0] + 1)
+        self._zeroth_order_moments = [None] * (self.end_point[0] - self.start_point[0] + 1)
         self._second_order_moments = [None] * (self.end_point[0] - self.start_point[0] + 1)
         for frame_index, positions in enumerate(self._particle_positions):
-            self._first_order_moments[frame_index] = np.array([self._calculate_first_order_intensity_moment(position, frame_index + self.start_point[0]) for position in positions], dtype=np.float64)
+            self._zeroth_order_moments[frame_index] = np.array([self._calculate_first_order_intensity_moment(position, frame_index + self.start_point[0]) for position in positions], dtype=np.float64)
             self._second_order_moments[frame_index] = np.array([self._calculate_second_order_intensity_moment(position, frame_index + self.start_point[0]) for position in positions], dtype=np.float64)
 
     def _create_trajectory_from_cost_matrix(self):
@@ -298,16 +298,16 @@ class ShortestPathFinder:
             )
             prev_lowest_cost_index = lowest_cost_index
 
-        particle_positions = np.empty((len(particle_indices[::-1]),), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('first_order_moment', np.float32), ('second_order_moment', np.float32)])
+        particle_positions = np.empty((len(particle_indices[::-1]),), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('zeroth_order_moment', np.float32), ('second_order_moment', np.float32)])
         self._trajectory = Trajectory()
         for frame_index, particle_index in enumerate(particle_indices[::-1]):
             particle_positions[frame_index]['frame_index'] = frame_index + self.start_point[0]
             particle_positions[frame_index]['time'] = self._Frames.time[frame_index + self.start_point[0]]
             particle_positions[frame_index]['position'] = self._particle_positions[frame_index][particle_index]
-            particle_positions[frame_index]['first_order_moment'] = self._first_order_moments[frame_index][particle_index]
+            particle_positions[frame_index]['zeroth_order_moment'] = self._zeroth_order_moments[frame_index][particle_index]
             particle_positions[frame_index]['second_order_moment'] = self._second_order_moments[frame_index][particle_index]
 
-        self._trajectory._particle_positions = particle_positions
+        self._trajectory.particle_positions = particle_positions
 
     def _calculate_second_order_intensity_moment(self, position, frame_index):
         position = int(round(position))
