@@ -262,10 +262,13 @@ class ParticleTracker:
         c: float
         """
         new_cost_coefficients = np.array([a, b, c], dtype=np.float32)
-        if new_cost_coefficients != self._cost_coefficients:
+        if np.array_equal(new_cost_coefficients,np.array([0,0,0])):
+            raise ValueError('All cost coefficients can\'t be zero')
+        if not np.array_equal(new_cost_coefficients, self._cost_coefficients):
             self._cost_coefficients = new_cost_coefficients
-            self._update_association_matrix()
-            self._update_trajectories()
+            if self._automatic_update:
+                self._update_association_matrix()
+                self._update_trajectories()
 
     def _update_trajectories(self):
         self._trajectories = []
