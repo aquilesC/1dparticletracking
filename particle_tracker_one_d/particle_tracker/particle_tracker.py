@@ -41,7 +41,6 @@ class ParticleTracker:
         self._particle_positions = [None] * self.frames.shape[0]
         self._trajectories = []
         self._cost_matrix = []
-        self._cost_matrix_without_distance = []
         self._association_matrix = []
 
     @property
@@ -67,7 +66,6 @@ class ParticleTracker:
             if self._automatic_update:
                 self._find_particle_positions()
                 self._update_association_matrix()
-                self._reconnect_broken_links()
                 self._update_trajectories()
 
     @property
@@ -91,7 +89,6 @@ class ParticleTracker:
             if self._automatic_update:
                 self._find_particle_positions()
                 self._update_association_matrix()
-                self._reconnect_broken_links()
                 self._update_trajectories()
 
     @property
@@ -114,7 +111,6 @@ class ParticleTracker:
             if self._automatic_update:
                 self._find_particle_positions()
                 self._update_association_matrix()
-                self._reconnect_broken_links()
                 self._update_trajectories()
 
     @property
@@ -137,7 +133,6 @@ class ParticleTracker:
             self._maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles = number_of_frames
             if self._automatic_update:
                 self._update_association_matrix()
-                self._reconnect_broken_links()
                 self._update_trajectories()
 
     @property
@@ -158,7 +153,6 @@ class ParticleTracker:
             self._maximum_distance_a_particle_can_travel_between_frames = distance
             if self._automatic_update:
                 self._update_association_matrix()
-                self._reconnect_broken_links()
                 self._update_trajectories()
 
     @property
@@ -463,7 +457,6 @@ class ParticleTracker:
 
         self._association_matrix = [[] for _ in range(number_of_frames)]
         self._cost_matrix = [[] for _ in range(number_of_frames)]
-        self._cost_matrix_without_distance = [[] for _ in range(number_of_frames)]
         for frame_index in range(0, number_of_frames):
             for future_frame_index in range(frame_index + 1, frame_index + r + 2):
                 if future_frame_index < number_of_frames:
@@ -472,10 +465,6 @@ class ParticleTracker:
                             (len(self._particle_positions[frame_index]) + 1, len(self._particle_positions[future_frame_index]) + 1), dtype=bool)
                     )
                     self._cost_matrix[frame_index].append(
-                        np.zeros(
-                            (len(self._particle_positions[frame_index]) + 1, len(self._particle_positions[future_frame_index]) + 1), dtype=np.float32)
-                    )
-                    self._cost_matrix_without_distance[frame_index].append(
                         np.zeros(
                             (len(self._particle_positions[frame_index]) + 1, len(self._particle_positions[future_frame_index]) + 1), dtype=np.float32)
                     )
@@ -515,19 +504,6 @@ class ParticleTracker:
                                 frame_index + future_frame_index + 1,
                                 future_particle_index - 1
                             )
-                            self._cost_matrix_without_distance[frame_index][future_frame_index][particle_index][
-                                future_particle_index] = self._calculate_linking_cost_without_distance(
-                                frame_index,
-                                particle_index - 1,
-                                frame_index + future_frame_index + 1,
-                                future_particle_index - 1
-                            )
-
-    def _calculate_linking_cost_without_distance(self, frame_index, particle_index, future_frame_index, future_particle_index):
-        return (
-                (self._zeroth_order_moments[frame_index][particle_index] - self._zeroth_order_moments[future_frame_index][future_particle_index]) ** 2 +
-                (self._second_order_moments[frame_index][particle_index] - self._second_order_moments[future_frame_index][future_particle_index]) ** 2
-        )
 
     def _calculate_linking_cost(self, frame_index, particle_index, future_frame_index, future_particle_index):
         cost = (
@@ -592,21 +568,6 @@ class ParticleTracker:
                             self._association_matrix[frame_index][future_frame_index][particle_index_with_lowest_cost][future_particle_index_with_lowest_cost] = True
                             self._association_matrix[frame_index][future_frame_index][row_index_with_link][col_index_with_link] = True
                             self._association_matrix[frame_index][future_frame_index][particle_index_with_lowest_cost][col_index_with_link] = False
-
-    def _reconnect_broken_links(self):
-        for frame_index, _ in enumerate(self._association_matrix):
-            for future_frame_index, _ in enumerate(self._association_matrix[frame_index]):
-                for particle_index, associations in enumerate(self._association_matrix[frame_index][future_frame_index]):
-                    if particle_index > 0 and associations[0] and associations.shape[0] > 1:
-                        future_particle_indices = np.argsort(self._cost_matrix_without_distance[frame_index][future_frame_index][particle_index][1:])
-                        for future_particle_index in future_particle_indices:
-                            if (not associations[future_particle_index + 1]) and (
-                                    self._particle_positions[frame_index][particle_index - 1] -
-                                    self._particle_positions[frame_index + future_frame_index + 1][future_particle_index]) ** 2 < \
-                                    ((future_frame_index + 1) * self.maximum_distance_a_particle_can_travel_between_frames) ** 2:
-                                self._association_matrix[frame_index][future_frame_index][particle_index][0] = False
-                                self._association_matrix[frame_index][future_frame_index][particle_index][future_particle_index + 1] = True
-                                break
 
     def _find_local_maximas_larger_than_threshold(self, y):
         local_maximas, _ = find_peaks(y, height=self.particle_detection_threshold, distance=2 * self.integration_radius_of_intensity_peaks)
