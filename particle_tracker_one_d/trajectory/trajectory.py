@@ -16,48 +16,55 @@ class Trajectory:
     Attributes
     ----------
     pixel_width
-    particle_positions
+    particle_positions: np.array
+        Numpy array with all particle positions in the trajectory on the form `np.array((nParticles,), dtype=[('frame_index', np.int16),
+        ('time', np.float32),('position', np.int16),('zeroth_order_moment', np.float32),('second_order_moment', np.float32)])`
     """
 
     def __init__(self, pixel_width=1):
-        self._particle_positions = np.empty((0,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('first_order_moment', np.float32),
-                                                         ('second_order_moment', np.float32)])
-        self._velocities = np.empty((0, 0), dtype=np.float32)
-        self._time_steps = np.empty((0, 0), dtype=np.int16)
-        self._position_steps = np.empty((0, 0), dtype=np.int16)
-        self._pixel_width = pixel_width
-        self._length = 0
-        self._density = 0
+        self.particle_positions = np.empty((0,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('zeroth_order_moment', np.float32),
+                                                        ('second_order_moment', np.float32)])
+        self.pixel_width = pixel_width
 
     def __add__(self, other):
         new_trajectory = Trajectory(pixel_width=self.pixel_width)
         if self.pixel_width != other.pixel_width:
             raise ValueError('Pixel width must be equal when adding trajectories together.')
-        elif self._particle_positions.shape[0] == 0 and other._particle_positions.shape[0] == 0:
+        elif self.particle_positions.shape[0] == 0 and other._particle_positions.shape[0] == 0:
             return new_trajectory
-        elif self._particle_positions.shape == (0,):
-            new_trajectory._particle_positions = other._particle_positions
+        elif self.particle_positions.shape == (0,):
+            new_trajectory.particle_positions = other._particle_positions
         elif other._particle_positions.shape == (0,):
-            new_trajectory._particle_positions = self._particle_positions
-        elif other._particle_positions[0]['frame_index'] == self._particle_positions[0]['frame_index']:
+            new_trajectory.particle_positions = self.particle_positions
+        elif other._particle_positions[0]['frame_index'] == self.particle_positions[0]['frame_index']:
             raise ValueError('Both trajectories cant start at same frame index.')
-        elif other._particle_positions.shape[0] == 1 and self._particle_positions.shape[0] == 1:
-            if other._particle_positions['frame_index'][0] < self._particle_positions['frame_index'][0]:
-                new_trajectory._particle_positions = np.append(other._particle_positions, self._particle_positions)
+        elif other._particle_positions.shape[0] == 1 and self.particle_positions.shape[0] == 1:
+            if other._particle_positions['frame_index'][0] < self.particle_positions['frame_index'][0]:
+                new_trajectory.particle_positions = np.append(other._particle_positions, self.particle_positions)
             else:
-                new_trajectory._particle_positions = np.append(self._particle_positions, other._particle_positions)
-        elif other._particle_positions['frame_index'][0] < self._particle_positions['frame_index'][0]:
+                new_trajectory.particle_positions = np.append(self.particle_positions, other._particle_positions)
+        elif other._particle_positions['frame_index'][0] < self.particle_positions['frame_index'][0]:
             index = np.where(
-                other._particle_positions['frame_index'] < self._particle_positions[0]['frame_index']
+                other._particle_positions['frame_index'] < self.particle_positions[0]['frame_index']
             )
-            new_trajectory._particle_positions = np.append(other._particle_positions[index], self._particle_positions)
-        elif self._particle_positions['frame_index'][0] < other._particle_positions['frame_index'][0]:
+            new_trajectory.particle_positions = np.append(other._particle_positions[index], self.particle_positions)
+        elif self.particle_positions['frame_index'][0] < other._particle_positions['frame_index'][0]:
             index = np.where(
-                self._particle_positions['frame_index'] < other._particle_positions[0]['frame_index']
+                self.particle_positions['frame_index'] < other._particle_positions[0]['frame_index']
             )
-            new_trajectory._particle_positions = np.append(self._particle_positions[index], other._particle_positions)
+            new_trajectory.particle_positions = np.append(self.particle_positions[index], other._particle_positions)
 
         return new_trajectory
+
+    @property
+    def velocities(self):
+        """
+        np.array:
+            The velocities the particle moves at.
+        """
+        if self.length > 1:
+            return self._calculate_particle_velocities()
+        return 0
 
     @property
     def density(self):
@@ -77,28 +84,6 @@ class Trajectory:
         """
         return self.particle_positions.shape[0]
 
-    @property
-    def pixel_width(self):
-        """
-        float:
-            Defines the length one pixel corresponds to. This value will be used when calculating diffusion
-            coefficients. Default is 1.
-        """
-        return self._pixel_width
-
-    @pixel_width.setter
-    def pixel_width(self, width):
-        self._pixel_width = width
-
-    @property
-    def particle_positions(self):
-        """
-        np.array:
-            Numpy array with all particle positions in the trajectory on the form `np.array((nParticles,), dtype=[('frame_index', np.int16),
-            ('time', np.float32),('position', np.int16)])`
-        """
-        return self._particle_positions
-
     def overlaps_with(self, trajectory):
         """
         Check if the trajectories overlaps
@@ -117,10 +102,14 @@ class Trajectory:
                     return True
         return False
 
-    def plot_trajectory(self, ax=None, **kwargs):
+    def plot_trajectory(self, x='frame_index', y='position', ax=None, **kwargs):
         """
         Plots the trajectory using the frame index and the particle position in pixels.
 
+        x: str
+            'frame_index', 'time', 'position' (default), 'zeroth_order_moment', 'second_order_moment' choose the x-axis value
+        y: str
+            'frame_index' (default), 'time', 'position', 'zeroth_order_moment', 'second_order_moment' choose the y-axis value
         ax: matplotlib axes instance
             The axes which you want the frames to plotted on. If none is provided a new instance will be created.
         **kwargs:
@@ -133,7 +122,7 @@ class Trajectory:
         """
         if ax is None:
             ax = plt.axes()
-        ax.plot(self._particle_positions['position'], self._particle_positions['frame_index'], np.ones((1,)), **kwargs)
+        ax.plot(self.particle_positions[x], self.particle_positions[y], **kwargs)
         return ax
 
     def plot_velocity_auto_correlation(self, ax=None, **kwargs):
@@ -153,7 +142,7 @@ class Trajectory:
         """
         if ax is None:
             ax = plt.axes()
-        ax.acorr(self._velocities, **kwargs)
+        ax.acorr(self.velocities, **kwargs)
         return ax
 
     def calculate_mean_square_displacement_function(self):
@@ -185,17 +174,17 @@ class Trajectory:
         return times[non_zeros_indices], mean_square_displacements['msd'][non_zeros_indices]
 
     def _append_position(self, particle_position):
-        self._particle_positions = np.append(self._particle_positions, particle_position, axis=0)
+        self.particle_positions = np.append(self.particle_positions, particle_position, axis=0)
 
     def _position_exists_in_trajectory(self, particle_position):
-        for p in self._particle_positions:
+        for p in self.particle_positions:
             if np.array_equal(p, particle_position):
                 return True
 
     def _calculate_particle_velocities(self):
-        self._time_steps = np.diff(self._particle_positions['time'])
-        self._position_steps = np.diff(self._particle_positions['position'] * self.pixel_width)
-        self._velocities = self._position_steps / self._time_steps
+        time_steps = np.diff(self.particle_positions['time'])
+        position_steps = np.diff(self.particle_positions['position'] * self.pixel_width)
+        return position_steps / time_steps
 
     @staticmethod
     def _remove_non_unique_values(array):
@@ -217,9 +206,7 @@ class Trajectory:
         Returns
         -------
             diffusion_coefficient: float
-                todo
             error: float
-                todo
         """
         time, mean_square_displacement = self.calculate_mean_square_displacement_function()
         if fit_range is None:
@@ -234,38 +221,17 @@ class Trajectory:
         error_estimate = [np.sqrt(covariance_matrix[0, 0]), np.sqrt(covariance_matrix[1, 1])]
         return polynomial_coefficients, error_estimate
 
-    def plot_parts_of_trajectory_used_in_the_covariance_based_estimator_for_diffusion_coefficient(self, ax=None, **kwargs):
-        """
-        Plots the part of the trajectory that is used when calculating the diffusion coefficient with the covariance based estimator.
-
-        ax: matplotlib axes instance
-            The axes which you want the frames to plotted on. If none is provided a new instance will be created.
-        **kwargs:
-            Plot settings, any settings which can be used in matplotlib.pyplot.plot method.
-
-        Returns
-        -------
-            matplotlib axes instance
-                Returns the axes input argument or creates and returns a new instance of a matplotlib axes object.
-        """
-        if ax is None:
-            ax = plt.axes()
-        for index, first_position in enumerate(self.particle_positions[:-2]):
-            second_position = self.particle_positions[index + 1]
-            third_position = self.particle_positions[index + 2]
-            if first_position['frame_index'] - second_position['frame_index'] == -1 and first_position['frame_index'] - third_position['frame_index'] == -2:
-                x = [first_position['position'], second_position['position']]
-                y = [first_position['frame_index'], second_position['frame_index']]
-                ax.plot(x, y, np.ones((1,)), **kwargs)
-        return ax
-
     def calculate_diffusion_coefficient_using_covariance_based_estimator(self, R=None):
         """
-        Unbiased estimator of the diffusion coefficient. More info at `https://www.nature.com/articles/nmeth.2904`
+        Unbiased estimator of the diffusion coefficient. More info at `https://www.nature.com/articles/nmeth.2904`.
+        If the motion blur coefficient is entered a variance estimate is also calculated.
+
+        R: float, motion blur coefficient
 
         Returns
         -------
             diffusion_coefficient: float
+            variance_estimate: float
         """
         squared_displacements = []
         covariance_term = []
@@ -292,23 +258,3 @@ class Trajectory:
 
     def _calculate_time_step(self):
         return (self.particle_positions['time'][1] - self.particle_positions['time'][0]) / (self.particle_positions['frame_index'][1] - self.particle_positions['frame_index'][0])
-
-    def calculate_number_of_missing_data_points(self):
-        """
-        Calculates the number of frames which the particle is not found in.
-
-        Returns
-        -------
-            number: int
-        """
-        return int((self._particle_positions['frame_index'][-1] - self._particle_positions['frame_index'][0]) - self._particle_positions['frame_index'].shape[0] + 1)
-
-    def calculate_number_of_particle_positions_with_single_time_step_between(self):
-        """
-        Calculates how many times in the trajectory the particle position in found in consecutive frames..
-
-        Returns
-        -------
-            number: int
-        """
-        return int(np.sum([diff == 1 for diff in np.diff(self._particle_positions['frame_index'])]))
