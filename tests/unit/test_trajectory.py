@@ -147,3 +147,49 @@ class FunctionsTester(unittest.TestCase):
 
         self.assertTrue(not t_1.overlaps_with(t_2))
         self.assertTrue(not t_2.overlaps_with(t_1))
+
+    def test_split_trajectories_function(self):
+        """
+        Test that the splitting of two trajectories works.
+        """
+
+        t1 = Trajectory()
+        t2 = Trajectory()
+
+        particle_positions1 = np.empty((3,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('zeroth_order_moment', np.float32),
+                                                   ('second_order_moment', np.float32)])
+        particle_positions1['frame_index'] = [0, 1, 2]
+        particle_positions1['time'] = [0, 0, 0]
+        particle_positions1['position'] = [0, 0, 0]
+        particle_positions1['zeroth_order_moment'] = [0, 0, 0]
+        particle_positions1['second_order_moment'] = [0, 0, 0]
+
+        particle_positions2 = np.empty((4,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('zeroth_order_moment', np.float32),
+                                                    ('second_order_moment', np.float32)])
+        particle_positions2['frame_index'] = [0, 2, 3, 4]
+        particle_positions2['time'] = [0, 0, 0, 0]
+        particle_positions2['position'] = [0, 0, 0, 0]
+        particle_positions2['zeroth_order_moment'] = [0, 0, 0, 0]
+        particle_positions2['second_order_moment'] = [0, 0, 0, 0]
+
+        t1.particle_positions = particle_positions1
+        t2.particle_positions = particle_positions2
+
+        expected_trajectory_1 = Trajectory()
+        expected_trajectory_2 = Trajectory()
+        expected_trajectory_3 = Trajectory()
+        expected_trajectory_4 = Trajectory()
+
+        expected_trajectory_1.particle_positions = particle_positions1[:1]
+        expected_trajectory_2.particle_positions = particle_positions1[1:2]
+        expected_trajectory_3.particle_positions = particle_positions1[2:3]
+        expected_trajectory_4.particle_positions = particle_positions2[2:]
+
+        split_trajectories = t1.split(t2)
+
+        np.testing.assert_array_equal(expected_trajectory_1.particle_positions, split_trajectories[0].particle_positions)
+        np.testing.assert_array_equal(expected_trajectory_2.particle_positions, split_trajectories[1].particle_positions)
+        np.testing.assert_array_equal(expected_trajectory_3.particle_positions, split_trajectories[2].particle_positions)
+        np.testing.assert_array_equal(expected_trajectory_4.particle_positions, split_trajectories[3].particle_positions)
+
+
