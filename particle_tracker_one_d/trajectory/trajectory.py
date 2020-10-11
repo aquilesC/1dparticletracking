@@ -102,6 +102,41 @@ class Trajectory:
                     return True
         return False
 
+    def split(self, trajectory):
+        """
+        If two trajectories overlaps, this function will split them into three or more non overlapping trajectories.
+
+        trajectory:
+
+        Returns
+        -------
+            list
+                Returns a list with the new trajectories
+        """
+        new_trajectories = []
+        while (self.length > 0) or (trajectory.length > 0):
+            if (self.length == 0) and (trajectory.length > 0):
+                new_trajectory = Trajectory(pixel_width=trajectory.pixel_width)
+                new_trajectory.particle_positions = trajectory.particle_positions
+                trajectory.particle_positions = np.array([])
+                new_trajectories.append(new_trajectory)
+            elif (trajectory.length == 0) and (self.length > 0):
+                new_trajectory = Trajectory(pixel_width=self.pixel_width)
+                new_trajectory.particle_positions = self.particle_positions
+                self.particle_positions = np.array([])
+                new_trajectories.append(new_trajectory)
+            elif self._first_position_is_same(self, trajectory):
+                self.particle_positions, trajectory.particle_positions, overlapping_trajectory = self._extract_first_overlapping_trajectory(self, trajectory)
+                new_trajectories.append(overlapping_trajectory)
+            else:
+                self.particle_positions, trajectory.particle_positions, not_overlapping_trajectory_1, not_overlapping_trajectory_2 = self._extract_first_non_overlapping_trajectories(
+                    self, trajectory)
+                if not_overlapping_trajectory_1 is not None:
+                    new_trajectories.append(not_overlapping_trajectory_1)
+                if not_overlapping_trajectory_2 is not None:
+                    new_trajectories.append(not_overlapping_trajectory_2)
+        return new_trajectories
+
     def plot_trajectory(self, x='frame_index', y='position', ax=None, **kwargs):
         """
         Plots the trajectory using the frame index and the particle position in pixels.
@@ -148,7 +183,7 @@ class Trajectory:
     def calculate_mean_square_displacement_function(self):
         """
         Calculate the average squared displacements for different time steps.
-        
+
         Returns
         -------
             time: np.array
@@ -260,3 +295,41 @@ class Trajectory:
 
     def _calculate_time_step(self):
         return (self.particle_positions['time'][1] - self.particle_positions['time'][0]) / (self.particle_positions['frame_index'][1] - self.particle_positions['frame_index'][0])
+
+    @staticmethod
+    def _first_position_is_same(t1, t2):
+        return t1.particle_positions[0] == t2.particle_positions[0]
+
+    @staticmethod
+    def _extract_first_overlapping_trajectory(t1, t2):
+        n = 0
+        length_of_shortest_trajectory = min(t1.length, t2.length)
+        while (n < length_of_shortest_trajectory) and (t1.particle_positions[n] == t2.particle_positions[n]):
+            n += 1
+        overlapping_trajectory = Trajectory(pixel_width=t1.pixel_width)
+        overlapping_trajectory.particle_positions = t1.particle_positions[:n]
+        return t1.particle_positions[n:], t2.particle_positions[n:], overlapping_trajectory
+
+    @staticmethod
+    def _extract_first_non_overlapping_trajectories(t1, t2):
+        n1 = 0
+        n2 = 0
+        while (n1 < t1.length) and (n2 < t2.length) and (t1.particle_positions[n1] != t2.particle_positions[n2]):
+            if t1.particle_positions[n1]['frame_index'] < t2.particle_positions[n2]['frame_index']:
+                n1 += 1
+            elif t1.particle_positions[n1]['frame_index'] > t2.particle_positions[n2]['frame_index']:
+                n2 += 1
+            else:
+                n1 += 1
+                n2 += 1
+        if n1 > 0:
+            first_part_of_t1 = Trajectory(pixel_width=t1.pixel_width)
+            first_part_of_t1.particle_positions = t1.particle_positions[:n1]
+        else:
+            first_part_of_t1 = None
+        if n2 > 0:
+            first_part_of_t2 = Trajectory(pixel_width=t2.pixel_width)
+            first_part_of_t2.particle_positions = t2.particle_positions[:n1]
+        else:
+            first_part_of_t2 = None
+        return t1.particle_positions[n1:], t2.particle_positions[n2:], first_part_of_t1, first_part_of_t2
