@@ -157,7 +157,7 @@ class FunctionsTester(unittest.TestCase):
         t2 = Trajectory()
 
         particle_positions1 = np.empty((3,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('zeroth_order_moment', np.float32),
-                                                   ('second_order_moment', np.float32)])
+                                                    ('second_order_moment', np.float32)])
         particle_positions1['frame_index'] = [0, 1, 2]
         particle_positions1['time'] = [0, 0, 0]
         particle_positions1['position'] = [0, 0, 0]
@@ -192,4 +192,45 @@ class FunctionsTester(unittest.TestCase):
         np.testing.assert_array_equal(expected_trajectory_3.particle_positions, split_trajectories[2].particle_positions)
         np.testing.assert_array_equal(expected_trajectory_4.particle_positions, split_trajectories[3].particle_positions)
 
+        # Change order
+        t1.particle_positions = particle_positions1
+        t2.particle_positions = particle_positions2
 
+        split_trajectories = t2.split(t1)
+
+        np.testing.assert_array_equal(expected_trajectory_1.particle_positions, split_trajectories[0].particle_positions)
+        np.testing.assert_array_equal(expected_trajectory_2.particle_positions, split_trajectories[1].particle_positions)
+        np.testing.assert_array_equal(expected_trajectory_3.particle_positions, split_trajectories[2].particle_positions)
+        np.testing.assert_array_equal(expected_trajectory_4.particle_positions, split_trajectories[3].particle_positions)
+
+        # Test not overlapping trajectories
+
+        particle_positions1 = np.empty((3,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('zeroth_order_moment', np.float32),
+                                                    ('second_order_moment', np.float32)])
+        particle_positions1['frame_index'] = [0, 1, 2]
+        particle_positions1['time'] = [0, 0, 0]
+        particle_positions1['position'] = [0, 0, 0]
+        particle_positions1['zeroth_order_moment'] = [0, 0, 0]
+        particle_positions1['second_order_moment'] = [0, 0, 0]
+
+        particle_positions2 = np.empty((4,), dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('zeroth_order_moment', np.float32),
+                                                    ('second_order_moment', np.float32)])
+        particle_positions2['frame_index'] = [3, 4, 5, 6]
+        particle_positions2['time'] = [0, 0, 0, 0]
+        particle_positions2['position'] = [0, 0, 0, 0]
+        particle_positions2['zeroth_order_moment'] = [0, 0, 0, 0]
+        particle_positions2['second_order_moment'] = [0, 0, 0, 0]
+
+        t1.particle_positions = particle_positions1
+        t2.particle_positions = particle_positions2
+
+        expected_trajectory_1 = Trajectory()
+        expected_trajectory_2 = Trajectory()
+
+        expected_trajectory_1.particle_positions = particle_positions1
+        expected_trajectory_2.particle_positions = particle_positions2
+
+        new_trajectories = t2.split(t1)
+
+        np.testing.assert_array_equal(new_trajectories[1].particle_positions, expected_trajectory_1.particle_positions)
+        np.testing.assert_array_equal(new_trajectories[0].particle_positions, expected_trajectory_2.particle_positions)
