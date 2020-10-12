@@ -113,28 +113,42 @@ class Trajectory:
             list
                 Returns a list with the new trajectories
         """
-        new_trajectories = []
-        while (self.length > 0) or (trajectory.length > 0):
-            if (self.length == 0) and (trajectory.length > 0):
-                new_trajectory = Trajectory(pixel_width=trajectory.pixel_width)
-                new_trajectory.particle_positions = trajectory.particle_positions
-                trajectory.particle_positions = np.array([])
-                new_trajectories.append(new_trajectory)
-            elif (trajectory.length == 0) and (self.length > 0):
-                new_trajectory = Trajectory(pixel_width=self.pixel_width)
-                new_trajectory.particle_positions = self.particle_positions
-                self.particle_positions = np.array([])
-                new_trajectories.append(new_trajectory)
-            elif self._first_position_is_same(self, trajectory):
-                self.particle_positions, trajectory.particle_positions, overlapping_trajectory = self._extract_first_overlapping_trajectory(self, trajectory)
-                new_trajectories.append(overlapping_trajectory)
+        if (
+                (self.particle_positions[0]['frame_index'] > trajectory.particle_positions[-1]['frame_index']) or
+                (self.particle_positions[-1]['frame_index'] < trajectory.particle_positions[0]['frame_index'])
+        ):
+            return [self, trajectory]
+
+        p1 = self.particle_positions.copy()
+        p2 = trajectory.particle_positions.copy()
+
+        new_positions = []
+        while (p1.shape[0] > 0) or (p2.shape[0] > 0):
+            if (p1.shape[0] == 0) and (p2.shape[0] > 0):
+                new_positions.append(p2.copy())
+                break
+            elif (p2.shape[0] == 0) and (p1.shape[0] > 0):
+                new_positions.append(p1.copy())
+                break
+            elif p1[0] == p2[0]:
+                index = self._find_index_of_first_not_equal_element(p1, p2)
+                new_positions.append(p1[:index].copy())
+                p1 = p1[index:]
+                p2 = p2[index:]
             else:
-                self.particle_positions, trajectory.particle_positions, not_overlapping_trajectory_1, not_overlapping_trajectory_2 = self._extract_first_non_overlapping_trajectories(
-                    self, trajectory)
-                if not_overlapping_trajectory_1 is not None:
-                    new_trajectories.append(not_overlapping_trajectory_1)
-                if not_overlapping_trajectory_2 is not None:
-                    new_trajectories.append(not_overlapping_trajectory_2)
+                index1, index2 = self._find_last_index_where_no_overlaps_occurs(p1, p2)
+                new_positions.append(p1[:index1].copy())
+                new_positions.append(p2[:index2].copy())
+                p1 = p1[index1:]
+                p2 = p2[index2:]
+
+        new_trajectories = []
+        for p in new_positions:
+            if p.shape[0] > 0:
+                t = Trajectory(pixel_width=self.pixel_width)
+                t.particle_positions = p
+                new_trajectories.append(t)
+
         return new_trajectories
 
     def plot_trajectory(self, x='frame_index', y='position', ax=None, **kwargs):
@@ -297,39 +311,25 @@ class Trajectory:
         return (self.particle_positions['time'][1] - self.particle_positions['time'][0]) / (self.particle_positions['frame_index'][1] - self.particle_positions['frame_index'][0])
 
     @staticmethod
-    def _first_position_is_same(t1, t2):
-        return t1.particle_positions[0] == t2.particle_positions[0]
-
-    @staticmethod
-    def _extract_first_overlapping_trajectory(t1, t2):
+    def _find_index_of_first_not_equal_element(p1, p2):
         n = 0
-        length_of_shortest_trajectory = min(t1.length, t2.length)
-        while (n < length_of_shortest_trajectory) and (t1.particle_positions[n] == t2.particle_positions[n]):
+        length_of_shortest_trajectory = min(p1.shape[0], p2.shape[0])
+        while (n < length_of_shortest_trajectory) and (p1[n] == p2[n]):
             n += 1
-        overlapping_trajectory = Trajectory(pixel_width=t1.pixel_width)
-        overlapping_trajectory.particle_positions = t1.particle_positions[:n]
-        return t1.particle_positions[n:], t2.particle_positions[n:], overlapping_trajectory
+        return n
 
     @staticmethod
-    def _extract_first_non_overlapping_trajectories(t1, t2):
+    def _find_last_index_where_no_overlaps_occurs(p1, p2):
         n1 = 0
         n2 = 0
-        while (n1 < t1.length) and (n2 < t2.length) and (t1.particle_positions[n1] != t2.particle_positions[n2]):
-            if t1.particle_positions[n1]['frame_index'] < t2.particle_positions[n2]['frame_index']:
+        print(p1)
+        print(p2)
+        while ((n1 < p1.shape[0]) or (n2 < p2.shape[0])) and (p1[n1] != p2[n2]):
+            if p1[n1]['frame_index'] < p2[n2]['frame_index']:
                 n1 += 1
-            elif t1.particle_positions[n1]['frame_index'] > t2.particle_positions[n2]['frame_index']:
+            elif p1[n1]['frame_index'] > p2[n2]['frame_index']:
                 n2 += 1
             else:
                 n1 += 1
                 n2 += 1
-        if n1 > 0:
-            first_part_of_t1 = Trajectory(pixel_width=t1.pixel_width)
-            first_part_of_t1.particle_positions = t1.particle_positions[:n1]
-        else:
-            first_part_of_t1 = None
-        if n2 > 0:
-            first_part_of_t2 = Trajectory(pixel_width=t2.pixel_width)
-            first_part_of_t2.particle_positions = t2.particle_positions[:n1]
-        else:
-            first_part_of_t2 = None
-        return t1.particle_positions[n1:], t2.particle_positions[n2:], first_part_of_t1, first_part_of_t2
+        return n1, n2
