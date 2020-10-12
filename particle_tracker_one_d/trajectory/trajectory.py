@@ -322,7 +322,7 @@ class Trajectory:
     def _find_last_index_where_no_overlaps_occurs(p1, p2):
         n1 = 0
         n2 = 0
-        while ((n1 < p1.shape[0]) or (n2 < p2.shape[0])) and (p1[n1] != p2[n2]):
+        while ((n1 < (p1.shape[0] - 1)) or (n2 < (p2.shape[0] - 1))) and (p1[n1] != p2[n2]):
             if p1[n1]['frame_index'] < p2[n2]['frame_index']:
                 n1 += 1
             elif p1[n1]['frame_index'] > p2[n2]['frame_index']:
