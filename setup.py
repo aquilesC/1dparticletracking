@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version = '0.6.1'
+version = '0.6.2'
 
 try:
     with open('requirements.txt') as f:

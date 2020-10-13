@@ -320,14 +320,48 @@ class Trajectory:
 
     @staticmethod
     def _find_last_index_where_no_overlaps_occurs(p1, p2):
-        n1 = 0
-        n2 = 0
-        while ((n1 < (p1.shape[0] - 1)) or (n2 < (p2.shape[0] - 1))) and (p1[n1] != p2[n2]):
-            if p1[n1]['frame_index'] < p2[n2]['frame_index']:
-                n1 += 1
-            elif p1[n1]['frame_index'] > p2[n2]['frame_index']:
+
+        if p1[0] == p2[0]:
+            return None, None
+        elif (p1.shape[0] == 1) and (p2.shape[0] == 1):
+            return 0, 0
+        elif p1.shape[0] == 1:
+            n2 = 0
+            while n2 < (p2.shape[0] - 1) and (p1[0] != p2[n2]):
                 n2 += 1
+            if p1[0] == p2[n2]:
+                return None, n2 - 1
             else:
+                return 0, n2
+        elif p2.shape[0] == 1:
+            n1 = 0
+            while n1 < (p1.shape[0] - 1) and (p1[n1] != p2[0]):
                 n1 += 1
-                n2 += 1
-        return n1, n2
+            if p1[n1] == p2[0]:
+                return n1 - 1, None
+            else:
+                return n1, 0
+        else:
+            n1 = 0
+            n2 = 0
+            while ((n1 < (p1.shape[0] - 1)) or (n2 < (p2.shape[0] - 1))) and (p1[n1] != p2[n2]):
+                while (
+                        (n1 < (p1.shape[0] - 1)) and
+                        (p1[n1]['frame_index'] < p2[n2]['frame_index']) and
+                        (p1[n1] != p2[n2])
+                ):
+                    n1 += 1
+                while (
+                        (n2 < (p2.shape[0] - 1)) and
+                        (p2[n2]['frame_index'] < p1[n1]['frame_index']) and
+                        (p1[n1] != p2[n2])
+                ):
+                    n2 += 1
+                while (
+                        (n1 < (p1.shape[0] - 1)) and
+                        (n2 < (p2.shape[0] - 1)) and
+                        (p1[n1] != p2[n2])
+                ):
+                    n1 += 1
+                    n2 += 1
+            return n1 - 1, n2 - 1

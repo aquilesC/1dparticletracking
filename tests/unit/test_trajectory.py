@@ -230,7 +230,64 @@ class FunctionsTester(unittest.TestCase):
         expected_trajectory_1.particle_positions = particle_positions1
         expected_trajectory_2.particle_positions = particle_positions2
 
+        new_trajectories = t1.split(t2)
+
+        np.testing.assert_array_equal(new_trajectories[0].particle_positions, expected_trajectory_1.particle_positions)
+        np.testing.assert_array_equal(new_trajectories[1].particle_positions, expected_trajectory_2.particle_positions)
+
+        # Change order
+        t1.particle_positions = particle_positions1
+        t2.particle_positions = particle_positions2
+
         new_trajectories = t2.split(t1)
 
         np.testing.assert_array_equal(new_trajectories[1].particle_positions, expected_trajectory_1.particle_positions)
         np.testing.assert_array_equal(new_trajectories[0].particle_positions, expected_trajectory_2.particle_positions)
+
+    def test_finding_last_non_overlapping_index(self):
+        """
+        Test the function that finds last overlapping index
+        """
+
+        test_arrays = [
+            [
+                np.array([0], dtype=[('frame_index', np.float32)]),
+                np.array([0], dtype=[('frame_index', np.float32)])
+            ],
+            [
+                np.array([0], dtype=[('frame_index', np.float32)]),
+                np.array([1], dtype=[('frame_index', np.float32)])
+            ],
+            [
+                np.array([0, 1], dtype=[('frame_index', np.float32)]),
+                np.array([0], dtype=[('frame_index', np.float32)])
+            ],
+            [
+                np.array([0, 1], dtype=[('frame_index', np.float32)]),
+                np.array([1], dtype=[('frame_index', np.float32)])
+            ],
+            [
+                np.array([0, 1, 2], dtype=[('frame_index', np.float32)]),
+                np.array([1], dtype=[('frame_index', np.float32)])
+            ],
+            [
+                np.array([2, 3, 4], dtype=[('frame_index', np.float32)]),
+                np.array([0, 1, 4], dtype=[('frame_index', np.float32)])
+            ],
+        ]
+
+        expected_indices = [
+            [None, None],
+            [0, 0],
+            [None, None],
+            [0, None],
+            [0, None],
+            [1, 1]
+        ]
+
+        for index, arrays in enumerate(test_arrays):
+            p1 = arrays[0]
+            p2 = arrays[1]
+            actual_indices = Trajectory._find_last_index_where_no_overlaps_occurs(p1, p2)
+            self.assertEqual(actual_indices[0], expected_indices[index][0])
+            self.assertEqual(actual_indices[1], expected_indices[index][1])
