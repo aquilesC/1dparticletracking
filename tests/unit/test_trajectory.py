@@ -274,6 +274,10 @@ class FunctionsTester(unittest.TestCase):
                 np.array([2, 3, 4], dtype=[('frame_index', np.float32)]),
                 np.array([0, 1, 4], dtype=[('frame_index', np.float32)])
             ],
+            [
+                np.array([5, 6, 7], dtype=[('frame_index', np.float32)]),
+                np.array([0, 1, 4], dtype=[('frame_index', np.float32)])
+            ],
         ]
 
         expected_indices = [
@@ -282,7 +286,8 @@ class FunctionsTester(unittest.TestCase):
             [None, None],
             [0, None],
             [0, None],
-            [1, 1]
+            [1, 1],
+            [2, 2]
         ]
 
         for index, arrays in enumerate(test_arrays):

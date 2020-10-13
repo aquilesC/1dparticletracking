@@ -137,10 +137,10 @@ class Trajectory:
                 p2 = p2[index:]
             else:
                 index1, index2 = self._find_last_index_where_no_overlaps_occurs(p1, p2)
-                new_positions.append(p1[:index1+1].copy())
-                new_positions.append(p2[:index2+1].copy())
-                p1 = p1[index1+1:]
-                p2 = p2[index2+1:]
+                new_positions.append(p1[:index1 + 1].copy())
+                new_positions.append(p2[:index2 + 1].copy())
+                p1 = p1[index1 + 1:]
+                p2 = p2[index2 + 1:]
 
         new_trajectories = []
         for p in new_positions:
@@ -345,23 +345,27 @@ class Trajectory:
             n1 = 0
             n2 = 0
             while ((n1 < (p1.shape[0] - 1)) or (n2 < (p2.shape[0] - 1))) and (p1[n1] != p2[n2]):
-                while (
-                        (n1 < (p1.shape[0] - 1)) and
+                if (
                         (p1[n1]['frame_index'] < p2[n2]['frame_index']) and
-                        (p1[n1] != p2[n2])
+                        (n1 < (p1.shape[0] - 1))
                 ):
                     n1 += 1
-                while (
-                        (n2 < (p2.shape[0] - 1)) and
+                elif (
                         (p2[n2]['frame_index'] < p1[n1]['frame_index']) and
-                        (p1[n1] != p2[n2])
+                        (n2 < (p2.shape[0] - 1))
                 ):
                     n2 += 1
-                while (
-                        (n1 < (p1.shape[0] - 1)) and
-                        (n2 < (p2.shape[0] - 1)) and
-                        (p1[n1] != p2[n2])
+                elif (
+                        (p2[n2]['frame_index'] == p1[n1]['frame_index']) and
+                        (n1 < (p1.shape[0]) - 1) and
+                        (n2 < (p2.shape[0]) - 1)
                 ):
                     n1 += 1
                     n2 += 1
-            return n1 - 1, n2 - 1
+                elif n1 < (p1.shape[0] - 1):
+                    n1 += 1
+                elif n2 < (p2.shape[0] - 1):
+                    n2 += 1
+            if p1[n1] == p2[n2]:
+                return n1 - 1, n2 - 1
+            return n1, n2
