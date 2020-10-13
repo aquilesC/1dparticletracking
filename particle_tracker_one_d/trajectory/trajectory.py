@@ -137,10 +137,10 @@ class Trajectory:
                 p2 = p2[index:]
             else:
                 index1, index2 = self._find_last_index_where_no_overlaps_occurs(p1, p2)
-                new_positions.append(p1[:index1].copy())
-                new_positions.append(p2[:index2].copy())
-                p1 = p1[index1:]
-                p2 = p2[index2:]
+                new_positions.append(p1[:index1+1].copy())
+                new_positions.append(p2[:index2+1].copy())
+                p1 = p1[index1+1:]
+                p2 = p2[index2+1:]
 
         new_trajectories = []
         for p in new_positions:
