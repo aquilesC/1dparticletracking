@@ -26,7 +26,8 @@ class SetAttributeTester(unittest.TestCase):
             'string'
         ]
         for frames in valid_frames:
-            self.assertTrue(ParticleTracker._test_if_frames_have_correct_format(frames), msg='Valid frames not accepted, frames: ' + np.array_str(frames))
+            self.assertTrue(ParticleTracker._test_if_frames_have_correct_format(frames),
+                            msg='Valid frames not accepted, frames: ' + np.array_str(frames))
 
         for frames in non_valid_shape_or_value_frames:
             with self.assertRaises(ValueError):
@@ -61,7 +62,8 @@ class SetAttributeTester(unittest.TestCase):
         ]
 
         for times in valid_times:
-            self.assertTrue(ParticleTracker._test_if_time_has_correct_format(times), msg='Valid times not accepted, times: ' + np.array_str(times))
+            self.assertTrue(ParticleTracker._test_if_time_has_correct_format(times),
+                            msg='Valid times not accepted, times: ' + np.array_str(times))
 
         for times in non_valid_shape_or_values_times:
             with self.assertRaises(ValueError):
@@ -96,11 +98,13 @@ class SetAttributeTester(unittest.TestCase):
         ]
 
         for time_and_frames in valid_times_and_frames:
-            self.assertTrue(ParticleTracker._test_if_time_and_frames_has_same_length(time_and_frames['time'], time_and_frames['frames']))
+            self.assertTrue(ParticleTracker._test_if_time_and_frames_has_same_length(time_and_frames['time'],
+                                                                                     time_and_frames['frames']))
 
         for time_and_frames in non_valid_times_and_frames:
             with self.assertRaises(ValueError):
-                ParticleTracker._test_if_time_and_frames_has_same_length(time_and_frames['time'], time_and_frames['frames'])
+                ParticleTracker._test_if_time_and_frames_has_same_length(time_and_frames['time'],
+                                                                         time_and_frames['frames'])
 
     def test_validation_of_automatic_update(self):
 
@@ -208,7 +212,8 @@ class SetAttributeTester(unittest.TestCase):
             with self.assertRaises(ValueError, msg=threshold):
                 pt.particle_detection_threshold = threshold
 
-    def test_validation_of_setting_maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles(self):
+    def test_validation_of_setting_maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles(
+            self):
         """
         Tests the setting of the class attribute maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles. Should be a numerical value between 0 and 1.
         """
@@ -222,14 +227,20 @@ class SetAttributeTester(unittest.TestCase):
         automatic_update = False
 
         valid_maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles = [0, 1, 2, 3]
-        non_valid_type_maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles = ['1', [1, 2], None, 1.2]
-        non_valid_values_of_maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles = [-1, 5, 100]
+        non_valid_type_maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles = ['1',
+                                                                                                                   [1,
+                                                                                                                    2],
+                                                                                                                   None,
+                                                                                                                   1.2]
+        non_valid_values_of_maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles = [
+            -1, 5, 100]
 
         pt = ParticleTracker(frames=frames, time=time, automatic_update=automatic_update)
 
         for number in valid_maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles:
             pt.maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles = number
-            self.assertEqual(pt.maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles, number)
+            self.assertEqual(
+                pt.maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles, number)
 
         for number in non_valid_type_maximum_number_of_frames_a_particle_can_disappear_and_still_be_linked_to_other_particles:
             with self.assertRaises(TypeError, msg=number):
@@ -355,7 +366,8 @@ class FindParticlePositionsTester(unittest.TestCase):
         pt.particle_detection_threshold = 0.1
 
         for index, intensity in enumerate(intensity_examples):
-            np.testing.assert_array_equal(expected_positions[index], pt._find_local_maximas_larger_than_threshold(intensity))
+            np.testing.assert_array_equal(expected_positions[index],
+                                          pt._find_local_maximas_larger_than_threshold(intensity))
 
     def test_finding_initial_particle_positions_function(self):
         """
@@ -514,7 +526,8 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
 
         for frame_index in range(len(expected_association_matrix)):
             for r in range(len(expected_association_matrix[frame_index])):
-                np.testing.assert_array_equal(pt._association_matrix[frame_index][r], expected_association_matrix[frame_index][r])
+                np.testing.assert_array_equal(pt._association_matrix[frame_index][r],
+                                              expected_association_matrix[frame_index][r])
                 np.testing.assert_array_equal(pt._cost_matrix[frame_index][r], expected_cost_matrix[frame_index][r])
 
     def test_calculation_of_zeroth_order_intensity_moments(self):
@@ -626,32 +639,38 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
         pt.integration_radius_of_intensity_peaks = 0
 
         for index, position in enumerate(particle_positions):
-            np.testing.assert_almost_equal(pt._calculate_zeroth_order_intensity_moment(position[0], int(round(position[1]))),
-                                           expected_zeroth_order_intensity_moment_integration_radius_zero[index])
+            np.testing.assert_almost_equal(
+                pt._calculate_zeroth_order_intensity_moment(position[0], int(round(position[1]))),
+                expected_zeroth_order_intensity_moment_integration_radius_zero[index])
 
         for index, position in enumerate(particle_positions):
-            np.testing.assert_almost_equal(pt._calculate_second_order_intensity_moment(position[0], int(round(position[1]))),
-                                           expected_second_order_intensity_moment_integration_radius_zero[index])
+            np.testing.assert_almost_equal(
+                pt._calculate_second_order_intensity_moment(position[0], int(round(position[1]))),
+                expected_second_order_intensity_moment_integration_radius_zero[index])
 
         pt.integration_radius_of_intensity_peaks = 1
 
         for index, position in enumerate(particle_positions):
             np.testing.assert_almost_equal(expected_zeroth_order_intensity_moment_integration_radius_one[index],
-                                           pt._calculate_zeroth_order_intensity_moment(position[0], int(round(position[1]))))
+                                           pt._calculate_zeroth_order_intensity_moment(position[0],
+                                                                                       int(round(position[1]))))
 
         for index, position in enumerate(particle_positions):
-            np.testing.assert_almost_equal(pt._calculate_second_order_intensity_moment(position[0], int(round(position[1]))),
-                                           expected_second_order_intensity_moment_integration_radius_one[index])
+            np.testing.assert_almost_equal(
+                pt._calculate_second_order_intensity_moment(position[0], int(round(position[1]))),
+                expected_second_order_intensity_moment_integration_radius_one[index])
 
         pt.integration_radius_of_intensity_peaks = 2
 
         for index, position in enumerate(particle_positions):
-            np.testing.assert_almost_equal(pt._calculate_zeroth_order_intensity_moment(position[0], int(round(position[1]))),
-                                           expected_zeroth_order_intensity_moment_integration_radius_two[index], decimal=5)
+            np.testing.assert_almost_equal(
+                pt._calculate_zeroth_order_intensity_moment(position[0], int(round(position[1]))),
+                expected_zeroth_order_intensity_moment_integration_radius_two[index], decimal=5)
 
         for index, position in enumerate(particle_positions):
-            np.testing.assert_almost_equal(pt._calculate_second_order_intensity_moment(position[0], int(round(position[1]))),
-                                           expected_second_order_intensity_moment_integration_radius_two[index])
+            np.testing.assert_almost_equal(
+                pt._calculate_second_order_intensity_moment(position[0], int(round(position[1]))),
+                expected_second_order_intensity_moment_integration_radius_two[index])
 
         pt.integration_radius_of_intensity_peaks = 3
 
@@ -763,7 +782,8 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
 
         for frame_index, _ in enumerate(pt._cost_matrix):
             for future_frame_index, _ in enumerate(pt._cost_matrix[frame_index]):
-                np.testing.assert_array_almost_equal(pt._cost_matrix[frame_index][future_frame_index], expected_cost_matrix[frame_index][future_frame_index])
+                np.testing.assert_array_almost_equal(pt._cost_matrix[frame_index][future_frame_index],
+                                                     expected_cost_matrix[frame_index][future_frame_index])
 
     def test_initial_links_in_association_matrix(self):
         """
@@ -832,7 +852,8 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
 
         for frame_index, _ in enumerate(pt._cost_matrix):
             for future_frame_index, _ in enumerate(pt._cost_matrix[frame_index]):
-                np.testing.assert_array_almost_equal(pt._association_matrix[frame_index][future_frame_index], expected_association_matrix[frame_index][future_frame_index])
+                np.testing.assert_array_almost_equal(pt._association_matrix[frame_index][future_frame_index],
+                                                     expected_association_matrix[frame_index][future_frame_index])
 
     def test_optimisation_of_association_matrix(self):
         """
@@ -911,7 +932,8 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
 
         for frame_index, _ in enumerate(pt._association_matrix):
             for future_frame_index, _ in enumerate(pt._association_matrix[frame_index]):
-                np.testing.assert_array_almost_equal(pt._association_matrix[frame_index][future_frame_index], expected_association_matrix[frame_index][future_frame_index])
+                np.testing.assert_array_almost_equal(pt._association_matrix[frame_index][future_frame_index],
+                                                     expected_association_matrix[frame_index][future_frame_index])
 
     def test_creating_trajectory(self):
 
@@ -996,11 +1018,14 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
 
         trajectories = [
             np.zeros((4,),
-                     dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('zeroth_order_moment', np.float32), ('second_order_moment', np.float32)]),
+                     dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32),
+                            ('zeroth_order_moment', np.float32), ('second_order_moment', np.float32)]),
             np.zeros((4,),
-                     dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('zeroth_order_moment', np.float32), ('second_order_moment', np.float32)]),
+                     dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32),
+                            ('zeroth_order_moment', np.float32), ('second_order_moment', np.float32)]),
             np.zeros((2,),
-                     dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32), ('zeroth_order_moment', np.float32), ('second_order_moment', np.float32)])
+                     dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32),
+                            ('zeroth_order_moment', np.float32), ('second_order_moment', np.float32)])
         ]
 
         trajectories[0]['frame_index'] = np.array([0, 1, 2, 3])
@@ -1032,6 +1057,22 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
 
         for index, t in enumerate(pt.trajectories):
             np.testing.assert_array_equal(trajectories[index], t.particle_positions)
+
+
+class PlotTester(unittest.TestCase):
+    """ Tester for the plotting functions"""
+
+    def test_plot_functions(self):
+        """ Test that no error occur when calling plot functions"""
+        frames = ParticleTracker.normalise_intensity(np.random.rand(10, 100))
+        time = np.linspace(0, 10, 10)
+
+        pt = ParticleTracker(frames=frames, time=time)
+        pt.particle_detection_threshold = 0.8
+        ax = pt.plot_all_frames()
+        pt.plot_frame(0, ax=ax)
+        pt.plot_frame_at_time(1, ax=ax)
+        pt.plot_moments(ax=ax)
 
 
 if __name__ == '__main__':
