@@ -1033,6 +1033,21 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
         for index, t in enumerate(pt.trajectories):
             np.testing.assert_array_equal(trajectories[index], t.particle_positions)
 
+class PlotTester(unittest.TestCase):
+    """ Tester for the plotting functions"""
+
+    def test_plot_functions(self):
+        """ Test that no error occur when calling plot functions"""
+        frames = ParticleTracker.normalise_intensity(np.random.rand(10, 100))
+        time = np.linspace(0, 10, 10)
+
+        pt = ParticleTracker(frames=frames, time=time)
+        pt.particle_detection_threshold = 0.8
+        ax = pt.plot_all_frames()
+        pt.plot_frame(0,ax=ax)
+        pt.plot_frame_at_time(1,ax=ax)
+        pt.plot_moments(ax=ax)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -234,10 +234,10 @@ class ParticleTracker:
         ax.plot(intensity, **kwargs)
         return ax
 
-    def plot_frame(self, frame_nr, ax=None, **kwargs):
+    def plot_frame(self, frame_index, ax=None, **kwargs):
         """
-        time: float
-            The time of the frame you want to plot.
+        frame_index: index
+            The index of the frame you want to plot.
         ax: matplotlib axes instance
             The axes which you want the frames to plotted on. If none is provided a new instance will be created.
         **kwargs:
@@ -248,10 +248,31 @@ class ParticleTracker:
             matplotlib axes instance
                 Returns the axes input argument or creates and returns a new instance of an matplotlib axes object.
         """
-        intensity = self.frames[frame_nr]
+        intensity = self.frames[frame_index]
         if ax is None:
             ax = plt.axes()
         ax.plot(intensity, **kwargs)
+        return ax
+
+    def plot_moments(self, ax=None, **kwargs):
+        """
+        ax: matplotlib axes instance
+            The axes which you want the frames to plotted on. If none is provided a new instance will be created.
+        **kwargs:
+            Plot settings, any settings which can be used in matplotlib.pyplot.scatter method.
+
+        Returns
+        -------
+            matplotlib axes instance
+                Returns the axes input argument or creates and returns a new instance of an matplotlib axes object.
+        """
+        if ax is None:
+            ax = plt.axes()
+        zeroth_order_moments = [m for moments in self._zeroth_order_moments for m in moments]
+        second_order_moments = [m for moments in self._second_order_moments for m in moments]
+        ax.scatter(zeroth_order_moments, second_order_moments, **kwargs)
+        ax.set_xlabel('$m_0$')
+        ax.set_ylabel('$m_2$')
         return ax
 
     def change_cost_coefficients(self, a=1, b=1, c=1):
