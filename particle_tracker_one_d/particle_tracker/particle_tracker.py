@@ -42,6 +42,7 @@ class ParticleTracker:
         self._trajectories = []
         self._cost_matrix = []
         self._association_matrix = []
+        self._trajectory_links = []
         self._cost_coefficients = np.array([1, 1, 1], dtype=np.float32)
 
     @property
@@ -294,34 +295,140 @@ class ParticleTracker:
                 self._update_association_matrix()
                 self._update_trajectories()
 
-    def _update_trajectories(self):
-        self._trajectories = []
-        p = np.empty((1,),
-                     dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32),
-                            ('zeroth_order_moment', np.float32), ('second_order_moment', np.float32)])
+    def _build_trajectory(self, trajectory):
+        last_position = trajectory[-1]
+        if last_position[0] == len(self._association_matrix) - 1:
+            return trajectory
+        link_matrix = self._association_matrix[last_position[0]][0]
+        link_index = link_matrix[last_position[1] + 1, :].nonzero()[0][0]
+        if link_index > 0:
+            trajectory.append((last_position[0] + 1, link_index - 1))
+            return self._build_trajectory(trajectory)
+        else:
+            return trajectory
+
+    def _find_initial_trajectories(self):
+        trajectories = []
         particle_has_been_used = [np.zeros(positions.shape, dtype=bool) for positions in self._particle_positions]
-        for frame_index, _ in enumerate(self._association_matrix[:-1]):
-            for particle_index, _ in enumerate(self._association_matrix[frame_index][0][1:]):
-                if not particle_has_been_used[frame_index][particle_index]:
-                    trajectory = Trajectory()
-                    trajectory_indexes = [np.array([frame_index, particle_index], dtype=np.int16)]
-                    trajectory_indexes = self._create_trajectory_from_particle(trajectory_indexes)
-                    trajectory.particle_positions = np.empty((len(trajectory_indexes),),
-                                                             dtype=[('frame_index', np.int16), ('time', np.float32),
-                                                                    ('position', np.float32),
-                                                                    ('zeroth_order_moment', np.float32),
-                                                                    ('second_order_moment', np.float32)])
-                    for index, indices in enumerate(trajectory_indexes):
-                        particle_has_been_used[indices[0]][indices[1]] = True
-                        trajectory.particle_positions[index]['frame_index'] = indices[0]
-                        trajectory.particle_positions[index]['time'] = self._Frames.time[indices[0]]
-                        trajectory.particle_positions[index]['position'] = self._particle_positions[indices[0]][
-                            indices[1]]
-                        trajectory.particle_positions[index]['zeroth_order_moment'] = \
-                            self._zeroth_order_moments[indices[0]][indices[1]]
-                        trajectory.particle_positions[index]['second_order_moment'] = \
-                            self._second_order_moments[indices[0]][indices[1]]
-                    self._trajectories.append(trajectory)
+        for frame_index, positions in enumerate(self._particle_positions):
+            for position_index, position in enumerate(positions):
+                if not particle_has_been_used[frame_index][position_index]:
+                    trajectory = self._build_trajectory([(frame_index, position_index)])
+                    for p in trajectory:
+                        particle_has_been_used[p[0]][p[1]] = True
+                    trajectories.append(trajectory)
+        return trajectories
+
+    def _find_all_associations(self, position):
+        associations = []
+        for index, link_matrix in enumerate(self._association_matrix[position[0]]):
+            link_index = link_matrix[position[1] + 1, :].nonzero()[0][0]
+            cost = self._cost_matrix[position[0]][index][position[1] + 1, link_index]
+            if link_index > 0:
+                associations.append((position[0] + index + 1, link_index - 1, cost))
+        return associations
+
+    def __connect_broken_trajectories(self, trajectories):
+        for index, trajectory in enumerate(trajectories):
+            if trajectory[-1][0] < self.frames.shape[0] - 1:
+                possible_associations = self._find_all_associations(trajectory[-1])
+                possible_associations.sort(key=lambda x: x[2])
+                if len(possible_associations) > 0:
+                    trajectories[index].append(possible_associations)
+
+        return trajectories
+
+    def _initialise_trajectory_links(self):
+        for t, _ in enumerate(self._association_matrix[:-1]):
+            for i, _ in enumerate(self._association_matrix[t][0]):
+                for j, is_associated in enumerate(self._association_matrix[t][0][i]):
+                    if is_associated and (i > 0):
+                        if t == 0:
+                            self._trajectory_links[t][0][i, j] = 1
+                        else:
+                            self._trajectory_links[t][0][i, j] = 1 + np.sum(self._trajectory_links[t - 1][0][:, i])
+
+    def _is_connected_to_dummy_particle(self, frame_index, particle_index):
+        return self._association_matrix[frame_index][0][particle_index + 1][0]
+
+    def _find_cheapest_valid_link(self, frame_index, particle_index):
+        t = frame_index
+        i = particle_index + 1
+        costs = []
+        for r, link_matrix in enumerate(self._association_matrix[t]):
+            j = link_matrix[i].nonzero()[0][0]
+            costs.append((r, j, self._cost_matrix[t][r][i][j]))
+        costs.sort(key=lambda x: x[2])
+        for c in costs:
+            if (
+                    t + c[0] + 1 < len(self._trajectory_links) - 1 and
+                    (np.sum(self._trajectory_links[t + c[0] + 1][0][c[1]]) == 1) and
+                    c[2] < np.inf
+            ):
+                return t, c[0], i, c[1]
+            elif c[2] < np.inf and (t + c[0] + 1 == len(self._trajectory_links) - 1):
+                is_already_linked = False
+                for link_matrices in self._trajectory_links[t:-1]:
+                    if link_matrices[-1][:, c[1]].any():
+                        is_already_linked = True
+                if not is_already_linked:
+                    return t, c[0], i, c[1]
+
+        return t, 0, i, 0
+
+    def _connect_broken_trajectories(self):
+        for frame_index, positions in enumerate(self._particle_positions[:-1]):
+            for particle_index, _ in enumerate(positions):
+                if self._is_connected_to_dummy_particle(frame_index, particle_index):
+                    t, r, i, j = self._find_cheapest_valid_link(frame_index, particle_index)
+                    if j > 0:
+                        self._trajectory_links[t][r][i][j] = 1
+                        if t + r + 1 < len(self._trajectory_links) - 1:
+                            j_prim = self._trajectory_links[t + r + 1][0][j].nonzero()[0][0]
+                            self._trajectory_links[t + r + 1][0][j][j_prim] += 1
+
+    def _update_trajectories(self):
+        self._initialise_trajectory_links()
+        self._connect_broken_trajectories()
+        self._build_trajectories()
+
+    def _build_trajectories(self):
+        self._trajectories = []
+        for t, link_matrices in enumerate(self._trajectory_links[:-1]):
+            for i, links in enumerate(link_matrices[0]):
+                for j, link in enumerate(links):
+                    if link == 1:
+                        self._trajectories.append(
+                            self._build_trajectory_from_particle(t, i)
+                        )
+
+    def _create_trajectory(self, indices):
+        last_position = indices[-1]
+        if last_position[0] == len(self._trajectory_links) - 1:
+            return indices
+        for r, link_matrix in enumerate(self._trajectory_links[last_position[0]]):
+            j = link_matrix[last_position[1]].nonzero()[0]
+            if j.size > 0 and (j[0] > 0):
+                indices.append((last_position[0] + r + 1, j[0]))
+                return self._create_trajectory(indices)
+        return indices
+
+    def _build_trajectory_from_particle(self, t, i):
+        index_trajectory = self._create_trajectory([(t, i)])
+        trajectory = Trajectory()
+        particle_positions = np.empty((len(index_trajectory),),
+                                      dtype=[('frame_index', np.int16), ('time', np.float32), ('position', np.float32),
+                                             ('zeroth_order_moment', np.float32),
+                                             ('second_order_moment', np.float32)])
+        for index, indices in enumerate(index_trajectory):
+            particle_positions[index]['frame_index'] = indices[0]
+            particle_positions[index]['time'] = self.time[indices[0]]
+            particle_positions[index]['position'] = self._particle_positions[indices[0]][indices[1] - 1]
+            particle_positions[index]['zeroth_order_moment'] = self._zeroth_order_moments[indices[0]][indices[1] - 1]
+            particle_positions[index]['second_order_moment'] = self._second_order_moments[indices[0]][indices[1] - 1]
+
+        trajectory.particle_positions = particle_positions
+        return trajectory
 
     def _create_trajectory_from_particle(self, indexes):
         for future_frame_index, link_matrix in enumerate(self._association_matrix[indexes[-1][0]]):
@@ -509,6 +616,7 @@ class ParticleTracker:
 
         self._association_matrix = [[] for _ in range(number_of_frames)]
         self._cost_matrix = [[] for _ in range(number_of_frames)]
+        self._trajectory_links = [[] for _ in range(number_of_frames)]
         for frame_index in range(0, number_of_frames):
             for future_frame_index in range(frame_index + 1, frame_index + r + 2):
                 if future_frame_index < number_of_frames:
@@ -522,25 +630,29 @@ class ParticleTracker:
                             (len(self._particle_positions[frame_index]) + 1,
                              len(self._particle_positions[future_frame_index]) + 1), dtype=np.float32)
                     )
+                    self._trajectory_links[frame_index].append(
+                        np.zeros(
+                            (len(self._particle_positions[frame_index]) + 1,
+                             len(self._particle_positions[future_frame_index]) + 1), dtype=np.int32)
+                    )
 
     def _create_initial_links_in_association_matrix(self):
-        for frame_index, _ in enumerate(self._cost_matrix):
-            for future_frame_index, _ in enumerate(self._cost_matrix[frame_index]):
-                used_indexes = []
-                for particle_index, row in enumerate(self._cost_matrix[frame_index][future_frame_index]):
-                    indexes_of_min = np.argsort(row)
-                    for index in indexes_of_min:
-                        if index not in used_indexes:
-                            self._association_matrix[frame_index][future_frame_index][particle_index][index] = True
-                            used_indexes.append(index)
+        for t, _ in enumerate(self._cost_matrix):
+            for r, _ in enumerate(self._cost_matrix[t]):
+                used_js = []
+                for i, _ in enumerate(self._cost_matrix[t][r]):
+                    js = np.argsort(self._cost_matrix[t][r][i])
+                    for j in js:
+                        if j not in used_js and (self._cost_matrix[t][r][i][j] != np.inf):
+                            used_js.append(j)
+                            self._association_matrix[t][r][i][j] = 1
                             break
-                for particle_index, row in enumerate(self._association_matrix[frame_index][future_frame_index]):
-                    if not any(row):
-                        self._association_matrix[frame_index][future_frame_index][particle_index][0] = True
-                for future_particle_index, col in enumerate(
-                        self._association_matrix[frame_index][future_frame_index].T):
-                    if not any(col):
-                        self._association_matrix[frame_index][future_frame_index][0][future_particle_index] = True
+                for i, row in enumerate(self._association_matrix[t][r]):
+                    if not row.any():
+                        self._association_matrix[t][r][i][0] = True
+                for i, row in enumerate(self._association_matrix[t][r].T):
+                    if not row.any():
+                        self._association_matrix[t][r][0, i] = True
 
     def _calculate_cost_matrices(self):
         for frame_index, _ in enumerate(self._cost_matrix):
