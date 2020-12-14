@@ -255,6 +255,25 @@ class ParticleTracker:
         ax.plot(intensity, **kwargs)
         return ax
 
+    def plot_all_particles(self, ax=None, **kwargs):
+        """
+        ax: matplotlib axes instance
+            The axes which you want the frames to plotted on. If none is provided a new instance will be created.
+        **kwargs:
+            Plot settings, any settings which can be used in matplotlib.pyplot.scatter method.
+
+        Returns
+        -------
+            matplotlib axes instance
+                Returns the axes input argument or creates and returns a new instance of an matplotlib axes object.
+        """
+        if ax is None:
+            ax = plt.axes()
+        for frame_index, positions in enumerate(self._particle_positions):
+            for position in positions:
+                ax.plot(position, frame_index, **kwargs)
+        return ax
+
     def plot_moments(self, ax=None, **kwargs):
         """
         ax: matplotlib axes instance
