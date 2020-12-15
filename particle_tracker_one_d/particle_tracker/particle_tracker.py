@@ -43,7 +43,7 @@ class ParticleTracker:
         self._cost_matrix = []
         self._association_matrix = []
         self._trajectory_links = []
-        self._cost_coefficients = np.array([1, 1, 1, 1], dtype=np.float32)
+        self._cost_coefficients = np.array([1, 1, 1, 0], dtype=np.float32)
 
     @property
     def frames(self):

@@ -295,24 +295,24 @@ class SetAttributeTester(unittest.TestCase):
         automatic_update = False
 
         correct_cost_coefficients = np.array([
-            [1, 2, 3],
-            [0, 0.2, 0.1],
-            [10, 10.2, -1]
+            [1, 2, 3, 0],
+            [0, 0.2, 0.1, 0],
+            [10, 10.2, -1, 0]
         ])
 
         incorrect_cost_coefficients = np.array([
-            [0, 0, 0]
+            [0, 0, 0, 0]
         ])
 
         pt = ParticleTracker(frames=frames, time=time, automatic_update=automatic_update)
 
         for cost_coefficients in correct_cost_coefficients:
-            pt.change_cost_coefficients(cost_coefficients[0], cost_coefficients[1], cost_coefficients[2])
+            pt.change_cost_coefficients(cost_coefficients[0], cost_coefficients[1], cost_coefficients[2], cost_coefficients[3])
             np.testing.assert_array_almost_equal(cost_coefficients, pt._cost_coefficients)
 
         for cost_coefficients in incorrect_cost_coefficients:
             with self.assertRaises(ValueError):
-                pt.change_cost_coefficients(cost_coefficients[0], cost_coefficients[1], cost_coefficients[2])
+                pt.change_cost_coefficients(cost_coefficients[0], cost_coefficients[1], cost_coefficients[2], cost_coefficients[3])
 
 
 class FindParticlePositionsTester(unittest.TestCase):
