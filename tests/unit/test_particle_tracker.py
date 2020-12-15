@@ -295,24 +295,24 @@ class SetAttributeTester(unittest.TestCase):
         automatic_update = False
 
         correct_cost_coefficients = np.array([
-            [1, 2, 3],
-            [0, 0.2, 0.1],
-            [10, 10.2, -1]
+            [1, 2, 3, 0],
+            [0, 0.2, 0.1, 0],
+            [10, 10.2, -1, 0]
         ])
 
         incorrect_cost_coefficients = np.array([
-            [0, 0, 0]
+            [0, 0, 0, 0]
         ])
 
         pt = ParticleTracker(frames=frames, time=time, automatic_update=automatic_update)
 
         for cost_coefficients in correct_cost_coefficients:
-            pt.change_cost_coefficients(cost_coefficients[0], cost_coefficients[1], cost_coefficients[2])
+            pt.change_cost_coefficients(cost_coefficients[0], cost_coefficients[1], cost_coefficients[2], cost_coefficients[3])
             np.testing.assert_array_almost_equal(cost_coefficients, pt._cost_coefficients)
 
         for cost_coefficients in incorrect_cost_coefficients:
             with self.assertRaises(ValueError):
-                pt.change_cost_coefficients(cost_coefficients[0], cost_coefficients[1], cost_coefficients[2])
+                pt.change_cost_coefficients(cost_coefficients[0], cost_coefficients[1], cost_coefficients[2], cost_coefficients[3])
 
 
 class FindParticlePositionsTester(unittest.TestCase):
@@ -1015,6 +1015,103 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
             ],
             []
         ]
+        trajectory_links = [
+            [
+
+                np.array(
+                    [
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                    ], dtype=np.int32),
+                np.array(
+                    [
+                        [0, 0, 0],
+                        [0, 0, 0],
+                        [0, 0, 0],
+                    ], dtype=np.int32),
+                np.array(
+                    [
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0]
+                    ], dtype=np.int32)
+            ],
+            [
+                np.array(
+                    [
+                        [0, 0, 0],
+                        [0, 0, 0],
+                        [0, 0, 0],
+                        [0, 0, 0]
+                    ], dtype=np.int32),
+                np.array(
+                    [
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0]
+                    ], dtype=np.int32)
+            ],
+            [
+                np.array(
+                    [
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0],
+                        [0, 0, 0, 0]
+                    ], dtype=np.int32),
+            ],
+            []
+        ]
+
+        cost_matrix = [
+            [
+                np.array(
+                    [
+                        [2, 2, 2, 2],
+                        [2, 1, 0, 1],
+                        [2, 0, 1, 1],
+                    ], dtype=np.float32),
+                np.array(
+                    [
+                        [2, 2, 2],
+                        [2, 3, 3],
+                        [2, 3, 1],
+                    ], dtype=np.float32),
+                np.array(
+                    [
+                        [2, 2, 2, 2],
+                        [2, 1, 3, 4],
+                        [2, 2, 1, 4]
+                    ], dtype=np.float32)
+            ],
+            [
+                np.array(
+                    [
+                        [2, 2, 2],
+                        [2, 3, 1],
+                        [2, 1, 3],
+                        [2, 3, 3]
+                    ], dtype=np.float32),
+                np.array(
+                    [
+                        [2, 2, 2, 2],
+                        [2, 1, 3, 3],
+                        [2, 3, 1, 3],
+                        [2, 3, 3, 1]
+                    ], dtype=np.float32)
+            ],
+            [
+                np.array(
+                    [
+                        [2, 2, 2, 2],
+                        [2, 3, 1, 3],
+                        [2, 1, 3, 3]
+                    ], dtype=np.float32),
+            ],
+            []
+        ]
+
 
         trajectories = [
             np.zeros((4,),
@@ -1049,12 +1146,13 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
         pt = ParticleTracker(time=times_example, frames=frames_example, automatic_update=False)
 
         pt._association_matrix = association_matrix
+        pt._cost_matrix = cost_matrix
+        pt._trajectory_links = trajectory_links
         pt._particle_positions = particle_position
         pt._zeroth_order_moments = zeroth_order_moments
         pt._second_order_moments = second_order_moments
 
         pt._update_trajectories()
-
         for index, t in enumerate(pt.trajectories):
             np.testing.assert_array_equal(trajectories[index], t.particle_positions)
 
