@@ -43,7 +43,7 @@ class ParticleTracker:
         self._cost_matrix = []
         self._association_matrix = []
         self._trajectory_links = []
-        self._cost_coefficients = np.array([1, 1, 1], dtype=np.float32)
+        self._cost_coefficients = np.array([1, 1, 1, 1], dtype=np.float32)
 
     @property
     def frames(self):
@@ -295,18 +295,20 @@ class ParticleTracker:
         ax.set_ylabel('$m_2$')
         return ax
 
-    def change_cost_coefficients(self, a=1, b=1, c=1):
+    def change_cost_coefficients(self, a=1, b=1, c=1, d=1):
         """
-        Change the coefficients of the cost function :math:`c(p_1,p_2) = a\\cdot (x_{p_1} - x_{p_1})^2 + b \\cdot (m_0(p_1)-m_0(p_2))^2 + b \\cdot (m_2(p_1)-m_2(p_2))^2)`
+        Change the coefficients of the cost function :math:`c(p_1,p_2) = a\\cdot (x_{p_1} - x_{p_1})^2 + b \\cdot (m_0(p_1)-m_0(p_2))^2 + b \\cdot (m_2(p_1)-m_2(p_2))^2) + d \\cdot (t_{p_1}-t_{p_2})^2`
 
         a: float
 
         b: float
 
         c: float
+
+        d: float
         """
-        new_cost_coefficients = np.array([a, b, c], dtype=np.float32)
-        if np.array_equal(new_cost_coefficients, np.array([0, 0, 0])):
+        new_cost_coefficients = np.array([a, b, c, d], dtype=np.float32)
+        if np.array_equal(new_cost_coefficients, np.array([0, 0, 0, 0])):
             raise ValueError('All cost coefficients can\'t be zero')
         if not np.array_equal(new_cost_coefficients, self._cost_coefficients):
             self._cost_coefficients = new_cost_coefficients
@@ -706,6 +708,7 @@ class ParticleTracker:
                 self._cost_coefficients[2] * (self._second_order_moments[frame_index][particle_index] -
                                               self._second_order_moments[future_frame_index][
                                                   future_particle_index]) ** 2
+                + self._cost_coefficients[3] * (future_frame_index - frame_index)**2
         )
         if cost > self._calculate_cost_for_association_with_dummy_particle(frame_index, future_frame_index):
             return np.inf
