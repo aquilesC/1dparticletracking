@@ -405,6 +405,163 @@ class FindParticlePositionsTester(unittest.TestCase):
         for index, position in enumerate(spf.particle_positions):
             np.testing.assert_array_equal(expected_positions[index], position)
 
+    def test_calculation_of_zeroth_order_intensity_moments(self):
+        """
+        Verification of the calulation of first order intensity moments
+        TODO: Rewrite to have more logical frames with particle positions going from left to right.
+        """
+
+        frames_example = np.array([
+            [0.3, 0.1, 0, 0.1, 0.1, 0.5],
+            [0, 0.6, 0.2, 0.3, 0.1, 0],
+            [1, 0.1, 0.1, 0.3, 0.2, 0],
+            [0.1, 0.1, 0.2, 0.2, 0.1, 0.1],
+            [0.1, 0.1, 0.8, 0.2, 0.3, 0],
+            [0.7, 0.2, 0.2, 0.2, 0.6, 0.1],
+            [0.1, 0.8, 0.2, 0.2, 0.9, 0.1]
+        ], dtype=np.float32)
+
+        times_example = np.array([0, 1, 2, 3, 4, 5, 6])
+
+        particle_positions = np.array([
+            [5, 0],
+            [1.25, 1],
+            [0, 2],
+            [2, 4],
+            [0, 5],
+            [4, 5],
+            [1, 6],
+            [4, 6]
+        ], dtype=np.float32)
+
+        expected_zeroth_order_intensity_moment_integration_radius_zero = [
+            0.5,
+            0.6,
+            1,
+            0.8,
+            0.7,
+            0.6,
+            0.8,
+            0.9
+        ]
+
+        expected_zeroth_order_intensity_moment_integration_radius_one = [
+            0.7,
+            0.8,
+            1.2,
+            1.1,
+            1.1,
+            0.9,
+            1.1,
+            1.2
+        ]
+
+        expected_zeroth_order_intensity_moment_integration_radius_two = [
+            0.9,
+            1.4,
+            1.4,
+            1.5,
+            1.5,
+            1.3,
+            1.5,
+            1.6
+        ]
+
+        expected_zeroth_order_intensity_moment_integration_radius_three = [
+            3.3,
+            3.2
+        ]
+
+        expected_second_order_intensity_moment_integration_radius_zero = [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+        ]
+
+        expected_second_order_intensity_moment_integration_radius_one = [
+            0.2857142857,
+            0.25,
+            0.1666666667,
+            0.2727272727,
+            0.3636363636,
+            0.3333333333,
+            0.2727272727,
+            0.25
+        ]
+
+        expected_second_order_intensity_moment_integration_radius_two = [
+            1.1111111111,
+            1.8571428571,
+            0.7142857143,
+            1.2666666667,
+            1.3333333333,
+            1.4615384615,
+            1.2666666667,
+            1.1875
+        ]
+
+        expected_second_order_intensity_moment_integration_radius_three = [
+            5.48484848485,
+            5.09375
+        ]
+
+        spf = ShortestPathFinder(frames=frames_example, time=times_example, automatic_update=False)
+        spf.integration_radius_of_intensity_peaks = 0
+
+        for index, position in enumerate(particle_positions):
+            np.testing.assert_almost_equal(
+                spf._calculate_zeroth_order_intensity_moment(position[0], int(round(position[1]))),
+                expected_zeroth_order_intensity_moment_integration_radius_zero[index])
+
+        for index, position in enumerate(particle_positions):
+            np.testing.assert_almost_equal(
+                spf._calculate_second_order_intensity_moment(position[0], int(round(position[1]))),
+                expected_second_order_intensity_moment_integration_radius_zero[index])
+
+        spf.integration_radius_of_intensity_peaks = 1
+
+        for index, position in enumerate(particle_positions):
+            np.testing.assert_almost_equal(expected_zeroth_order_intensity_moment_integration_radius_one[index],
+                                           spf._calculate_zeroth_order_intensity_moment(position[0],
+                                                                                       int(round(position[1]))))
+
+        for index, position in enumerate(particle_positions):
+            np.testing.assert_almost_equal(
+                spf._calculate_second_order_intensity_moment(position[0], int(round(position[1]))),
+                expected_second_order_intensity_moment_integration_radius_one[index])
+
+        spf.integration_radius_of_intensity_peaks = 2
+
+        for index, position in enumerate(particle_positions):
+            np.testing.assert_almost_equal(
+                spf._calculate_zeroth_order_intensity_moment(position[0], int(round(position[1]))),
+                expected_zeroth_order_intensity_moment_integration_radius_two[index], decimal=5)
+
+        for index, position in enumerate(particle_positions):
+            np.testing.assert_almost_equal(
+                spf._calculate_second_order_intensity_moment(position[0], int(round(position[1]))),
+                expected_second_order_intensity_moment_integration_radius_two[index])
+
+        spf.integration_radius_of_intensity_peaks = 3
+
+        np.testing.assert_almost_equal(spf._calculate_zeroth_order_intensity_moment(1, 6),
+                                       expected_zeroth_order_intensity_moment_integration_radius_three[0])
+
+        np.testing.assert_almost_equal(spf._calculate_zeroth_order_intensity_moment(4, 6),
+                                       expected_zeroth_order_intensity_moment_integration_radius_three[1])
+
+        np.testing.assert_almost_equal(spf._calculate_second_order_intensity_moment(1, 6),
+                                       expected_second_order_intensity_moment_integration_radius_three[0], decimal=5)
+
+        np.testing.assert_almost_equal(spf._calculate_second_order_intensity_moment(4, 6),
+                                       expected_second_order_intensity_moment_integration_radius_three[1])
+
+
 
 class AssociationAndCostMatrixTester(unittest.TestCase):
 
@@ -551,3 +708,36 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
         #print('1.')
         pprint.pprint(spf._create_trajectory_from_cost_matrix())
         #print('2.')
+
+    def test_find_shortest_path_by_dijkstra_with_static_points(self):
+        """
+         Test automatic finding
+         """
+
+        automatic_update = True
+
+        frames = np.array([
+            [0, 1, 0, 0, 0, 0],
+            [0, 1, 0, 0, 1, 0],
+            [0, 1, 0, 0, 0, 0],
+            [0, 1, 0, 0, 1, 0],
+            [0, 1, 0, 0, 0, 0]
+        ], dtype=np.float32)
+
+        times = np.array([0, 1, 2, 3, 4])
+
+        start_point = (0, 1)
+        static_points = [(1,4), (3, 4)]
+        end_point = (4, 1)
+
+
+        spf = ShortestPathFinder(frames=frames, time=times, automatic_update=automatic_update)
+        spf.boxcar_width = 0
+        spf.start_point = start_point
+        spf.static_points = static_points
+        spf.end_point = end_point
+
+        print(spf.trajectory.particle_positions['position'])
+        # print('1.')
+        pprint.pprint(spf._create_trajectory_from_cost_matrix())
+        # print('2.')
