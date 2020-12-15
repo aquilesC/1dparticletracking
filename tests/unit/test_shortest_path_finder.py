@@ -650,16 +650,16 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
                 ], dtype=np.float32),
             np.array(
                 [
-                    [0.4725],
+                    [0.3825],
                 ], dtype=np.float32),
             np.array(
                 [
-                    [0.6325, 1.0325],
+                    [0.39249998, 0.7925],
                 ], dtype=np.float32),
             np.array(
                 [
-                    [1.1225],
-                    [1.1225001],
+                    [1.2825],
+                    [1.2825],
                 ], dtype=np.float32),
         ]
 
@@ -672,9 +672,6 @@ class AssociationAndCostMatrixTester(unittest.TestCase):
         spf._initialise_association_and_cost_matrix()
         spf._calculate_particle_moments()
         spf._calculate_cost_matrix()
-
-        print(expected_cost_matrix)
-        print(spf._cost_matrix)
 
         for frame_index, _ in enumerate(spf._cost_matrix):
             for future_frame_index, _ in enumerate(spf._cost_matrix[frame_index]):
