@@ -715,7 +715,7 @@ class ParticleTracker:
         return cost
 
     def _calculate_cost_for_association_with_dummy_particle(self, frame_index, future_frame_index):
-        return (self.maximum_distance_a_particle_can_travel_between_frames * (future_frame_index - frame_index)) ** 2
+        return self._cost_coefficients[0] * (self.maximum_distance_a_particle_can_travel_between_frames * (future_frame_index - frame_index)) ** 2
 
     def _optimise_link_matrix(self, links, costs):
         lowest_cost = 1
