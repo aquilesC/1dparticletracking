@@ -258,7 +258,7 @@ class ParticleTracker:
     def plot_all_particles(self, ax=None, **kwargs):
         """
         ax: matplotlib axes instance
-            The axes which you want the frames to plotted on. If none is provided a new instance will be created.
+            The axes which you want the particle detections to be plotted on. If none is provided a new instance will be created.
         **kwargs:
             Plot settings, any settings which can be used in matplotlib.pyplot.scatter method.
 
@@ -277,7 +277,7 @@ class ParticleTracker:
     def plot_moments(self, ax=None, **kwargs):
         """
         ax: matplotlib axes instance
-            The axes which you want the frames to plotted on. If none is provided a new instance will be created.
+            The axes which you want the moments to plotted on. If none is provided a new instance will be created.
         **kwargs:
             Plot settings, any settings which can be used in matplotlib.pyplot.scatter method.
 
@@ -297,7 +297,7 @@ class ParticleTracker:
 
     def change_cost_coefficients(self, a=1, b=1, c=1, d=1):
         """
-        Change the coefficients of the cost function :math:`c(p_1,p_2) = a\\cdot (x_{p_1} - x_{p_1})^2 + b \\cdot (m_0(p_1)-m_0(p_2))^2 + b \\cdot (m_2(p_1)-m_2(p_2))^2) + d \\cdot (t_{p_1}-t_{p_2})^2`
+        Change the coefficients of the cost function :math:`c(p_1,p_2) = a\\cdot (x_{p_1} - x_{p_2})^2 + b \\cdot (m_0(p_1)-m_0(p_2))^2 + b \\cdot (m_2(p_1)-m_2(p_2))^2) + d \\cdot (t_{p_1}-t_{p_2})^2`
 
         a: float
 

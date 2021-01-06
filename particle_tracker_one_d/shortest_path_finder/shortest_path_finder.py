@@ -102,7 +102,7 @@ class ShortestPathFinder:
         """
         float:
             Defines the threshold value for finding intensity peaks. Local maximas below this threshold will not be
-            considered as particles. Should be a value between 0 and 1.
+            considered as particles.
         """
         return self._particle_detection_threshold
 
@@ -232,8 +232,6 @@ class ShortestPathFinder:
         b: float
 
         c: float
-
-        d: float
         """
         new_cost_coefficients = np.array([a, b, c], dtype=np.float32)
         if np.array_equal(new_cost_coefficients, np.array([0, 0, 0])):
