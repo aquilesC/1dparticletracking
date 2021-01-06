@@ -14,18 +14,18 @@ __ https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm
 
 Definitions
 -----------
-A particle observation or feature point :math:`p = [t,\hat{x_p}]` where :math:`t` is the frame index and :math:`\hat{x_p}` is the estimated position comes with associated
+A particle observation :math:`p = [t,\hat{x}_p]` where :math:`t` is the frame index and :math:`\hat{x}_p` is the estimated position comes with associated
 intensity moments defined as the 0th order moment
 
 .. math::
 
-    m_0(p) = \sum_{i^2 \leq w^2} I^t (\hat{x_p} + i)
+    m_0(p) = \sum_{i^2 \leq w^2} I^t (\hat{x}_p + i)
 
 and the 2nd order moment
 
 .. math::
 
-    m_2(p) = \sum_{i^2 \leq w^2} i^2 I^t (\hat{x_p} + i)
+    m_2(p) = \sum_{i^2 \leq w^2} i^2 I^t (\hat{x}_p + i)
 
 where :math:`I^t` is the intensity of frame :math:`t` and :math:`w` is the integration radius.
 
@@ -37,6 +37,7 @@ together by minimising a cost describing the chance of detections being the same
 Initialisation
 ______________
 To create an instance of the particle tracker one has to provide the frames and the corresponding times.
+
 .. code-block:: python
 
     from particle_tracker_one_d import ParticleTracker
@@ -57,7 +58,7 @@ Finding particle positions
 __________________________
 To detect possible particles an intensity detection threshold is set by the attribute
 :code:`pt.particle_detection_threshold`. Local maximas over this threshold are considered as initial possible particle
-detections. If however, two maximas are found within a distance of :code:`2 * integration_radius_of_intensity_peaks`
+detections. If however, two maximas are found within a distance of :code:`2 * pt.integration_radius_of_intensity_peaks`
 pixels, the lowest maxima of the two points is discarded. Each position is then refined using a centroid estimation
 around the local maxima, using the same integration radius.
 
@@ -72,7 +73,7 @@ only be linked to one particle in frame :math:`t+r`. The maximum :math:`r` allow
 used for the associations is
 
 .. math::
-    \phi(p_1,p_2) = a \cdot (x_{p_1}-x_{p_2})^2 + b \cdot (m_0(p_1) - m_0(p_2))^2 + c \cdot (m_2(p_1) - m_2(p_2))^2 + d \cdot (r-1)^2
+    \phi(p_1,p_2) = a \cdot (\hat{x}_{p_1}-\hat{x}_{p_2})^2 + b \cdot (m_0(p_1) - m_0(p_2))^2 + c \cdot (m_2(p_1) - m_2(p_2))^2 + d \cdot (r-1)^2
 
 where the :math:`d \cdot (r-1)^2` term is added to promote the linking of particle detections closer in time. To change
 the coefficients :math:`a,b,c,d` one can call the function :code:`pt.change_cost_coefficients(a=1,b=1,c=1,d=1)`. In
@@ -130,14 +131,14 @@ the attribute :code:`spf.particle_detection_threshold` in the frames between the
 the frames with the static points. If however, two maximas are found within a double distance of
 the attribute :code:`spf.integration_radius_of_intensity_peaks`, the lowest maxima of the two points is discarded.
 Each position is then refined using a centroid estimation around the local maxima, using the same integration radius.
-This also includes the start, end and static points.
+This also includes the start, the end and the static points.
 
 Finding the shortest path
 _________________________
 The algorithm then finds the shortest path defined by the cost/distance between particles
 
 .. math::
-    \phi(p_1,p_2) = a \cdot (x_{p_1}-x_{p_2})^2 + b \cdot (m_0(p_1) - m_0(p_2))^2 + c \cdot (m_2(p_1) - m_2(p_2))^2
+    \phi(p_1,p_2) = a \cdot (\hat{x}_{p_1}-\hat{x}_{p_2})^2 + b \cdot (m_0(p_1) - m_0(p_2))^2 + c \cdot (m_2(p_1) - m_2(p_2))^2
 
 where the coefficients :math:`a,b,c` can be changed using the function :code:`spf.change_cost_coefficients(a=1,b=1,c=1)`.
 The algorithm then works as follows:
@@ -146,10 +147,10 @@ The algorithm then works as follows:
 2. Start at :math:`t=t_0` and calculate the cost between the position at :math:`t_0` and the positions at :math:`t_1`. Store these costs in a matrix :math:`C^1=c_{ij}=\phi(p_i,p_j)`. These now describe the cost to go to each position in frame :math:`t_1`.
 3. Continue calculate for all :math:`n` the cost between particles in frame :math:`t_{n}` to particles in frame :math:`t_{n+1}` and add the lowest cost from the i:th column in the previous cost matrix
 
-    .. math::
-        C^n = c_{ij} = \phi(p_i,p_j) + min_{i^'}(C_{i^'i}^{n-1})
+.. math::
+    C^n = c_{ij} = \phi(p_i,p_j) + min_{i^'}(C_{i^'i}^{n-1})
 
-4. Find the lowest value in :math:`C^n`. This will describe the lowest possible cost from the first position to the final, passing through all the positions in the initial sparse trajectory.
+4. Find the lowest value in :math:`C^n`. Wich is the lowest possible cost path from the first position to the final, passing through all the positions in the initial sparse trajectory.
 5. Build the trajectory by going backwards in the cost matrices following the lowest cost path.
 
 
